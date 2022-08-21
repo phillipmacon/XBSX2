@@ -2128,16 +2128,16 @@ void ImGuiFullscreen::SetTheme()
 	UIBackgroundColor = HEX_TO_IMVEC4(0x160021, 0xff); // Right of Main, Left of Game List, Settings
 	UIBackgroundTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
 	UIBackgroundLineColor = HEX_TO_IMVEC4(0x160021, 0xff); // Cursor Highlight
-	UIBackgroundHighlightColor = HEX_TO_IMVEC4(0x660099, 0xff); // Cursor
+	UIBackgroundHighlightColor = HEX_TO_IMVEC4(0x440066, 0xff); // Cursor
 	UIPrimaryColor = HEX_TO_IMVEC4(0x1f002e, 0xff); // Settings Nav Bar
 	UIPrimaryLightColor = HEX_TO_IMVEC4(0x484848, 0xff);
 	UIPrimaryDarkColor = HEX_TO_IMVEC4(0x1f002e, 0xff); // Left of Main, Right of Game List
-	UIPrimaryTextColor = HEX_TO_IMVEC4(0xdcbeff, 0xff); // Settings Nav Bar Text/Icons
+	UIPrimaryTextColor = HEX_TO_IMVEC4(0x9769ff, 0xff); // Settings Nav Bar Text/Icons
 	UIDisabledColor = HEX_TO_IMVEC4(0xcccccc, 0xff); // Menu Headings Settings
 	UITextHighlightColor = HEX_TO_IMVEC4(0xffffff, 0xff); 
 	UIPrimaryLineColor = HEX_TO_IMVEC4(0xffffff, 0xff);
-	UISecondaryColor = HEX_TO_IMVEC4(0x660099, 0xff); // Scanning Bar
-	UISecondaryLightColor = HEX_TO_IMVEC4(0x8235a3, 0xff); // Active Buttons 
+	UISecondaryColor = HEX_TO_IMVEC4(0x440066, 0xff); // Scanning Bar
+	UISecondaryLightColor = HEX_TO_IMVEC4(0x440066, 0xff); // Active Buttons 
 	UISecondaryDarkColor = HEX_TO_IMVEC4(0x002171, 0xff);
 	UISecondaryTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
 #elif 1
