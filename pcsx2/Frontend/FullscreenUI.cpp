@@ -777,7 +777,7 @@ void FullscreenUI::DoChangeDiscFromFile()
 		{
 			if (!GameList::IsScannableFilename(path))
 			{
-				ShowToast({}, fmt::format("{} is not a valid disc image.", FileSystem::GetDisplayNameFromPath(path)));
+				ShowToast({}, fmt::format("{} is corrupt or invalid.", FileSystem::GetDisplayNameFromPath(path)));
 			}
 			else
 			{
@@ -843,25 +843,25 @@ void FullscreenUI::DrawLandingWindow()
 
 		BeginMenuButtons(5, 0.5f);
 
-		if (MenuButton(" " ICON_FA_LIST "  Game List", "Launch a game from images scanned from your game directories."))
+		if (MenuButton(" " ICON_FA_LIST "  Games List", "Launch a game from images scanned from your game directories."))
 		{
 			SwitchToGameList();
 		}
 
-		if (MenuButton(" " ICON_FA_MICROCHIP "  Start BIOS", "Start the console without any disc inserted."))
+		if (MenuButton(" " ICON_FA_MICROCHIP "  Start BIOS", "Boot to the PlayStation 2 menu."))
 		{
 			DoStartBIOS();
 		}
 
-		if (MenuButton(" " ICON_FA_FOLDER_OPEN "  Start File", "Launch a game by selecting a file/disc image."))
+		if (MenuButton(" " ICON_FA_FOLDER_OPEN "  Start Game", "Launch a game by selecting a file/disc image."))
 		{
 			DoStartFile();
 		}
 
-		if (MenuButton(" " ICON_FA_COG "  Settings", "Change settings for the emulator."))
+		if (MenuButton(" " ICON_FA_COG "  Settings", "Change settings for XBSX2."))
 			SwitchToSettings();
 
-		if (MenuButton(" " ICON_FA_SIGN_OUT_ALT "  Exit", "Exits the program."))
+		if (MenuButton(" " ICON_FA_SIGN_OUT_ALT "  Exit", "Quit to dashboard."))
 		{
 			DoRequestExit();
 		}
@@ -1554,8 +1554,8 @@ void FullscreenUI::DrawSettingsWindow()
 			SettingsPage::Controller, SettingsPage::Hotkey, SettingsPage::Achievements, SettingsPage::Directory, SettingsPage::Advanced};
 		static constexpr SettingsPage per_game_pages[] = {SettingsPage::Summary, SettingsPage::Emulation, SettingsPage::System,
 			SettingsPage::Display, SettingsPage::Enhancements, SettingsPage::Audio, SettingsPage::MemoryCard};
-		static constexpr const char* titles[] = {"Summary", "Interface Settings", "Game List Settings",
-			"Emulation Settings", "System Settings", "Display Settings", "Enhancements Settings", "Audio Settings", "Memory Card Settings", "Controller Settings",
+		static constexpr const char* titles[] = {"Summary", "UI Settings", "Games List Settings",
+			"Emulator Settings", "System Settings", "Display Settings", "Enhancements Settings", "Audio Settings", "Memory Card Settings", "Controller Settings",
 			"Hotkey Settings", "Achievements Settings", "Directory Settings", "Advanced Settings"};
 
 		const bool game_settings = IsEditingGameSettings();
@@ -1717,7 +1717,7 @@ void FullscreenUI::DrawSummarySettingsPage()
 		DoCopyGameSettings();
 	if (MenuButton(ICON_FA_TRASH "  Clear Settings", "Clears all settings set for this game."))
 		DoClearGameSettings();
-	if (MenuButton(ICON_FA_BACKWARD "  Return To Game List", "Closes this menu and returns to the Game List."))
+	if (MenuButton(ICON_FA_BACKWARD "  Return To Games List", "Closes this menu and returns to the Game List."))
 		SwitchToGameList();
 
 	EndMenuButtons();
@@ -1728,10 +1728,8 @@ void FullscreenUI::DrawInterfaceSettingsPage()
 	BeginMenuButtons();
 
 	MenuHeading("On-Screen Display");
-	/*DrawIntRangeSetting(ICON_FA_SEARCH "  OSD Scale", "Determines how large the on-screen messages and monitor are.", "EmuCore/GS",
-		"OsdScale", 100, 25, 500, "%d%%");*/
 	DrawToggleSetting(ICON_FA_LIST "  Show Messages",
-		"Shows on-screen-display messages when events occur such as save states being created/loaded, screenshots being taken, etc.",
+		"Shows on-screen-display messages when save states are created/loaded, screenshots taken, etc.",
 		"EmuCore/GS", "OsdShowMessages", true);
 	DrawToggleSetting(ICON_FA_CLOCK "  Show Speed",
 		"Shows the current emulation speed of the system in the top-right corner of the display as a percentage.", "EmuCore/GS",
@@ -1777,7 +1775,7 @@ void FullscreenUI::DrawGameListSettingsPage()
 {
 	BeginMenuButtons();
 
-	MenuHeading("Game List");
+	MenuHeading("Games List");
 
 	if (MenuButton(ICON_FA_FOLDER_PLUS "  Add Search Directory", "Adds a new directory to the game search list."))
 	{
@@ -2140,7 +2138,7 @@ void FullscreenUI::DrawDisplaySettingsPage()
 	MenuHeading("Renderer");
 	DrawStringListSetting("Renderer", "Selects the API used to render the emulated GS.", "EmuCore/GS", "Renderer", "-1", s_renderer_names,
 		s_renderer_values, std::size(s_renderer_names));
-	DrawIntListSetting("Sync To Host Refresh (VSync)", "Synchronizes frame presentation with host refresh.", "EmuCore/GS", "VsyncEnable",
+	DrawIntListSetting("VSync", "Synchronizes frame presentation with host refresh.", "EmuCore/GS", "VsyncEnable",
 		static_cast<int>(VsyncMode::Off), s_vsync_values, std::size(s_vsync_values));
 
 	MenuHeading("Display");

@@ -28,6 +28,7 @@
 #include "System.h"
 #include "Config.h"
 #include "Host.h"
+#include "IconsFontAwesome5.h"
 
 #include "svnrev.h"
 
@@ -529,10 +530,8 @@ s32 FileMemoryCard::Save(uint slot, const u8* src, u32 adr, int size)
 		std::chrono::duration<float> elapsed = std::chrono::system_clock::now() - last;
 		if (elapsed > std::chrono::seconds(5))
 		{
-			const std::string_view filename(Path::GetFileName(m_filenames[slot]));
-			Host::AddKeyedFormattedOSDMessage(StringUtil::StdStringFromFormat("MemoryCardSave%u", slot), 3.0f,
-				"Saving %.*s.", static_cast<int>(filename.size()), static_cast<const char*>(filename.data()));
-			last = std::chrono::system_clock::now();
+			Host::AddIconOSDMessage(fmt::format("MemoryCardSave{}", slot), ICON_FA_SD_CARD,
+				fmt::format("Memory card '{}' was saved to storage.", Path::GetFileName(m_filenames[slot])), 3.0f);
 		}
 		return 1;
 	}
