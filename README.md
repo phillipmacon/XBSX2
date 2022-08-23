@@ -25,6 +25,8 @@ https://github.com/PCSX2/pcsx2/archive/a3eeed316a0bdcb60a445fe6237b0777f40d553b.
 
 - Changed around the Quick Menu option placements to be more inline with something we're all familiar with.
 
+- Added basic shaders/filters in the form of FXAA, Brightness, Contrast and Saturation adjustments and some CRT filters.
+
 # Known Issues
 - Remapping input/hotkeys currently broken and requires manually altering the PCSX2.ini file.
 - Some widescreen patches/cheats causing a crash when booting a game.
