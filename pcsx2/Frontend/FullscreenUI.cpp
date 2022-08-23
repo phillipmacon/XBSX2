@@ -2305,6 +2305,23 @@ void FullscreenUI::DrawEnhancementsSettingsPage()
 		DrawToggleSetting("Mipmapping", "Enables emulation of the GS's texture mipmapping.", "EmuCore/GS", "mipmap", true);
 	}
 
+	MenuHeading("Post-Processing");
+	{
+		const bool shadeboost_active = bsi->GetBoolValue("EmuCore/GS", "ShadeBoost", false);
+		DrawToggleSetting("FXAA", "Enables FXAA post-processing shader.", "EmuCore/GS", "fxaa", false);
+		DrawToggleSetting("Shade Boost", "Enables brightness/contrast/saturation adjustment.", "EmuCore/GS", "ShadeBoost", false);
+		DrawIntRangeSetting("Shade Boost Brightness", "Adjusts brightness. 50 is normal.", "EmuCore/GS", "ShadeBoost_Brightness", 50,
+			1, 100, "%d", shadeboost_active);
+		DrawIntRangeSetting("Shade Boost Contrast", "Adjusts contrast. 50 is normal.", "EmuCore/GS", "ShadeBoost_Contrast", 50, 1, 100,
+			"%d", shadeboost_active);
+		DrawIntRangeSetting("Shade Boost Saturation", "Adjusts saturation. 50 is normal.", "EmuCore/GS", "ShadeBoost_Saturation", 50,
+			1, 100, "%d", shadeboost_active);
+
+		static constexpr const char* s_tv_shaders[] = {
+			"None", "Scanline Filter", "Diagonal Filter", "Triangular Filter", "Wave Filter", "Lottes CRT"};
+		DrawIntListSetting("TV Shaders", "Selects post-processing TV shader.", "EmuCore/GS", "TVShader", 0, s_tv_shaders, std::size(s_tv_shaders));
+	}
+
 	static constexpr const char* s_gsdump_compression[] = {"Uncompressed", "LZMA (xz)", "Zstandard (zst)"};
 
 	MenuHeading("Advanced");
