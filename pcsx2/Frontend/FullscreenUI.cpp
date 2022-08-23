@@ -253,6 +253,7 @@ namespace FullscreenUI
 	static void DrawEnhancementsSettingsPage();
 	static void DrawAudioSettingsPage();
 	static void DrawMemoryCardSettingsPage();
+	static void DrawCreateMemoryCardWindow();
 	static void DrawControllerSettingsPage();
 	static void DrawHotkeySettingsPage();
 	static void DrawAchievementsSettingsPage();
@@ -2410,7 +2411,9 @@ void FullscreenUI::DrawMemoryCardSettingsPage()
 	SettingsInterface* bsi = GetEditingSettingsInterface();
 
 	MenuHeading("Settings and Operations");
-	//MenuButton(ICON_FA_PLUS "  Create Memory Card", "Creates a new memory card file or folder.");
+	if (MenuButton(ICON_FA_PLUS "  Create Memory Card", "Creates a new memory card file or folder."))
+		ImGui::OpenPopup("Create Memory Card");
+	DrawCreateMemoryCardWindow();
 	DrawToggleSetting(ICON_FA_SEARCH "  Folder Memory Card Filter",
 		"Simulates a larger memory card by filtering saves only to the current game.", "EmuCore", "McdFolderAutoManage", true);
 	DrawToggleSetting(ICON_FA_MAGIC "  Auto Eject When Loading",
@@ -2491,6 +2494,89 @@ void FullscreenUI::DrawMemoryCardSettingsPage()
 
 
 	EndMenuButtons();
+}
+
+void FullscreenUI::DrawCreateMemoryCardWindow()
+{
+	ImGui::SetNextWindowSize(LayoutScale(700.0f, 0.0f));
+	ImGui::SetNextWindowPos(ImGui::GetIO().DisplaySize * 0.5f, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, LayoutScale(10.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, LayoutScale(20.0f, 20.0f));
+	ImGui::PushFont(g_large_font);
+
+	bool is_open = true;
+	if (ImGui::BeginPopupModal("Create Memory Card", &is_open, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
+	{
+		ImGui::TextWrapped("Enter the name of the memory card you wish to create, and choose a size. We recommend either using 8MB memory "
+						   "cards, or folder memory cards for best compatibility.");
+		ImGui::NewLine();
+
+		static char memcard_name[256] = {};
+		ImGui::Text("Card Name: ");
+		ImGui::InputText("##name", memcard_name, sizeof(memcard_name));
+
+		ImGui::NewLine();
+
+		static constexpr std::tuple<const char*, MemoryCardType, MemoryCardFileType> memcard_types[] = {
+			{"8 MB [Most Compatible]", MemoryCardType::File, MemoryCardFileType::PS2_8MB},
+			{"16 MB", MemoryCardType::File, MemoryCardFileType::PS2_16MB},
+			{"32 MB", MemoryCardType::File, MemoryCardFileType::PS2_32MB},
+			{"64 MB", MemoryCardType::File, MemoryCardFileType::PS2_64MB},
+			{"Folder [Recommended]", MemoryCardType::Folder, MemoryCardFileType::PS2_8MB},
+			{"128 KB [PS1]", MemoryCardType::File, MemoryCardFileType::PS1},
+		};
+
+		static int memcard_type = 0;
+		for (int i = 0; i < static_cast<int>(std::size(memcard_types)); i++)
+			ImGui::RadioButton(std::get<0>(memcard_types[i]), &memcard_type, i);
+
+		ImGui::NewLine();
+
+		BeginMenuButtons();
+
+		const bool create_enabled = (std::strlen(memcard_name) > 0);
+
+		if (ActiveButton(ICON_FA_FOLDER_OPEN "  Create", false, create_enabled) && std::strlen(memcard_name) > 0)
+		{
+			const std::string real_card_name(fmt::format("{}.ps2", memcard_name));
+			if (!FileMcd_GetCardInfo(real_card_name).has_value())
+			{
+				const auto& [type_title, type, file_type] = memcard_types[memcard_type];
+				if (FileMcd_CreateNewCard(real_card_name, type, file_type))
+				{
+					ShowToast(std::string(), fmt::format("Memory card '{}' created.", real_card_name));
+
+					std::memset(memcard_name, 0, sizeof(memcard_name));
+					memcard_type = 0;
+					ImGui::CloseCurrentPopup();
+				}
+				else
+				{
+					ShowToast(std::string(), fmt::format("Failed to create memory card '{}'.", real_card_name));
+				}
+			}
+			else
+			{
+				ShowToast(std::string(), fmt::format("A memory card with the name '{}' already exists.", real_card_name));
+			}
+		}
+
+		if (ActiveButton(ICON_FA_TIMES "  Cancel", false))
+		{
+			std::memset(memcard_name, 0, sizeof(memcard_name));
+			memcard_type = 0;
+
+			ImGui::CloseCurrentPopup();
+		}
+
+		EndMenuButtons();
+
+		ImGui::EndPopup();
+	}
+
+	ImGui::PopFont();
+	ImGui::PopStyleVar(2);
 }
 
 void FullscreenUI::DrawControllerSettingsPage()
