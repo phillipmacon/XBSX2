@@ -66,8 +66,8 @@ static __fi u32 HWADDR(u32 mem) { return psxhwLUT[mem >> 16] + mem; }
 
 static RecompiledCodeReserve* recMem = NULL;
 
-static BASEBLOCK* recRAM  = NULL; // and the ptr to the blocks here
-static BASEBLOCK* recROM  = NULL; // and here
+static BASEBLOCK* recRAM = NULL; // and the ptr to the blocks here
+static BASEBLOCK* recROM = NULL; // and here
 static BASEBLOCK* recROM1 = NULL; // also here
 static BASEBLOCK* recROM2 = NULL; // also here
 static BaseBlocks recBlocks;
@@ -107,7 +107,8 @@ static u32 psxdump = 0;
 
 #define PSXREC_CLEARM(mem) \
 	(((mem) < g_psxMaxRecMem && (psxRecLUT[(mem) >> 16] + (mem))) ? \
-		psxRecClearMem(mem) : 4)
+            psxRecClearMem(mem) : \
+            4)
 
 // =====================================================================================================
 //  Dynamically Compiled Dispatchers - R3000A style
@@ -120,12 +121,12 @@ alignas(__pagesize) static u8 iopRecDispatchers[__pagesize];
 
 typedef void DynGenFunc();
 
-static DynGenFunc* iopDispatcherEvent     = NULL;
-static DynGenFunc* iopDispatcherReg       = NULL;
-static DynGenFunc* iopJITCompile          = NULL;
-static DynGenFunc* iopJITCompileInBlock   = NULL;
+static DynGenFunc* iopDispatcherEvent = NULL;
+static DynGenFunc* iopDispatcherReg = NULL;
+static DynGenFunc* iopJITCompile = NULL;
+static DynGenFunc* iopJITCompileInBlock = NULL;
 static DynGenFunc* iopEnterRecompiledCode = NULL;
-static DynGenFunc* iopExitRecompiledCode  = NULL;
+static DynGenFunc* iopExitRecompiledCode = NULL;
 
 static void recEventTest()
 {
@@ -215,10 +216,10 @@ static void _DynGen_Dispatchers()
 	// most and stand to benefit from strong alignment and direct referencing.
 	iopDispatcherEvent = (DynGenFunc*)xGetPtr();
 	xFastCall((void*)recEventTest);
-	iopDispatcherReg       = _DynGen_DispatcherReg();
+	iopDispatcherReg = _DynGen_DispatcherReg();
 
-	iopJITCompile          = _DynGen_JITCompile();
-	iopJITCompileInBlock   = _DynGen_JITCompileInBlock();
+	iopJITCompile = _DynGen_JITCompile();
+	iopJITCompileInBlock = _DynGen_JITCompileInBlock();
 	iopEnterRecompiledCode = _DynGen_EnterRecompiledCode();
 
 	HostSys::MemProtectStatic(iopRecDispatchers, PageAccess_ExecOnly());
@@ -313,7 +314,8 @@ static void iIopDumpBlock(int startpc, u8* ptr)
 	}
 
 	int status = std::system(fmt::format("objdump -D -b binary -mi386 -M intel --no-show-raw-insn {} >> {}; rm {}",
-		"mydump1", filename.c_str(), "mydump1").c_str());
+		"mydump1", filename.c_str(), "mydump1")
+								 .c_str());
 
 	if (!WIFEXITED(status))
 		Console.Error("IOP dump didn't terminate normally");
@@ -324,7 +326,13 @@ u8 _psxLoadWritesRs(u32 tempcode)
 {
 	switch (tempcode >> 26)
 	{
-		case 32: case 33: case 34: case 35: case 36: case 37: case 38:
+		case 32:
+		case 33:
+		case 34:
+		case 35:
+		case 36:
+		case 37:
+		case 38:
 			return ((tempcode >> 21) & 0x1f) == ((tempcode >> 16) & 0x1f); // rs==rt
 	}
 	return 0;
@@ -334,9 +342,19 @@ u8 _psxIsLoadStore(u32 tempcode)
 {
 	switch (tempcode >> 26)
 	{
-		case 32: case 33: case 34: case 35: case 36: case 37: case 38:
+		case 32:
+		case 33:
+		case 34:
+		case 35:
+		case 36:
+		case 37:
+		case 38:
 		// 4 byte stores
-		case 40: case 41: case 42: case 43: case 46:
+		case 40:
+		case 41:
+		case 42:
+		case 43:
+		case 46:
 			return 1;
 	}
 	return 0;
@@ -734,10 +752,14 @@ static void recAlloc()
 		throw Exception::OutOfMemory("R3000A BASEBLOCK lookup tables");
 
 	u8* curpos = m_recBlockAlloc;
-	recRAM  = (BASEBLOCK*)curpos; curpos += (Ps2MemSize::IopRam / 4) * sizeof(BASEBLOCK);
-	recROM  = (BASEBLOCK*)curpos; curpos += (Ps2MemSize::Rom    / 4) * sizeof(BASEBLOCK);
-	recROM1 = (BASEBLOCK*)curpos; curpos += (Ps2MemSize::Rom1   / 4) * sizeof(BASEBLOCK);
-	recROM2 = (BASEBLOCK*)curpos; curpos += (Ps2MemSize::Rom2   / 4) * sizeof(BASEBLOCK);
+	recRAM = (BASEBLOCK*)curpos;
+	curpos += (Ps2MemSize::IopRam / 4) * sizeof(BASEBLOCK);
+	recROM = (BASEBLOCK*)curpos;
+	curpos += (Ps2MemSize::Rom / 4) * sizeof(BASEBLOCK);
+	recROM1 = (BASEBLOCK*)curpos;
+	curpos += (Ps2MemSize::Rom1 / 4) * sizeof(BASEBLOCK);
+	recROM2 = (BASEBLOCK*)curpos;
+	curpos += (Ps2MemSize::Rom2 / 4) * sizeof(BASEBLOCK);
 
 
 	if (s_pInstCache == NULL)
@@ -1196,14 +1218,14 @@ static void psxRecMemcheck(u32 op, u32 bits, bool store)
 		// logic: memAddress < bpEnd && bpStart < memAddress+memSize
 
 		xMOV(eax, checks[i].end);
-		xCMP(ecx, eax);     // address < end
+		xCMP(ecx, eax); // address < end
 		xForwardJGE8 next1; // if address >= end then goto next1
 
 		xMOV(eax, checks[i].start);
-		xCMP(eax, edx);     // start < address+size
+		xCMP(eax, edx); // start < address+size
 		xForwardJGE8 next2; // if start >= address+size then goto next2
 
-		                    // hit the breakpoint
+		// hit the breakpoint
 		if (checks[i].result & MEMCHECK_LOG)
 		{
 			xMOV(edx, store);
@@ -1244,10 +1266,18 @@ static void psxEncodeMemcheck()
 	bool store = (opcode.flags & IS_STORE) != 0;
 	switch (opcode.flags & MEMTYPE_MASK)
 	{
-		case MEMTYPE_BYTE:  psxRecMemcheck(op,   8, store); break;
-		case MEMTYPE_HALF:  psxRecMemcheck(op,  16, store); break;
-		case MEMTYPE_WORD:  psxRecMemcheck(op,  32, store); break;
-		case MEMTYPE_DWORD: psxRecMemcheck(op,  64, store); break;
+		case MEMTYPE_BYTE:
+			psxRecMemcheck(op, 8, store);
+			break;
+		case MEMTYPE_HALF:
+			psxRecMemcheck(op, 16, store);
+			break;
+		case MEMTYPE_WORD:
+			psxRecMemcheck(op, 32, store);
+			break;
+		case MEMTYPE_DWORD:
+			psxRecMemcheck(op, 64, store);
+			break;
 	}
 }
 
@@ -1344,8 +1374,7 @@ static void iopRecRecompile(const u32 startpc)
 
 	s_pCurBlock = PSX_GETBLOCK(startpc);
 
-	pxAssert(s_pCurBlock->GetFnptr() == (uptr)iopJITCompile
-		|| s_pCurBlock->GetFnptr() == (uptr)iopJITCompileInBlock);
+	pxAssert(s_pCurBlock->GetFnptr() == (uptr)iopJITCompile || s_pCurBlock->GetFnptr() == (uptr)iopJITCompileInBlock);
 
 	s_pCurBlockEx = recBlocks.Get(HWADDR(startpc));
 
@@ -1383,9 +1412,7 @@ static void iopRecRecompile(const u32 startpc)
 	while (1)
 	{
 		BASEBLOCK* pblock = PSX_GETBLOCK(i);
-		if (i != startpc
-		 && pblock->GetFnptr() != (uptr)iopJITCompile
-		 && pblock->GetFnptr() != (uptr)iopJITCompileInBlock)
+		if (i != startpc && pblock->GetFnptr() != (uptr)iopJITCompile && pblock->GetFnptr() != (uptr)iopJITCompileInBlock)
 		{
 			// branch = 3
 			willbranch3 = 1;
@@ -1424,7 +1451,10 @@ static void iopRecRecompile(const u32 startpc)
 				goto StartRecomp;
 
 			// branches
-			case 4: case 5: case 6: case 7:
+			case 4:
+			case 5:
+			case 6:
+			case 7:
 				s_branchTo = _Imm_ * 4 + i + 4;
 				if (s_branchTo > startpc && s_branchTo < i)
 					s_nEndBlock = s_branchTo;
@@ -1579,5 +1609,4 @@ R3000Acpu psxRec = {
 	recShutdown,
 
 	recGetCacheReserve,
-	recSetCacheReserve
-};
+	recSetCacheReserve};

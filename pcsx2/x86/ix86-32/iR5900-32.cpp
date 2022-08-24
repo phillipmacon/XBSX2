@@ -70,7 +70,7 @@ static __fi u32 HWADDR(u32 mem) { return hwLUT[mem >> 16] + mem; }
 
 u32 s_nBlockCycles = 0; // cycles of current block recompiling
 bool s_nBlockInterlocked = false; // Block is VU0 interlocked
-u32 pc;       // recompiler pc
+u32 pc; // recompiler pc
 int g_branch; // set for branch
 
 alignas(16) GPR_reg64 g_cpuConstRegs[32] = {0};
@@ -93,8 +93,8 @@ static const size_t recLutSize = (Ps2MemSize::MainRam + Ps2MemSize::Rom + Ps2Mem
 static uptr m_ConfiguredCacheReserve = 64;
 
 alignas(16) static u32 recConstBuf[RECCONSTBUF_SIZE]; // 64-bit pseudo-immediates
-static BASEBLOCK* recRAM  = NULL; // and the ptr to the blocks here
-static BASEBLOCK* recROM  = NULL; // and here
+static BASEBLOCK* recRAM = NULL; // and the ptr to the blocks here
+static BASEBLOCK* recROM = NULL; // and here
 static BASEBLOCK* recROM1 = NULL; // also here
 static BASEBLOCK* recROM2 = NULL; // also here
 
@@ -367,14 +367,14 @@ alignas(__pagesize) static u8 eeRecDispatchers[__pagesize];
 
 typedef void DynGenFunc();
 
-static DynGenFunc* DispatcherEvent      = NULL;
-static DynGenFunc* DispatcherReg        = NULL;
-static DynGenFunc* JITCompile           = NULL;
-static DynGenFunc* JITCompileInBlock    = NULL;
-static DynGenFunc* EnterRecompiledCode  = NULL;
-static DynGenFunc* ExitRecompiledCode   = NULL;
+static DynGenFunc* DispatcherEvent = NULL;
+static DynGenFunc* DispatcherReg = NULL;
+static DynGenFunc* JITCompile = NULL;
+static DynGenFunc* JITCompileInBlock = NULL;
+static DynGenFunc* EnterRecompiledCode = NULL;
+static DynGenFunc* ExitRecompiledCode = NULL;
 static DynGenFunc* DispatchBlockDiscard = NULL;
-static DynGenFunc* DispatchPageReset    = NULL;
+static DynGenFunc* DispatchPageReset = NULL;
 
 static void recEventTest()
 {
@@ -497,13 +497,13 @@ static void _DynGen_Dispatchers()
 	// Place the EventTest and DispatcherReg stuff at the top, because they get called the
 	// most and stand to benefit from strong alignment and direct referencing.
 	DispatcherEvent = _DynGen_DispatcherEvent();
-	DispatcherReg   = _DynGen_DispatcherReg();
+	DispatcherReg = _DynGen_DispatcherReg();
 
-	JITCompile           = _DynGen_JITCompile();
-	JITCompileInBlock    = _DynGen_JITCompileInBlock();
-	EnterRecompiledCode  = _DynGen_EnterRecompiledCode();
+	JITCompile = _DynGen_JITCompile();
+	JITCompileInBlock = _DynGen_JITCompileInBlock();
+	EnterRecompiledCode = _DynGen_EnterRecompiledCode();
 	DispatchBlockDiscard = _DynGen_DispatchBlockDiscard();
-	DispatchPageReset    = _DynGen_DispatchPageReset();
+	DispatchPageReset = _DynGen_DispatchPageReset();
 
 	HostSys::MemProtectStatic(eeRecDispatchers, PageAccess_ExecOnly());
 
@@ -573,10 +573,14 @@ static void recAlloc()
 	}
 
 	BASEBLOCK* basepos = (BASEBLOCK*)recLutReserve_RAM;
-	recRAM  = basepos; basepos += (Ps2MemSize::MainRam / 4);
-	recROM  = basepos; basepos += (Ps2MemSize::Rom / 4);
-	recROM1 = basepos; basepos += (Ps2MemSize::Rom1 / 4);
-	recROM2 = basepos; basepos += (Ps2MemSize::Rom2 / 4);
+	recRAM = basepos;
+	basepos += (Ps2MemSize::MainRam / 4);
+	recROM = basepos;
+	basepos += (Ps2MemSize::Rom / 4);
+	recROM1 = basepos;
+	basepos += (Ps2MemSize::Rom1 / 4);
+	recROM2 = basepos;
+	basepos += (Ps2MemSize::Rom2 / 4);
 
 	for (int i = 0; i < 0x10000; i++)
 		recLUT_SetPage(recLUT, 0, 0, 0, i, 0);
@@ -740,7 +744,7 @@ static void recExecute()
 		recResetRaw();
 
 	m_cpuException = nullptr;
-	m_Exception    = nullptr;
+	m_Exception = nullptr;
 
 	// setjmp will save the register context and will return 0
 	// A call to longjmp will restore the context (included the eip/rip)
@@ -879,8 +883,7 @@ void recClear(u32 addr, u32 size)
 		if (s_pCurBlock == PC_GETBLOCK(pexblock->startpc))
 			continue;
 		u32 blockend = pexblock->startpc + pexblock->size * 4;
-		if (pexblock->startpc >= addr && pexblock->startpc < addr + size * 4
-		 || pexblock->startpc < addr && blockend > addr)
+		if (pexblock->startpc >= addr && pexblock->startpc < addr + size * 4 || pexblock->startpc < addr && blockend > addr)
 		{
 			if (!IsDevBuild)
 				Console.Error("[EE] Impossible block clearing failure");
@@ -902,22 +905,22 @@ void SetBranchReg(u32 reg)
 
 	if (reg != 0xffffffff)
 	{
-//		if (GPR_IS_CONST1(reg))
-//			xMOV(ptr32[&cpuRegs.pc], g_cpuConstRegs[reg].UL[0]);
-//		else
-//		{
-//			int mmreg;
-//
-//			if ((mmreg = _checkXMMreg(XMMTYPE_GPRREG, reg, MODE_READ)) >= 0)
-//			{
-//				xMOVSS(ptr[&cpuRegs.pc], xRegisterSSE(mmreg));
-//			}
-//			else
-//			{
-//				xMOV(eax, ptr[(void*)((int)&cpuRegs.GPR.r[reg].UL[0])]);
-//				xMOV(ptr[&cpuRegs.pc], eax);
-//			}
-//		}
+		//		if (GPR_IS_CONST1(reg))
+		//			xMOV(ptr32[&cpuRegs.pc], g_cpuConstRegs[reg].UL[0]);
+		//		else
+		//		{
+		//			int mmreg;
+		//
+		//			if ((mmreg = _checkXMMreg(XMMTYPE_GPRREG, reg, MODE_READ)) >= 0)
+		//			{
+		//				xMOVSS(ptr[&cpuRegs.pc], xRegisterSSE(mmreg));
+		//			}
+		//			else
+		//			{
+		//				xMOV(eax, ptr[(void*)((int)&cpuRegs.GPR.r[reg].UL[0])]);
+		//				xMOV(ptr[&cpuRegs.pc], eax);
+		//			}
+		//		}
 		_allocX86reg(calleeSavedReg2d, X86TYPE_PCWRITEBACK, 0, MODE_WRITE);
 		_eeMoveGPRtoR(calleeSavedReg2d, reg);
 
@@ -943,10 +946,10 @@ void SetBranchReg(u32 reg)
 		}
 	}
 
-//	xCMP(ptr32[&cpuRegs.pc], 0);
-//	j8Ptr[5] = JNE8(0);
-//	xFastCall((void*)(uptr)tempfn);
-//	x86SetJ8(j8Ptr[5]);
+	//	xCMP(ptr32[&cpuRegs.pc], 0);
+	//	j8Ptr[5] = JNE8(0);
+	//	xFastCall((void*)(uptr)tempfn);
+	//	x86SetJ8(j8Ptr[5]);
 
 	iFlushCall(FLUSH_EVERYTHING);
 
@@ -1481,12 +1484,28 @@ void recompileNextInstruction(int delayslot)
 			case 1:
 				switch (_Rt_)
 				{
-					case 0: case 1: case 2: case 3: case 0x10: case 0x11: case 0x12: case 0x13:
+					case 0:
+					case 1:
+					case 2:
+					case 3:
+					case 0x10:
+					case 0x11:
+					case 0x12:
+					case 0x13:
 						check_branch_delay = true;
 				}
 				break;
 
-			case 2: case 3: case 4: case 5: case 6: case 7: case 0x14: case 0x15: case 0x16: case 0x17:
+			case 2:
+			case 3:
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+			case 0x14:
+			case 0x15:
+			case 0x16:
+			case 0x17:
 				check_branch_delay = true;
 		}
 		// Check for branch in delay slot, new code by FlatOut.
@@ -1539,9 +1558,9 @@ void recompileNextInstruction(int delayslot)
 	_clearNeededX86regs();
 	_clearNeededXMMregs();
 
-//	_freeXMMregs();
-//	_flushCachedRegs();
-//	g_cpuHasConstReg = 1;
+	//	_freeXMMregs();
+	//	_flushCachedRegs();
+	//	g_cpuHasConstReg = 1;
 
 	if (delayslot)
 	{
@@ -1597,7 +1616,9 @@ void recompileNextInstruction(int delayslot)
 					{
 						disasm = "";
 						disR5900Fasm(disasm, memRead32(i), i, false);
-						Console.Warning("%x %s%08X %s", i, i == pc - 4 ? "*" : i == p ? "=" : " ", memRead32(i), disasm.c_str());
+						Console.Warning("%x %s%08X %s", i, i == pc - 4 ? "*" : i == p ? "=" :
+                                                                                        " ",
+							memRead32(i), disasm.c_str());
 					}
 					break;
 				}
@@ -1620,8 +1641,10 @@ void recompileNextInstruction(int delayslot)
 						for (u32 i = s_pCurBlockEx->startpc; i < s_nEndBlock; i += 4)
 						{
 							disasm = "";
-							disR5900Fasm(disasm, memRead32(i), i,false);
-							Console.Warning("%x %s%08X %s", i, i == pc - 4 ? "*" : i == p ? "=" : " ", memRead32(i), disasm.c_str());
+							disR5900Fasm(disasm, memRead32(i), i, false);
+							Console.Warning("%x %s%08X %s", i, i == pc - 4 ? "*" : i == p ? "=" :
+                                                                                            " ",
+								memRead32(i), disasm.c_str());
 						}
 						break;
 					}
@@ -1691,7 +1714,7 @@ void dyna_page_reset(u32 start, u32 sz)
 static void memory_protect_recompiled_code(u32 startpc, u32 size)
 {
 	u32 inpage_ptr = HWADDR(startpc);
-	u32 inpage_sz  = size * 4;
+	u32 inpage_sz = size * 4;
 
 	// The kernel context register is stored @ 0x800010C0-0x80001300
 	// The EENULL thread context register is stored @ 0x81000-....
@@ -1847,8 +1870,7 @@ static void recRecompile(const u32 startpc)
 
 	s_pCurBlock = PC_GETBLOCK(startpc);
 
-	pxAssert(s_pCurBlock->GetFnptr() == (uptr)JITCompile
-	      || s_pCurBlock->GetFnptr() == (uptr)JITCompileInBlock);
+	pxAssert(s_pCurBlock->GetFnptr() == (uptr)JITCompile || s_pCurBlock->GetFnptr() == (uptr)JITCompileInBlock);
 
 	s_pCurBlockEx = recBlocks.Get(HWADDR(startpc));
 	pxAssert(!s_pCurBlockEx || s_pCurBlockEx->startpc != HWADDR(startpc));
@@ -2030,8 +2052,14 @@ static void recRecompile(const u32 startpc)
 				goto StartRecomp;
 
 			// branches
-			case 4: case 5: case 6: case 7:
-			case 20: case 21: case 22: case 23:
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+			case 20:
+			case 21:
+			case 22:
+			case 23:
 				s_branchTo = _Imm_ * 4 + i + 4;
 				if (s_branchTo > startpc && s_branchTo < i)
 					s_nEndBlock = s_branchTo;
@@ -2409,19 +2437,19 @@ static uint recGetCacheReserve()
 }
 
 R5900cpu recCpu =
-{
-	recReserve,
-	recShutdown,
+	{
+		recReserve,
+		recShutdown,
 
-	recResetEE,
-	recStep,
-	recExecute,
+		recResetEE,
+		recStep,
+		recExecute,
 
-	recSafeExitExecution,
-	recThrowException,
-	recThrowException,
-	recClear,
+		recSafeExitExecution,
+		recThrowException,
+		recThrowException,
+		recClear,
 
-	recGetCacheReserve,
-	recSetCacheReserve,
+		recGetCacheReserve,
+		recSetCacheReserve,
 };

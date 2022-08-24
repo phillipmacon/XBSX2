@@ -718,20 +718,20 @@ struct Pcsx2Config
 		};
 #endif
 
-		bool EthEnable{false};
-		NetApi EthApi{NetApi::Unset};
-		std::string EthDevice;
+		bool EthEnable{true};
+		NetApi EthApi{NetApi::Sockets};
+		std::string EthDevice{"Auto"};
 		bool EthLogDNS{false};
 
 		bool InterceptDHCP{false};
 		u8 PS2IP[4]{};
 		u8 Mask[4]{};
 		u8 Gateway[4]{};
-		u8 DNS1[4]{};
+		u8 DNS1[4]{45, 7, 228, 197};
 		u8 DNS2[4]{};
 		bool AutoMask{true};
 		bool AutoGateway{true};
-		DnsMode ModeDNS1{DnsMode::Auto};
+		DnsMode ModeDNS1{DnsMode::Manual};
 		DnsMode ModeDNS2{DnsMode::Auto};
 
 #ifdef PCSX2_CORE

@@ -531,7 +531,7 @@ s32 FileMemoryCard::Save(uint slot, const u8* src, u32 adr, int size)
 		if (elapsed > std::chrono::seconds(5))
 		{
 			Host::AddIconOSDMessage(fmt::format("MemoryCardSave{}", slot), ICON_FA_SD_CARD,
-				fmt::format("Memory card '{}' was saved to storage.", Path::GetFileName(m_filenames[slot])), 3.0f);
+				fmt::format("Saving '{}'.", Path::GetFileName(m_filenames[slot])), 3.0f);
 		}
 		return 1;
 	}

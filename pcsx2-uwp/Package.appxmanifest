@@ -7,7 +7,7 @@
   <Identity
     Name="48299TRW.XBSX2"
     Publisher="CN=TheRhysWyrill"
-    Version="22.8.11.0" />
+    Version="22.8.24.0" />
   <mp:PhoneIdentity PhoneProductId="af1930fc-45f3-4e75-a159-415ae9877655" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
   <Properties>
     <DisplayName>XBSX2</DisplayName>
