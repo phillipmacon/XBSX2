@@ -542,7 +542,7 @@ struct Pcsx2Config
 		GSHardwareDownloadMode HWDownloadMode{GSHardwareDownloadMode::Enabled};
 		int Dithering{2};
 		int MaxAnisotropy{0};
-		int SWExtraThreads{2};
+		int SWExtraThreads{5};
 		int SWExtraThreadsHeight{4};
 		int TVShader{0};
 		int SkipDrawStart{0};

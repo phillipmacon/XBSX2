@@ -642,6 +642,8 @@ SCAJ-20044:
   region: "NTSC-Unk"
   gameFixes:
     - SoftwareRendererFMVHack # Fixes garbage pixels.
+  gsHWFixes:
+    autoFlush: 1 # Fixes lava effect.
 SCAJ-20045:
   name: "Shadow Tower Abyss"
   region: "NTSC-Unk"
@@ -8640,7 +8642,6 @@ SLAJ-25094:
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
-    mipmap: 2 # Fixes over sharpening.
 SLAJ-25095:
   name: "Medal of Honor - Vanguard"
   region: "NTSC-Unk"
@@ -8669,6 +8670,9 @@ SLED-50117:
     - DMABusyHack # Fixes broken half-bottom artifacts.
   gsHWFixes:
     texturePreloading: 1 # Fixes micro stuttering.
+SLED-50286:
+  name: "Red Faction [Demo]"
+  region: "PAL-E"
 SLED-50359:
   name: "Devil May Cry [Demo]"
   region: "PAL-E"
@@ -8676,6 +8680,9 @@ SLED-50359:
     vuClampMode: 3 # Fixes out of place polys (COP2).
   gsHWFixes:
     disablePartialInvalidation: 1 # Fixes corrupt textures.
+SLED-50439:
+  name: "MX 2002 featuring Ricky Carmichael [Demo]"
+  region: "PAL-E"
 SLED-50478:
   name: "WWF Smackdown! - Just Bring It [Demo]"
   region: "PAL-E"
@@ -8687,11 +8694,28 @@ SLED-50488:
   region: "PAL-E"
   gameFixes:
     - VIF1StallHack # Fixes loading hang.
+SLED-50489:
+  name: "Stuntman [Demo]"
+  region: "PAL-E"
+  gsHWFixes:
+    cpuSpriteRenderBW: 4 # Fixes textures.
+SLED-50587:
+  name: "Top Gun - Combat Zones [Demo]"
+  region: "PAL-E"
+SLED-50617:
+  name: "Burnout [Demo]"
+  region: "PAL-E"
+SLED-50762:
+  name: "Maximo [Demo]"
+  region: "PAL-E"
 SLED-50884:
   name: "TimeSplitters 2 [Demo]"
   region: "PAL-E"
   gsHWFixes:
     halfPixelOffset: 1 # Fixes texture slight misalignment.
+SLED-50895:
+  name: "Medal of Honor - Frontline [Demo]"
+  region: "PAL-E"
 SLED-51062:
   name: "Fireblade [Demo]"
   region: "PAL-E"
@@ -11495,6 +11519,8 @@ SLES-51227:
         patch=1,EE,001db3a4,word,4bc529ff
   gameFixes:
     - SoftwareRendererFMVHack # Fixes garbage pixels.
+  gsHWFixes:
+    autoFlush: 1 # Fixes lava effect.
 SLES-51229:
   name: "Virtua Cop - Elite Edition"
   region: "PAL-M5"
@@ -19075,7 +19101,6 @@ SLES-54627:
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
-    mipmap: 2 # Fixes over sharpening.
 SLES-54628:
   name: "Skate Attack [Promo]"
   region: "PAL-E"
@@ -19235,7 +19260,6 @@ SLES-54681:
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
-    mipmap: 2 # Fixes over sharpening.
 SLES-54683:
   name: "Medal of Honor - Vanguard"
   region: "PAL-M9"
@@ -21941,6 +21965,8 @@ SLKA-25073:
   region: "NTSC-K"
   gameFixes:
     - SoftwareRendererFMVHack # Fixes garbage pixels.
+  gsHWFixes:
+    autoFlush: 1 # Fixes lava effect.
 SLKA-25076:
   name: "Shin Megami Tensei 3"
   region: "NTSC-K"
@@ -23125,9 +23151,16 @@ SLPM-55215:
 SLPM-55216:
   name: "Hiiro no Kakera - Tamayori-hime Kitan [Aizou-ban]"
   region: "NTSC-J"
+SLPM-55219:
+  name: "Osouji Sentai Clean Keeper H [Limited Edition]"
+  region: "NTSC-J"
+  gsHWFixes:
+    texturePreloading: 1 # Fixes poor performance.
 SLPM-55220:
   name: "Osouji Sentai Clean Keeper H"
   region: "NTSC-J"
+  gsHWFixes:
+    texturePreloading: 1 # Fixes poor performance.
 SLPM-55221:
   name: "beatmania IIDX 16 EMPRESS + PREMIUM BEST [EMPRESS DISC]"
   region: "NTSC-J"
@@ -24103,6 +24136,8 @@ SLPM-62244:
 SLPM-62245:
   name: "Yuusei kara no Buttai X - Episode II"
   region: "NTSC-J"
+  gameFixes:
+    - SoftwareRendererFMVHack # Fixes flashing FMVs.
 SLPM-62247:
   name: "Shin Contra"
   region: "NTSC-J"
@@ -31630,7 +31665,6 @@ SLPM-66739:
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
-    mipmap: 2 # Fixes over sharpening.
 SLPM-66740:
   name: "Sentou Kokka Kai - Legend [DX Pack]"
   region: "NTSC-J"
@@ -35174,6 +35208,8 @@ SLPS-25246:
   region: "NTSC-J"
   gameFixes:
     - SoftwareRendererFMVHack # Fixes garbage pixels.
+  gsHWFixes:
+    autoFlush: 1 # Fixes lava effect.
 SLPS-25247:
   name: "R-Type Final"
   region: "NTSC-J"
@@ -35941,6 +35977,14 @@ SLPS-25462:
   gsHWFixes:
     preloadFrameData: 1 # Fixes black screen while in a mech.
     roundSprite: 2 # Fixes HUD artifacts.
+  memcardFilters:
+    - SLPS-25338
+    - SLPS-25339
+    - SLPS-73202
+    - SLPS-73203
+    - SLPS-25408
+    - SLPS-25462
+    - SLPS-73247
 SLPS-25463:
   name: "My Home o Tsukurou 2! Takumi"
   region: "NTSC-J"
@@ -38013,6 +38057,14 @@ SLPS-73247:
   gsHWFixes:
     preloadFrameData: 1 # Fixes black screen while in a mech.
     roundSprite: 2 # Fixes HUD artifacts.
+  memcardFilters:
+    - SLPS-25338
+    - SLPS-25339
+    - SLPS-73202
+    - SLPS-73203
+    - SLPS-25408
+    - SLPS-25462
+    - SLPS-73247
 SLPS-73248:
   name: "Kagero 2 - Dark Illusion [PlayStation 2 The Best]"
   region: "NTSC-J"
@@ -40105,6 +40157,8 @@ SLUS-20467:
         patch=1,EE,001d90e4,word,4bc529ff
   gameFixes:
     - SoftwareRendererFMVHack # Fixes garbage pixels.
+  gsHWFixes:
+    autoFlush: 1 # Fixes lava effect.
 SLUS-20468:
   name: "Dynasty Tactics"
   region: "NTSC-U"
@@ -42802,6 +42856,8 @@ SLUS-21034:
 SLUS-21035:
   name: "Major League Baseball 2K5"
   region: "NTSC-U"
+  clampModes:
+    eeClampMode: 2 # Fixes hang when the baseball hits the ground.
   patches:
     2243ce1d:
       content: |-
@@ -44269,6 +44325,8 @@ SLUS-21323:
 SLUS-21324:
   name: "Major League Baseball 2K5 [World Series Edition]"
   region: "NTSC-U"
+  clampModes:
+    eeClampMode: 2 # Fixes hang when the baseball hits the ground.
   patches:
     D592B291:
       content: |-
@@ -45535,7 +45593,6 @@ SLUS-21596:
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
-    mipmap: 2 # Fixes over sharpening.
 SLUS-21597:
   name: "Medal of Honor - Vanguard"
   region: "NTSC-U"

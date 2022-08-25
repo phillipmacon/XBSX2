@@ -136,18 +136,26 @@ void UWPNoGUIPlatform::OnSizeChanged(const IInspectable&, const winrt::Windows::
 
 void UWPNoGUIPlatform::OnKeyDown(const IInspectable&, const winrt::Windows::UI::Core::KeyEventArgs& args)
 {
-	const auto status = args.KeyStatus();
-	if (!status.WasKeyDown && !status.IsKeyReleased)
-		NoGUIHost::ProcessPlatformKeyEvent(static_cast<s32>(args.VirtualKey()), true);
+	// Ignore Gamepad input as that's handled by XInput
+	if (args.VirtualKey() <= VirtualKey::GoHome)
+	{
+		const auto status = args.KeyStatus();
+		if (!status.WasKeyDown && !status.IsKeyReleased)
+			NoGUIHost::ProcessPlatformKeyEvent(static_cast<s32>(args.VirtualKey()), true);
+	}
 
 	args.Handled(true);
 }
 
 void UWPNoGUIPlatform::OnKeyUp(const IInspectable&, const winrt::Windows::UI::Core::KeyEventArgs& args)
 {
-	const auto status = args.KeyStatus();
-	if (status.WasKeyDown && status.IsKeyReleased)
-		NoGUIHost::ProcessPlatformKeyEvent(static_cast<s32>(args.VirtualKey()), false);
+	// Ignore Gamepad input as that's handled by XInput
+	if (args.VirtualKey() <= VirtualKey::GoHome)
+	{
+		const auto status = args.KeyStatus();
+		if (status.WasKeyDown && status.IsKeyReleased)
+			NoGUIHost::ProcessPlatformKeyEvent(static_cast<s32>(args.VirtualKey()), false);
+	}
 
 	args.Handled(true);
 }
