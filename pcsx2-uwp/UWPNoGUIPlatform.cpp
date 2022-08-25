@@ -99,7 +99,7 @@ void UWPNoGUIPlatform::SetWindow(const winrt::Windows::UI::Core::CoreWindow& win
 	window.KeyUp({this, &UWPNoGUIPlatform::OnKeyUp});
 	window.CharacterReceived({this, &UWPNoGUIPlatform::OnCharacterReceived});
 	window.PointerPressed({this, &UWPNoGUIPlatform::OnPointerPressed});
-	window.PointerReleased({this, &UWPNoGUIPlatform::OnPointerPressed});
+	window.PointerReleased({this, &UWPNoGUIPlatform::OnPointerReleased});
 	window.PointerMoved({this, &UWPNoGUIPlatform::OnPointerMoved});
 	window.PointerWheelChanged({this, &UWPNoGUIPlatform::OnPointerWheelChanged});
 }
@@ -220,7 +220,7 @@ void UWPNoGUIPlatform::UpdateMouseButtonState(const winrt::Windows::UI::Input::P
 		if (m_last_mouse_state[i] == states[i])
 			continue;
 
-		NoGUIHost::ProcessPlatformMouseButtonEvent(i + 1, states[i]);
+		NoGUIHost::ProcessPlatformMouseButtonEvent(i, states[i]);
 		m_last_mouse_state[i] = states[i];
 	}
 }
