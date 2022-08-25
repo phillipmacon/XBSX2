@@ -57,7 +57,7 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <TargetName>$(EXEString)</TargetName>
     <GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
-    <AppxPackageDir>D:\TheRhysWyrill\Downloads\Emu Stuff\AppPackages\</AppxPackageDir>
+    <AppxPackageDir>C:\XBSX2\Builds</AppxPackageDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
