@@ -1,6 +1,3 @@
-# First and foremost consider this:
-- This is not a forum or a help section.
-
 ## Description
 
 [Description of the bug]
@@ -18,3 +15,6 @@
 1. [First step]
 2. [Second step]
 3. [and so on...]
+
+### Console
+[Xbox One/Series X|S]
