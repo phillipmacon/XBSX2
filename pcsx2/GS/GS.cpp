@@ -1804,43 +1804,43 @@ static void HotkeyAdjustZoom(double delta)
 }
 
 BEGIN_HOTKEY_LIST(g_gs_hotkeys)
-	{"Screenshot", "Graphics", "Save Screenshot", [](s32 pressed) {
-		if (!pressed)
-		{
-			GetMTGS().RunOnGSThread([]() {
-				GSQueueSnapshot(std::string(), 0);
-			});
-		}
-	}},
-	{"GSDumpSingleFrame", "Graphics", "Save Single Frame GS Dump", [](s32 pressed) {
-		if (!pressed)
-		{
-			GetMTGS().RunOnGSThread([]() {
-				GSQueueSnapshot(std::string(), 1);
-			});
-		}
-	}},
-	{"GSDumpMultiFrame", "Graphics", "Save Multi Frame GS Dump", [](s32 pressed) {
-		GetMTGS().RunOnGSThread([pressed]() {
-			if (pressed > 0)
-				GSQueueSnapshot(std::string(), std::numeric_limits<u32>::max());
-			else
-				GSStopGSDump();
-		});
-	}},
-	{"ToggleSoftwareRendering", "Graphics", "Toggle Software Rendering", [](s32 pressed) {
+	//  {"Screenshot", "3. Graphics", "Save Screenshot", [](s32 pressed) {
+	//  	if (!pressed)
+	//  	{
+	//  		GetMTGS().RunOnGSThread([]() {
+	//  			GSQueueSnapshot(std::string(), 0);
+	//  		});
+	//  	}
+	//  }},
+	//  {"GSDumpSingleFrame", "3. Graphics", "Save Single Frame GS Dump", [](s32 pressed) {
+	//  	if (!pressed)
+	//  	{
+	//  		GetMTGS().RunOnGSThread([]() {
+	//  			GSQueueSnapshot(std::string(), 1);
+	//  		});
+	//  	}
+	//  }},
+	//  {"GSDumpMultiFrame", "3. Graphics", "Save Multi Frame GS Dump", [](s32 pressed) {
+	//  	GetMTGS().RunOnGSThread([pressed]() {
+	//  		if (pressed > 0)
+	//  			GSQueueSnapshot(std::string(), std::numeric_limits<u32>::max());
+	//  		else
+	//  			GSStopGSDump();
+	//  	});
+	//  }},
+	{"ToggleSoftwareRendering", "3. Graphics", "Toggle Software Rendering", [](s32 pressed) {
 		if (!pressed)
 			GetMTGS().ToggleSoftwareRendering();
 	}},
-	{"IncreaseUpscaleMultiplier", "Graphics", "Increase Upscale Multiplier", [](s32 pressed) {
+	{"IncreaseUpscaleMultiplier", "3. Graphics", "Increase Upscale Multiplier", [](s32 pressed) {
 		 if (!pressed)
 			 HotkeyAdjustUpscaleMultiplier(1);
 	 }},
-	{"DecreaseUpscaleMultiplier", "Graphics", "Decrease Upscale Multiplier", [](s32 pressed) {
+	{"DecreaseUpscaleMultiplier", "3. Graphics", "Decrease Upscale Multiplier", [](s32 pressed) {
 		 if (!pressed)
 			 HotkeyAdjustUpscaleMultiplier(-1);
 	 }},
-	{"CycleAspectRatio", "Graphics", "Cycle Aspect Ratio", [](s32 pressed) {
+	{"CycleAspectRatio", "3. Graphics", "Cycle Aspect Ratio", [](s32 pressed) {
 		 if (pressed)
 			 return;
 
@@ -1848,7 +1848,7 @@ BEGIN_HOTKEY_LIST(g_gs_hotkeys)
 		 EmuConfig.CurrentAspectRatio = static_cast<AspectRatioType>((static_cast<int>(EmuConfig.CurrentAspectRatio) + 1) % static_cast<int>(AspectRatioType::MaxCount));
 		 Host::AddKeyedFormattedOSDMessage("CycleAspectRatio", 10.0f, "Aspect ratio set to '%s'.", Pcsx2Config::GSOptions::AspectRatioNames[static_cast<int>(EmuConfig.CurrentAspectRatio)]);
 	 }},
-	{"CycleMipmapMode", "Graphics", "Cycle Hardware Mipmapping", [](s32 pressed) {
+	{"CycleMipmapMode", "3. Graphics", "Cycle Hardware Mipmapping", [](s32 pressed) {
 		 if (pressed)
 			 return;
 
@@ -1865,7 +1865,7 @@ BEGIN_HOTKEY_LIST(g_gs_hotkeys)
 			 g_gs_renderer->PurgePool();
 		 });
 	 }},
-	{"CycleInterlaceMode", "Graphics", "Cycle Deinterlace Mode", [](s32 pressed) {
+	{"CycleInterlaceMode", "3. Graphics", "Cycle Deinterlace Mode", [](s32 pressed) {
 		 if (pressed)
 			 return;
 
@@ -1886,15 +1886,15 @@ BEGIN_HOTKEY_LIST(g_gs_hotkeys)
 
 		 GetMTGS().RunOnGSThread([new_mode]() { GSConfig.InterlaceMode = new_mode; });
 	 }},
-	{"ZoomIn", "Graphics", "Zoom In", [](s32 pressed) {
-		 if (!pressed)
-			 HotkeyAdjustZoom(1.0);
-	 }},
-	{"ZoomOut", "Graphics", "Zoom Out", [](s32 pressed) {
-		 if (!pressed)
-			 HotkeyAdjustZoom(-1.0);
-	 }},
-	{"ToggleTextureDumping", "Graphics", "Toggle Texture Dumping", [](s32 pressed) {
+	//  {"ZoomIn", "3. Graphics", "Zoom In", [](s32 pressed) {
+	//  	 if (!pressed)
+	//  		 HotkeyAdjustZoom(1.0);
+	//   }},
+	//  {"ZoomOut", "3. Graphics", "Zoom Out", [](s32 pressed) {
+	//  	 if (!pressed)
+	//  		 HotkeyAdjustZoom(-1.0);
+	//   }},
+	{"ToggleTextureDumping", "3. Graphics", "Toggle Texture Dumping", [](s32 pressed) {
 		 if (!pressed)
 		 {
 			 EmuConfig.GS.DumpReplaceableTextures = !EmuConfig.GS.DumpReplaceableTextures;
@@ -1902,7 +1902,7 @@ BEGIN_HOTKEY_LIST(g_gs_hotkeys)
 			 GetMTGS().ApplySettings();
 		 }
 	 }},
-	{"ToggleTextureReplacements", "Graphics", "Toggle Texture Replacements", [](s32 pressed) {
+	{"ToggleTextureReplacements", "3. Graphics", "Toggle Texture Replacements", [](s32 pressed) {
 		 if (!pressed)
 		 {
 			 EmuConfig.GS.LoadTextureReplacements = !EmuConfig.GS.LoadTextureReplacements;
@@ -1910,7 +1910,7 @@ BEGIN_HOTKEY_LIST(g_gs_hotkeys)
 			 GetMTGS().ApplySettings();
 		 }
 	 }},
-	{"ReloadTextureReplacements", "Graphics", "Reload Texture Replacements", [](s32 pressed) {
+	{"ReloadTextureReplacements", "3. Graphics", "Reload Texture Replacements", [](s32 pressed) {
 		 if (!pressed)
 		 {
 			 if (!EmuConfig.GS.LoadTextureReplacements)
@@ -1926,6 +1926,7 @@ BEGIN_HOTKEY_LIST(g_gs_hotkeys)
 			 }
 		 }
 	 }},
-END_HOTKEY_LIST()
+	
+	END_HOTKEY_LIST()
 
 #endif
