@@ -2602,19 +2602,19 @@ void FullscreenUI::DrawControllerSettingsPage()
 
 	SettingsInterface* bsi = GetEditingSettingsInterface();
 
-	MenuHeading("Input Sources");
-
-#ifdef SDL_BUILD
-	DrawToggleSetting(
-		ICON_FA_COG "  Enable SDL Input Source", "The SDL input source supports most controllers.", "InputSources", "SDL", true);
-	DrawToggleSetting(ICON_FA_WIFI "  SDL DualShock 4 / DualSense Enhanced Mode",
-		"Provides vibration and LED control support over Bluetooth.", "InputSources", "SDLControllerEnhancedMode", false,
-		bsi->GetBoolValue("InputSources", "SDL"));
-#endif
-#ifdef _WIN32
-	DrawToggleSetting(ICON_FA_COG "  Enable XInput Input Source",
-		"The XInput source provides support for XBox 360/XBox One/XBox Series controllers.", "InputSources", "XInput", false);
-#endif
+//  	MenuHeading("Input Sources");
+//  
+//  #ifdef SDL_BUILD
+//  	DrawToggleSetting(
+//  		ICON_FA_COG "  Enable SDL Input Source", "The SDL input source supports most controllers.", "InputSources", "SDL", true);
+//  	DrawToggleSetting(ICON_FA_WIFI "  SDL DualShock 4 / DualSense Enhanced Mode",
+//  		"Provides vibration and LED control support over Bluetooth.", "InputSources", "SDLControllerEnhancedMode", false,
+//  		bsi->GetBoolValue("InputSources", "SDL"));
+//  #endif
+//  #ifdef _WIN32
+//	  DrawToggleSetting(ICON_FA_COG "  Enable XInput Input Source",
+//	  	"The XInput source provides support for XBox 360/XBox One/XBox Series controllers.", "InputSources", "XInput", false);
+//  #endif
 
 	MenuHeading("Multitap");
 	DrawToggleSetting(ICON_FA_PLUS_SQUARE "  Enable Console Port 1 Multitap",
@@ -2902,20 +2902,20 @@ void FullscreenUI::DrawAdvancedSettingsPage()
 	DrawToggleSetting("Asynchronous Texture Loading", "Loads replacement textures on a worker thread, reducing microstutter when replacements are enabled.", "EmuCore/GS", "LoadTextureReplacementsAsync", true, replacement_active);
 	DrawToggleSetting("Precache Replacements", "Preloads all replacement textures to memory. Not necessary with asynchronous loading.", "EmuCore/GS", "PrecacheTextureReplacements", false, replacement_active);
 
-	//  MenuHeading("Logging");
-	//  
-	//  DrawToggleSetting("System Console", "Writes log messages to the system console (console window/standard output).", "Logging",
-	//  	"EnableSystemConsole", false);
-	//  DrawToggleSetting("File Logging", "Writes log messages to emulog.txt.", "Logging", "EnableFileLogging", false);
-	//  DrawToggleSetting("Verbose Logging", "Writes dev log messages to log sinks.", "Logging", "EnableVerbose", false, !IsDevBuild);
-	//  DrawToggleSetting("Log Timestamps", "Writes timestamps alongside log messages.", "Logging", "EnableTimestamps", true);
-	//  DrawToggleSetting("EE Console", "Writes debug messages from the game's EE code to the console.", "Logging", "EnableEEConsole", true);
-	//  DrawToggleSetting("IOP Console", "Writes debug messages from the game's IOP code to the console.", "Logging", "EnableIOPConsole", true);
-	//  DrawToggleSetting("CDVD Verbose Reads", "Logs disc reads from games.", "EmuCore", "CdvdVerboseReads", false);
+	MenuHeading("Logging");
+	
+	DrawToggleSetting("System Console", "Writes log messages to the system console (Restart).", "Logging",
+		"EnableSystemConsole", false);
+	DrawToggleSetting("File Logging", "Writes log messages to emulog.txt.", "Logging", "EnableFileLogging", false);
+	DrawToggleSetting("Verbose Logging", "Writes dev log messages to log sinks.", "Logging", "EnableVerbose", false, !IsDevBuild);
+	DrawToggleSetting("Log Timestamps", "Writes timestamps alongside log messages.", "Logging", "EnableTimestamps", true);
+	DrawToggleSetting("EE Console", "Writes debug messages from the game's EE code to the console.", "Logging", "EnableEEConsole", true);
+	DrawToggleSetting("IOP Console", "Writes debug messages from the game's IOP code to the console.", "Logging", "EnableIOPConsole", true);
+	DrawToggleSetting("CDVD Verbose Reads", "Logs disc reads from games.", "EmuCore", "CdvdVerboseReads", false);
 
-	//  MenuHeading("Graphics");
-	//  
-	//  DrawToggleSetting("Use Debug Device", "Enables API-level validation of graphics commands", "EmuCore/GS", "UseDebugDevice", false);
+	MenuHeading("Graphics");
+	
+	DrawToggleSetting("Use Debug Device", "Enables API-level validation of graphics commands", "EmuCore/GS", "UseDebugDevice", false);
 
 
 

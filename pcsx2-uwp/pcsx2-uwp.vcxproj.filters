@@ -337,9 +337,6 @@
     <None Include="resources\cheats_ws.zip">
       <Filter>resources</Filter>
     </None>
-    <None Include="resources\fonts\Roboto-Regular-copyright">
-      <Filter>resources\fonts</Filter>
-    </None>
     <None Include="resources\shaders\dx11\convert.fx">
       <Filter>resources\shaders\dx11</Filter>
     </None>
@@ -375,11 +372,7 @@
     <Font Include="resources\fonts\fa-solid-900.ttf">
       <Filter>resources\fonts</Filter>
     </Font>
-    <Font Include="resources\fonts\RobotoMono-Medium.ttf">
-      <Filter>resources\fonts</Filter>
-    </Font>
-    <Font Include="resources\fonts\Roboto-Regular.ttf">
-      <Filter>resources\fonts</Filter>
-    </Font>
+    <Font Include="resources\fonts\bold.ttf" />
+    <Font Include="resources\fonts\regular.ttf" />
   </ItemGroup>
 </Project>
