@@ -15,12 +15,15 @@
 
 #include "PrecompiledHeader.h"
 #include "common/SafeArray.inl"
+#include "common/Path.h"
 
 #include "MemoryCardFile.h"
 #include "MemoryCardFolder.h"
 
 #include "System.h"
 #include "Config.h"
+#include "Host.h"
+#include "IconsFontAwesome5.h"
 
 #include "common/FileSystem.h"
 #include "common/Path.h"
@@ -1578,6 +1581,11 @@ bool FolderMemoryCard::WriteToFile(const u8* src, u32 adr, u32 dataLength)
 	return false;
 }
 
+std::string FolderMemoryCard::GetFolderName()
+{
+	return m_folderName;
+}
+
 void FolderMemoryCard::CopyEntryDictIntoTree(std::vector<MemoryCardFileEntryTreeNode>* fileEntryTree, const u32 cluster, const u32 fileCount)
 {
 	const MemoryCardFileEntryCluster* entryCluster = &m_fileEntryDict[cluster];
@@ -2322,7 +2330,14 @@ s32 FolderMemoryCardAggregator::Read(uint slot, u8* dest, u32 adr, int size)
 
 s32 FolderMemoryCardAggregator::Save(uint slot, const u8* src, u32 adr, int size)
 {
-	return m_cards[slot].Save(src, adr, size);
+	const s32 saveResult = m_cards[slot].Save(src, adr, size);
+	if (saveResult)
+	{
+		Host::AddIconOSDMessage(fmt::format("MemoryCardSave{}", slot), ICON_FA_SD_CARD, fmt::format
+			("Writing To '{}'.", Path::GetFileName(m_cards[slot].GetFolderName())), 3.0f);
+	}
+
+	return saveResult;
 }
 
 s32 FolderMemoryCardAggregator::EraseBlock(uint slot, u32 adr)
