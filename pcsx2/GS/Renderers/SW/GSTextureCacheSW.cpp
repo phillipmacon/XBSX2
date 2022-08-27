@@ -135,14 +135,14 @@ void GSTextureCacheSW::IncAge()
 //
 
 GSTextureCacheSW::Texture::Texture(u32 tw0, const GIFRegTEX0& TEX0, const GIFRegTEXA& TEXA)
-	: m_buff(NULL)
+	: m_TEX0(TEX0)
+	, m_TEXA(TEXA)
+	, m_buff(NULL)
 	, m_tw(tw0)
 	, m_age(0)
 	, m_complete(false)
 	, m_p2t(NULL)
 {
-	m_TEX0 = TEX0;
-	m_TEXA = TEXA;
 
 	if (m_tw == 0)
 	{

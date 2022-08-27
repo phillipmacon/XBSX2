@@ -1752,18 +1752,12 @@ void FullscreenUI::DrawInterfaceSettingsPage()
 
 	MenuHeading("Behaviour");
 
-	DrawToggleSetting(ICON_FA_MAGIC "  Inhibit Screensaver",
-		"Prevents the screen saver from activating and the host from sleeping while emulation is running.", "UI", "InhibitScreensaver",
-		true);
 #ifdef WITH_DISCORD_PRESENCE
 	DrawToggleSetting("Enable Discord Presence", "Shows the game you are currently playing as part of your profile on Discord.", "UI",
 		"DiscordPresence", false);
 #endif
 	DrawToggleSetting(ICON_FA_WINDOW_MAXIMIZE "  Pause On Menu",
 		"Pauses the emulator when you open the quick menu, and unpauses when you close it.", "UI", "PauseOnMenu", true);
-	DrawToggleSetting(ICON_FA_POWER_OFF "  Confirm Shutdown",
-		"Determines whether a prompt will be displayed to confirm shutting down the emulator/game when the hotkey is pressed.", "UI",
-		"ConfirmShutdown", true);
 	DrawToggleSetting(ICON_FA_SAVE "  Save State On Shutdown",
 		"Automatically saves the emulator state when powering down or exiting. You can then resume directly from where you left off next "
 		"time.",
