@@ -577,13 +577,9 @@ int GSState::GetFramebufferHeight()
 
 int GSState::GetFramebufferWidth()
 {
-	// Framebuffer height is 11 bits max
-	constexpr int width_limit = (1 << 11);
-
 	const GSVector4i disp1_rect = GetFrameRect(0, true);
 	const GSVector4i disp2_rect = GetFrameRect(1, true);
-	const GSVector4i combined = disp1_rect.runion(disp2_rect);
-
+	
 	const int max_width = std::max(disp1_rect.width(), disp2_rect.width());
 
 	return max_width;
@@ -2269,7 +2265,7 @@ void GSState::ReadFIFO(u8* mem, int size)
 	Read(mem, size);
 
 	if (m_dump)
-		m_dump->ReadFIFO(size);
+		m_dump->ReadFIFO(size / 16);
 }
 
 void GSState::ReadLocalMemoryUnsync(u8* mem, int qwc, GIFRegBITBLTBUF BITBLTBUF, GIFRegTRXPOS TRXPOS, GIFRegTRXREG TRXREG)

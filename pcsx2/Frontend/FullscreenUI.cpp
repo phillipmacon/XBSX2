@@ -161,7 +161,7 @@ namespace FullscreenUI
 		MemoryCard,
 		Controller,
 		Hotkey,
-		Achievements,
+		// Achievements,
 		Directory,
 		Advanced,
 		Count
@@ -256,7 +256,7 @@ namespace FullscreenUI
 	static void DrawCreateMemoryCardWindow();
 	static void DrawControllerSettingsPage();
 	static void DrawHotkeySettingsPage();
-	static void DrawAchievementsSettingsPage();
+	//  static void DrawAchievementsSettingsPage();
 	static void DrawDirectorySettingsPage();
 	static void DrawAdvancedSettingsPage();
 
@@ -1546,18 +1546,18 @@ void FullscreenUI::DrawSettingsWindow()
 		static constexpr float ITEM_WIDTH = 22.0f;
 
 		static constexpr const char* global_icons[] = {ICON_FA_WINDOW_MAXIMIZE, ICON_FA_LIST, ICON_FA_SLIDERS_H,
-			ICON_FA_HDD, ICON_FA_DESKTOP, ICON_FA_MAGIC, ICON_FA_HEADPHONES, ICON_FA_SD_CARD, ICON_FA_GAMEPAD, ICON_FA_KEYBOARD, ICON_FA_TROPHY, ICON_FA_FOLDER,
+			ICON_FA_HDD, ICON_FA_DESKTOP, ICON_FA_MAGIC, ICON_FA_HEADPHONES, ICON_FA_SD_CARD, ICON_FA_GAMEPAD, ICON_FA_KEYBOARD, /*ICON_FA_TROPHY,*/ ICON_FA_FOLDER,
 			ICON_FA_COGS};
 		static constexpr const char* per_game_icons[] = {
 			ICON_FA_LIST, ICON_FA_SLIDERS_H, ICON_FA_HDD, ICON_FA_DESKTOP, ICON_FA_MAGIC, ICON_FA_HEADPHONES, ICON_FA_SD_CARD, ICON_FA_GAMEPAD};
 		static constexpr SettingsPage global_pages[] = {SettingsPage::Interface, SettingsPage::GameList,
 			SettingsPage::Emulation, SettingsPage::System, SettingsPage::Display, SettingsPage::Enhancements, SettingsPage::Audio, SettingsPage::MemoryCard,
-			SettingsPage::Controller, SettingsPage::Hotkey, SettingsPage::Achievements, SettingsPage::Directory, SettingsPage::Advanced};
+			SettingsPage::Controller, SettingsPage::Hotkey, /*SettingsPage::Achievements,*/ SettingsPage::Directory, SettingsPage::Advanced};
 		static constexpr SettingsPage per_game_pages[] = {SettingsPage::Summary, SettingsPage::Emulation, SettingsPage::System,
 			SettingsPage::Display, SettingsPage::Enhancements, SettingsPage::Audio, SettingsPage::MemoryCard, SettingsPage::Controller};
 		static constexpr const char* titles[] = {"Summary", "UI Settings", "Games List Settings",
 			"Emulator Settings", "System Settings", "Display Settings", "Enhancements Settings", "Audio Settings", "Memory Card Settings", "Controller Settings",
-			"Hotkey Settings", "Achievements Settings", "Directory Settings", "Advanced Settings"};
+			"Hotkey Settings", /*"Achievements Settings",*/ "Directory Settings", "Advanced Settings"};
 
 		const bool game_settings = IsEditingGameSettings();
 		const u32 count = game_settings ? std::size(per_game_pages) : std::size(global_pages);
@@ -1668,9 +1668,9 @@ void FullscreenUI::DrawSettingsWindow()
 				DrawHotkeySettingsPage();
 				break;
 
-			case SettingsPage::Achievements:
+			/*  case SettingsPage::Achievements:
 				DrawAchievementsSettingsPage();
-				break;
+				break;  */
 
 			case SettingsPage::Directory:
 				DrawDirectorySettingsPage();
@@ -2834,14 +2834,14 @@ void FullscreenUI::DrawHotkeySettingsPage()
 	EndMenuButtons();
 }
 
-void FullscreenUI::DrawAchievementsSettingsPage()
-{
-
-	BeginMenuButtons();
-	ActiveButton(ICON_FA_BAN "  This build was not compiled with RetroAchivements support.", false, false,
-		ImGuiFullscreen::LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
-	EndMenuButtons();
-}
+//  void FullscreenUI::DrawAchievementsSettingsPage()
+//  {
+//  
+//  	BeginMenuButtons();
+//  	ActiveButton(ICON_FA_BAN "  This build was not compiled with RetroAchievements support.", false, false,
+//  		ImGuiFullscreen::LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
+//  	EndMenuButtons();
+//  }
 
 // Custom Directory Settings Tab
 void FullscreenUI::DrawDirectorySettingsPage()

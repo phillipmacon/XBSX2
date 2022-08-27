@@ -255,8 +255,6 @@ GSTexture* GSRendererHW::GetOutput(int i, int& y_offset)
 
 	GSTexture* t = nullptr;
 
-	GSVector2i size = GetOutputSize(fb_height);
-
 	if (GSTextureCache::Target* rt = m_tc->LookupDisplayTarget(TEX0, GetOutputSize(fb_height), fb_width, fb_height))
 	{
 		t = rt->m_texture;

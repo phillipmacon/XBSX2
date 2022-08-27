@@ -726,7 +726,6 @@ void ImGuiManager::DrawPerformanceOverlay()
 					fmt::format_to(std::back_inserter(text), "{:.2f} FPS", PerformanceMetrics::GetFPS());
 					break;
 			}
-			first = false;
 		}
 		if (GSConfig.OsdShowSpeed)
 		{
