@@ -2602,19 +2602,22 @@ void FullscreenUI::DrawControllerSettingsPage()
 
 	SettingsInterface* bsi = GetEditingSettingsInterface();
 
-//  	MenuHeading("Input Sources");
-//  
-//  #ifdef SDL_BUILD
-//  	DrawToggleSetting(
-//  		ICON_FA_COG "  Enable SDL Input Source", "The SDL input source supports most controllers.", "InputSources", "SDL", true);
-//  	DrawToggleSetting(ICON_FA_WIFI "  SDL DualShock 4 / DualSense Enhanced Mode",
-//  		"Provides vibration and LED control support over Bluetooth.", "InputSources", "SDLControllerEnhancedMode", false,
-//  		bsi->GetBoolValue("InputSources", "SDL"));
-//  #endif
-//  #ifdef _WIN32
-//	  DrawToggleSetting(ICON_FA_COG "  Enable XInput Input Source",
-//	  	"The XInput source provides support for XBox 360/XBox One/XBox Series controllers.", "InputSources", "XInput", false);
-//  #endif
+#ifndef _UWP
+
+  	MenuHeading("Input Sources");
+  
+#ifdef SDL_BUILD
+  	DrawToggleSetting(
+  		ICON_FA_COG "  Enable SDL Input Source", "The SDL input source supports most controllers.", "InputSources", "SDL", true);
+  	DrawToggleSetting(ICON_FA_WIFI "  SDL DualShock 4 / DualSense Enhanced Mode",
+  		"Provides vibration and LED control support over Bluetooth.", "InputSources", "SDLControllerEnhancedMode", false,
+  		bsi->GetBoolValue("InputSources", "SDL"));
+#endif
+#ifdef _WIN32
+	  DrawToggleSetting(ICON_FA_COG "  Enable XInput Input Source",
+	  	"The XInput source provides support for XBox 360/XBox One/XBox Series controllers.", "InputSources", "XInput", false);
+#endif
+#endif
 
 	MenuHeading("Multitap");
 	DrawToggleSetting(ICON_FA_PLUS_SQUARE "  Enable Console Port 1 Multitap",
@@ -2804,13 +2807,13 @@ void FullscreenUI::DrawControllerSettingsPage()
 			"Scales input values when the stick range differs to the virtual controller.", section.c_str(), "AxisScale",
 			PAD::DEFAULT_STICK_SCALE, 0.1f, 3.0f, "%.2f");
 
-		if (ci->vibration_caps == PAD::VibrationCapabilities::LargeSmallMotors)
+		/*  if (ci->vibration_caps == PAD::VibrationCapabilities::LargeSmallMotors)
 		{
 			DrawFloatRangeSetting(ICON_FA_BELL "  Large Motor Scale", "Adjusts intensity of low-frequency vibration.", section.c_str(),
 				"LargeMotorScale", 1.0f, 0.0f, 3.0f, "%.2f");
 			DrawFloatRangeSetting(ICON_FA_BELL "  Small Motor Scale", "Adjusts intensity of high-frequency vibration.", section.c_str(),
 				"SmallMotorScale", 1.0f, 0.0f, 3.0f, "%.2f");
-		}
+		}  */
 	}
 
 	EndMenuButtons();
@@ -2904,8 +2907,6 @@ void FullscreenUI::DrawAdvancedSettingsPage()
 
 	MenuHeading("Logging");
 	
-	DrawToggleSetting("System Console", "Writes log messages to the system console (Restart).", "Logging",
-		"EnableSystemConsole", false);
 	DrawToggleSetting("File Logging", "Writes log messages to emulog.txt.", "Logging", "EnableFileLogging", false);
 	DrawToggleSetting("Verbose Logging", "Writes dev log messages to log sinks.", "Logging", "EnableVerbose", false, !IsDevBuild);
 	DrawToggleSetting("Log Timestamps", "Writes timestamps alongside log messages.", "Logging", "EnableTimestamps", true);

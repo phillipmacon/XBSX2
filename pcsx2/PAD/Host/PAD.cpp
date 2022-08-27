@@ -421,12 +421,9 @@ static const PAD::ControllerSettingInfo s_dualshock2_settings[] = {
 	{PAD::ControllerSettingInfo::Type::Float, "SmallMotorScale", "Small Motor Vibration Scale",
 		"Increases or decreases the intensity of high frequency vibration sent by the game.",
 		"1.00", "0.00", "2.00", "0.01", "%.0f%%", 100.0f},
-	/*{PAD::ControllerSettingInfo::Type::Float, "InitialPressure", "Initial Pressure",
-	"Sets the pressure when the modifier button isn't held.",
-	"1.00", "0.01", "1.00", "0.01", "%.0f%%", 100.0f},*/
 	{PAD::ControllerSettingInfo::Type::Float, "PressureModifier", "Modifier Pressure",
 		"Sets the pressure when the modifier button is held.",
-		"0.50", "0.01", "1.00", "0.01", "%.0f%%", 100.0f},
+		"0.25", "0.01", "1.00", "0.01", "%.0f%%", 100.0f},
 };
 
 static const PAD::ControllerInfo s_controller_info[] = {
