@@ -1,5 +1,8 @@
-#define SVN_REV 20220827134614ll 
-#define GIT_REV "v1.7.3227-30-g6e214e974" 
-#define GIT_HASH "6e214e9747db22ece7772f613e7f50a6a6233bb2" 
-#define GIT_TAG "" 
-#define GIT_TAGGED_COMMIT 0 
+#define SVN_REV 20220828040913ll 
+#define GIT_REV "" 
+#define GIT_HASH "debfad005036b7564b367f34f2315884d19e2014" 
+#define GIT_TAG "v1.7.3256" 
+#define GIT_TAG_HI 1 
+#define GIT_TAG_MID 7 
+#define GIT_TAG_LO 3256 
+#define GIT_TAGGED_COMMIT 1 

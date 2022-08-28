@@ -870,7 +870,7 @@ void FullscreenUI::DrawLandingWindow()
 
 		ImGui::SetCursorPos(ImVec2(LayoutScale(20.0f), ImGui::GetWindowHeight() - g_medium_font->FontSize - LayoutScale(20.0f)));
 		ImGui::PushFont(g_medium_font);
-		ImGui::Text(GIT_REV);
+		ImGui::Text(GIT_TAG);
 		ImGui::PopFont();
 	}
 	EndFullscreenColumnWindow();
@@ -1719,7 +1719,7 @@ void FullscreenUI::DrawSettingsWindow()
 
 	if (BeginFullscreenWindow(ImVec2(0.0f, 0.0f), heading_size, "settings_category", UIPrimaryColor))
 	{
-		static constexpr float ITEM_WIDTH = 22.0f;
+		static constexpr float ITEM_WIDTH = 26.0f;
 
 		static constexpr const char* global_icons[] = {ICON_FA_WINDOW_MAXIMIZE, ICON_FA_LIST, ICON_FA_SLIDERS_H,
 			ICON_FA_HDD, ICON_FA_DESKTOP, ICON_FA_MAGIC, ICON_FA_HEADPHONES, ICON_FA_SD_CARD, ICON_FA_GAMEPAD, ICON_FA_KEYBOARD, /*ICON_FA_TROPHY,*/ ICON_FA_FOLDER,
@@ -1762,7 +1762,7 @@ void FullscreenUI::DrawSettingsWindow()
 			s_settings_page = pages[index];
 		}
 
-		if (NavButton(ICON_FA_COG, true, true))
+		if (NavButton(ICON_FA_INFO_CIRCLE, true, true))
 			ReturnToMainWindow();
 
 		if (s_game_settings_entry)
@@ -1902,8 +1902,11 @@ void FullscreenUI::DrawSummarySettingsPage()
 		DoCopyGameSettings();
 	if (MenuButton(ICON_FA_TRASH "  Clear Settings", "Clears all settings set for this game."))
 		DoClearGameSettings();
-	if (MenuButton(ICON_FA_BACKWARD "  Return To Games List", "Closes this menu and returns to the Game List."))
-		SwitchToGameList();
+	if (WantsToCloseMenu())
+	{
+		if (ImGui::IsWindowFocused())
+			SwitchToGameList();
+	}
 
 	EndMenuButtons();
 }
@@ -3710,6 +3713,12 @@ void FullscreenUI::DrawGameListWindow()
 
 		ResetFocusHere();
 
+		if (WantsToCloseMenu())
+		{
+			if (!ImGui::IsWindowFocused())
+				ReturnToMainWindow();
+		}
+
 		BeginMenuButtons();
 
 		// TODO: replace with something not heap allcating
@@ -3893,11 +3902,6 @@ void FullscreenUI::DrawGameListWindow()
 		ImGui::PopTextWrapPos();
 		ImGui::PopStyleVar();
 
-		if (ImGui::IsNavInputTest(ImGuiNavInput_Back, ImGuiNavReadMode_Pressed))
-		{
-			ReturnToMainWindow();
-		}
-
 		/*ImGui::SetCursorPosY(ImGui::GetWindowHeight() - LayoutScale(50.0f));
 		BeginMenuButtons();
 		if (ActiveButton(ICON_FA_BACKWARD "  Back", false))
@@ -4005,33 +4009,22 @@ void FullscreenUI::DrawAboutWindow()
 	ImGui::OpenPopup("About XBSX2");
 
 	ImGui::PushFont(g_large_font);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, LayoutScale(10.0f));
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, LayoutScale(20.0f, 20.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, LayoutScale(5.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, LayoutScale(10.0f, 10.0f));
 
 	if (ImGui::BeginPopupModal("About XBSX2", &s_about_window_open, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
 	{
-		ImGui::TextWrapped("XBSX2 Controls");
+		ImGui::Text("About XBSX2");
 
 		ImGui::NewLine();
 
-		ImGui::TextWrapped("LB/RB - Jump Backward/Forward Through Entries.");
+		ImGui::Text("LB/RB - Jump Backward/Forward Through Entries.");
 
 		ImGui::NewLine();
 
-		ImGui::TextWrapped("Start - Open Game Specific Menu.");
-
-
-		ImGui::NewLine();
-
-		ImGui::TextWrapped("Back - Exits to Main Menu.");
+		ImGui::Text("Start - Open Game Specific Menu.");
 
 		ImGui::NewLine();
-
-		ImGui::TextWrapped("About XBSX2");
-
-
-		ImGui::NewLine();
-
 
 		ImGui::TextWrapped("XBSX2 is a free and open-source PlayStation 2 (PS2) emulator. Its purpose is to emulate the PS2's hardware, using a "
 						   "combination of MIPS CPU Interpreters, Recompilers and a Virtual Machine which manages hardware states and PS2 system memory. "
