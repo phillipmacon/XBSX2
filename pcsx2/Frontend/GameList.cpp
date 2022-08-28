@@ -53,7 +53,7 @@ namespace GameList
 
 	static bool GetGameListEntryFromCache(const std::string& path, GameList::Entry* entry);
 	static void ScanDirectory(
-		const char* path, bool recursive, const std::vector<std::string>& excluded_paths, ProgressCallback* progress);
+		const char* path, bool recursive, bool only_cache, const std::vector<std::string>& excluded_paths, ProgressCallback* progress);
 	static bool AddFileFromCache(const std::string& path, std::time_t timestamp);
 	static bool ScanFile(std::string path, std::time_t timestamp);
 
@@ -85,6 +85,11 @@ const char* GameList::EntryTypeToString(EntryType type)
 	return names[static_cast<int>(type)];
 }
 
+const char* GameList::EntryTypeToDisplayString(EntryType type)
+{
+	static std::array<const char*, static_cast<int>(EntryType::Count)> names = {{"PS2 Disc", "PS1 Disc", "ELF", "Playlist"}};
+	return names[static_cast<int>(type)];
+}
 const char* GameList::RegionToString(Region region)
 {
 	static std::array<const char*, static_cast<int>(Region::Count)> names = {{"NTSC-B", "NTSC-C", "NTSC-HK", "NTSC-J", "NTSC-K", "NTSC-T",
@@ -166,7 +171,7 @@ bool GameList::GetElfListEntry(const std::string& path, GameList::Entry* entry)
 	const std::string display_name(FileSystem::GetDisplayNameFromPath(path));
 	entry->path = path;
 	entry->serial.clear();
-	entry->title = Path::StripExtension(display_name);
+	entry->title = Path::GetFileTitle(display_name);
 	entry->region = Region::Other;
 	entry->total_size = static_cast<u64>(file_size);
 	entry->type = EntryType::ELF;
@@ -528,7 +533,7 @@ static bool IsPathExcluded(const std::vector<std::string>& excluded_paths, const
 	return (std::find(excluded_paths.begin(), excluded_paths.end(), path) != excluded_paths.end());
 }
 
-void GameList::ScanDirectory(const char* path, bool recursive, const std::vector<std::string>& excluded_paths, ProgressCallback* progress)
+void GameList::ScanDirectory(const char* path, bool recursive, bool only_cache, const std::vector<std::string>& excluded_paths, ProgressCallback* progress)
 {
 	Console.WriteLn("Scanning %s%s", path, recursive ? " (recursively)" : "");
 
@@ -541,11 +546,13 @@ void GameList::ScanDirectory(const char* path, bool recursive, const std::vector
                     (FILESYSTEM_FIND_FILES | FILESYSTEM_FIND_HIDDEN_FILES),
 		&files);
 
+	u32 files_scanned = 0;				   
 	progress->SetProgressRange(static_cast<u32>(files.size()));
 	progress->SetProgressValue(0);
 
 	for (FILESYSTEM_FIND_DATA& ffd : files)
 	{
+		files_scanned++;
 		if (progress->IsCancelled() || !GameList::IsScannableFilename(ffd.FileName) ||
 			IsPathExcluded(excluded_paths, ffd.FileName))
 		{
@@ -555,7 +562,7 @@ void GameList::ScanDirectory(const char* path, bool recursive, const std::vector
 		{
 			std::unique_lock lock(s_mutex);
 			if (GetEntryForPath(ffd.FileName.c_str()) ||
-				AddFileFromCache(ffd.FileName, ffd.ModificationTime))
+				AddFileFromCache(ffd.FileName, ffd.ModificationTime) || only_cache);
 			{
 				progress->IncrementProgressValue();
 				continue;
@@ -565,10 +572,10 @@ void GameList::ScanDirectory(const char* path, bool recursive, const std::vector
 		// ownership of fp is transferred
 		progress->SetFormattedStatusText("Scanning '%s'...", FileSystem::GetDisplayNameFromPath(ffd.FileName).c_str());
 		ScanFile(std::move(ffd.FileName), ffd.ModificationTime);
-		progress->IncrementProgressValue();
+		progress->SetProgressValue(files_scanned);
 	}
 
-	progress->SetProgressValue(static_cast<u32>(files.size()));
+	progress->SetProgressValue(files_scanned);
 	progress->PopState();
 }
 
@@ -671,7 +678,7 @@ u32 GameList::GetEntryCount()
 	return static_cast<u32>(m_entries.size());
 }
 
-void GameList::Refresh(bool invalidate_cache, ProgressCallback* progress /* = nullptr */)
+void GameList::Refresh(bool invalidate_cache, bool only_cache, ProgressCallback* progress /* = nullptr */)
 {
 	m_game_list_loaded = true;
 
@@ -706,7 +713,7 @@ void GameList::Refresh(bool invalidate_cache, ProgressCallback* progress /* = nu
 			if (progress->IsCancelled())
 				break;
 
-			ScanDirectory(dir.c_str(), false, excluded_paths, progress);
+			ScanDirectory(dir.c_str(), false, only_cache, excluded_paths, progress);
 			progress->SetProgressValue(++directory_counter);
 		}
 		for (const std::string& dir : recursive_dirs)
@@ -714,7 +721,7 @@ void GameList::Refresh(bool invalidate_cache, ProgressCallback* progress /* = nu
 			if (progress->IsCancelled())
 				break;
 
-			ScanDirectory(dir.c_str(), true, excluded_paths, progress);
+			ScanDirectory(dir.c_str(), true, only_cache, excluded_paths, progress);
 			progress->SetProgressValue(++directory_counter);
 		}
 	}

@@ -7,7 +7,6 @@ else()
 endif()
 
 target_sources(pcsx2-nogui PRIVATE
-	Main.cpp
 	NoGUIHost.cpp
 	NoGUIHost.h
 	NoGUIPlatform.h
@@ -16,7 +15,6 @@ target_sources(pcsx2-nogui PRIVATE
 target_precompile_headers(pcsx2-nogui PRIVATE PrecompiledHeader.h)
 
 target_include_directories(pcsx2-nogui PRIVATE
-	${Qt6Gui_PRIVATE_INCLUDE_DIRS}
 	"${CMAKE_BINARY_DIR}/common/include"
 	"${CMAKE_SOURCE_DIR}/pcsx2"
 	"${CMAKE_SOURCE_DIR}/pcsx2-nogui"
@@ -27,7 +25,25 @@ target_link_libraries(pcsx2-nogui PRIVATE
 	PCSX2
 )
 
+if (X11_API)
+	message(STATUS "Building X11 NoGUI Platform.")
+	target_compile_definitions(pcsx2-nogui PRIVATE
+		NOGUI_PLATFORM_X11
+	)
+	target_sources(pcsx2-nogui PRIVATE
+		X11NoGUIPlatform.cpp
+		X11NoGUIPlatform.h
+	)
+	target_include_directories(pcsx2-nogui PRIVATE
+		"${X11_INCLUDE_DIR}"
+	)
+	target_link_libraries(pcsx2-nogui PRIVATE
+		"${X11_LIBRARIES}"
+	)
+endif()
+
 if (WAYLAND_API)
+	message(STATUS "Building Wayland NoGUI Platform.")
 	# Generate the xdg-shell and xdg-decoration protocols at build-time.
 	# Because these are C, not C++, we have to put them in their own library, otherwise
 	# cmake tries to generate a C PCH as well as the C++ one...

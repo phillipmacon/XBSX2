@@ -65,6 +65,7 @@
 #include "svnrev.h"
 
 #include "pcsx2/DebugTools/Debug.h"
+#include <include/IconsFontAwesome5.h>
 
 using namespace std::chrono_literals;
 
@@ -78,6 +79,12 @@ std::unique_ptr<NoGUIPlatform> g_nogui_window;
 //////////////////////////////////////////////////////////////////////////
 namespace NoGUIHost
 {
+#ifndef _UWP
+	static void PrintCommandLineVersion();
+	static void PrintCommandLineHelp(const char* progname);
+	static std::shared_ptr<VMBootParameters>& AutoBoot(std::shared_ptr<VMBootParameters>& autoboot);
+	static bool ParseCommandLineOptions(int argc, char* argv[], std::shared_ptr<VMBootParameters>& autoboot);
+#endif
 	static bool InitializeConfig();
 	static bool ShouldUsePortableMode();
 	static void SetResourcesDirectory();
@@ -91,6 +98,7 @@ namespace NoGUIHost
 	static void ProcessCPUThreadPlatformMessages();
 	static void CPUThreadEntryPoint();
 	static void CPUThreadMainLoop();
+	static std::unique_ptr<NoGUIPlatform> CreatePlatform();
 	static std::string GetWindowTitle(const std::string& game_title);
 	static void UpdateWindowTitle(const std::string& game_title);
 	static void GameListRefreshThreadEntryPoint(bool invalidate_cache);
@@ -107,6 +115,7 @@ static std::atomic_bool s_running{false};
 static bool s_batch_mode = false;
 static bool s_is_fullscreen = false;
 static bool s_save_state_on_shutdown = false;
+static bool s_was_paused_by_focus_loss = false;
 
 static Threading::Thread s_cpu_thread;
 static std::mutex s_cpu_thread_events_mutex;
@@ -257,6 +266,7 @@ bool NoGUIHost::InitializeConfig()
 	if (!s_base_settings_interface->Load() || !s_base_settings_interface->GetUIntValue("UI", "SettingsVersion", &settings_version) ||
 		settings_version != SETTINGS_VERSION)
 	{
+		g_nogui_window->ReportError("Settings Reset", "Settings do not exist or are the incorrect version, resetting to defaults.");
 		SetDefaultConfig();
 		s_base_settings_interface->Save();
 	}
@@ -264,7 +274,7 @@ bool NoGUIHost::InitializeConfig()
 	// TODO: Handle reset to defaults if load fails.
 	EmuFolders::LoadConfig(*s_base_settings_interface.get());
 	EmuFolders::EnsureFoldersExist();
-	Host::UpdateLogging();
+	Host::UpdateLogging(false);
 	return true;
 }
 
@@ -402,7 +412,7 @@ void NoGUIHost::SetBatchMode(bool enabled)
 {
 	s_batch_mode = enabled;
 	if (enabled)
-		GameList::Refresh(false);
+		GameList::Refresh(false, true);
 }
 
 void NoGUIHost::StartVM(std::shared_ptr<VMBootParameters> params)
@@ -444,14 +454,34 @@ void NoGUIHost::ProcessPlatformKeyEvent(s32 key, bool pressed)
 	Host::RunOnCPUThread([key, pressed]() { InputManager::InvokeEvents(InputManager::MakeHostKeyboardKey(key), pressed ? 1.0f : 0.0f); });
 }
 
+void NoGUIHost::ProcessPlatformTextEvent(const char* text)
+{
+	if (!ImGuiManager::WantsTextInput())
+		return;
+
+	Host::RunOnCPUThread([text = std::string(text)]() { ImGuiManager::AddTextInput(std::move(text)); });
+}
+
 void NoGUIHost::PlatformWindowFocusGained()
 {
-	// TODO
+	Host::RunOnCPUThread([]() {
+		if (VMManager::GetState() != VMState::Paused || !Host::GetBaseBoolSettingValue("UI", "PauseOnFocusLoss", false))
+			return;
+
+		VMManager::SetPaused(false);
+		s_was_paused_by_focus_loss = false;
+	});
 }
 
 void NoGUIHost::PlatformWindowFocusLost()
 {
-	// TODO
+	Host::RunOnCPUThread([]() {
+		if (VMManager::GetState() != VMState::Running || !Host::GetBaseBoolSettingValue("UI", "PauseOnFocusLoss", false))
+			return;
+
+		s_was_paused_by_focus_loss = true;
+		VMManager::SetPaused(true);
+	});
 }
 
 bool NoGUIHost::GetSavedPlatformWindowGeometry(s32* x, s32* y, s32* width, s32* height)
@@ -671,6 +701,16 @@ std::optional<std::string> Host::ReadResourceFileToString(const char* filename)
 	return ret;
 }
 
+std::optional<time_t> Host::GetResourceFileTimestamp(const char* filename)
+{
+	const std::string path(Path::Combine(EmuFolders::Resources, filename));
+	FILESYSTEM_STAT_DATA sd;
+	if (!FileSystem::StatFile(filename, &sd))
+		return std::nullopt;
+
+	return sd.ModificationTime;
+}
+
 void Host::ReportErrorAsync(const std::string_view& title, const std::string_view& message)
 {
 	if (!title.empty() && !message.empty())
@@ -686,16 +726,33 @@ void Host::ReportErrorAsync(const std::string_view& title, const std::string_vie
 	g_nogui_window->ReportError(title, message);
 }
 
+#ifndef _UWP
+bool Host::ConfirmMessage(const std::string_view& title, const std::string_view& message)
+{
+	if (!title.empty() && !message.empty())
+	{
+		Console.Warning(
+			"ConfirmMessage: %.*s: %.*s", static_cast<int>(title.size()), title.data(), static_cast<int>(message.size()), message.data());
+	}
+	else if (!message.empty())
+	{
+		Console.Warning("ConfirmMessage: %.*s", static_cast<int>(message.size()), message.data());
+	}
+
+	return g_nogui_window->ConfirmMessage(title, message);
+}
+#endif
+
 void Host::OnInputDeviceConnected(const std::string_view& identifier, const std::string_view& device_name)
 {
-	Host::AddKeyedOSDMessage(fmt::format("{} Connected", identifier),
-		fmt::format("{} Connected.", identifier), 3.0f);
+	Host::AddIconOSDMessage(fmt::format("{} Connected.", identifier), ICON_FA_GAMEPAD, 
+		fmt::format("{} Connected.", device_name, identifier), 3.0f);
 }
 
 void Host::OnInputDeviceDisconnected(const std::string_view& identifier)
 {
-	Host::AddKeyedOSDMessage(
-		fmt::format("{}", identifier), fmt::format("{} Disconnected.", identifier), 3.0f);
+	Host::AddIconOSDMessage(
+		fmt::format("{} Connected.", identifier), ICON_FA_GAMEPAD, fmt::format("{} Disconnected.", identifier), 3.0f);
 }
 
 HostDisplay* Host::GetHostDisplay()
@@ -805,9 +862,49 @@ void Host::RequestResizeHostDisplay(s32 width, s32 height)
 	g_nogui_window->RequestRenderWindowSize(width, height);
 }
 
+#ifndef _UWP
+void Host::OpenURL(const std::string_view& url)
+{
+	g_nogui_window->OpenURL(url);
+}
+
+bool Host::CopyTextToClipboard(const std::string_view& text)
+{
+	return g_nogui_window->CopyTextToClipboard(text);
+}
+#endif
+
 void Host::UpdateHostDisplay()
 {
 	// not used in nogui, except if we do exclusive fullscreen
+}
+
+std::unique_ptr<NoGUIPlatform> NoGUIHost::CreatePlatform()
+{
+	std::unique_ptr<NoGUIPlatform> ret;
+
+#if defined(_WIN32)
+	ret = NoGUIPlatform::CreateWin32Platform();
+#elif defined(__APPLE__)
+	// nothing yet
+#else
+	// linux
+	const char* platform = std::getenv("PCSX1_NOGUI_PLATFORM");
+#ifdef NOGUI_PLATFORM_WAYLAND
+	if (!ret && (!platform || StringUtil::Strcasecmp(platform, "wayland") == 0) && std::getenv("WAYLAND_DISPLAY"))
+		ret = NoGUIPlatform::CreateWaylandPlatform();
+#endif
+#ifdef NOGUI_PLATFORM_X11
+	if (!ret && (!platform || StringUtil::Strcasecmp(platform, "x11") == 0) && std::getenv("DISPLAY"))
+		ret = NoGUIPlatform::CreateX11Platform();
+#endif
+#ifdef NOGUI_PLATFORM_VTY
+	if (!ret && (!platform || StringUtil::Strcasecmp(platform, "vty") == 0))
+		ret = NoGUIPlatform::CreateVTYPlatform();
+#endif
+#endif
+
+	return ret;
 }
 
 std::string NoGUIHost::GetWindowTitle(const std::string& game_title)
@@ -903,7 +1000,7 @@ void NoGUIHost::GameListRefreshThreadEntryPoint(bool invalidate_cache)
 	s_game_list_refresh_progress = &callback;
 
 	lock.unlock();
-	GameList::Refresh(invalidate_cache, &callback);
+	GameList::Refresh(invalidate_cache, false, &callback);
 	lock.lock();
 
 	s_game_list_refresh_progress = nullptr;
@@ -955,11 +1052,11 @@ void Host::RequestExit(bool save_state_if_running)
 	s_running.store(false, std::memory_order_release);
 }
 
-void Host::RequestVMShutdown(bool save_state)
+void Host::RequestVMShutdown(bool allow_confirm, bool allow_save_state, bool default_save_state)
 {
 	if (VMManager::HasValidVM())
 	{
-		s_save_state_on_shutdown = save_state;
+		s_save_state_on_shutdown = allow_save_state && default_save_state;
 		VMManager::SetState(VMState::Stopping);
 	}
 }
@@ -1023,3 +1120,229 @@ void NoGUIHost::HookSignals()
 	std::signal(SIGINT, SignalHandler);
 	std::signal(SIGTERM, SignalHandler);
 }
+
+#ifndef _UWP
+
+void NoGUIHost::PrintCommandLineVersion()
+{
+	Host::InitializeEarlyConsole();
+	std::fprintf(stderr, "%s\n", (GetAppNameAndVersion() + GetAppConfigSuffix()).c_str());
+	std::fprintf(stderr, "https://pcsx2.net/\n");
+	std::fprintf(stderr, "\n");
+}
+
+void NoGUIHost::PrintCommandLineHelp(const char* progname)
+{
+	PrintCommandLineVersion();
+	std::fprintf(stderr, "Usage: %s [parameters] [--] [boot filename]\n", progname);
+	std::fprintf(stderr, "\n");
+	std::fprintf(stderr, "  -help: Displays this information and exits.\n");
+	std::fprintf(stderr, "  -version: Displays version information and exits.\n");
+	std::fprintf(stderr, "  -batch: Enables batch mode (exits after shutting down).\n");
+	std::fprintf(stderr, "  -elf <file>: Overrides the boot ELF with the specified filename.\n");
+	std::fprintf(stderr, "  -disc <path>: Uses the specified host DVD drive as a source.\n");
+	std::fprintf(stderr, "  -bios: Starts the BIOS (System Menu/OSDSYS).\n");
+	std::fprintf(stderr, "  -fastboot: Force fast boot for provided filename.\n");
+	std::fprintf(stderr, "  -slowboot: Force slow boot for provided filename.\n");
+	std::fprintf(stderr, "  -state <index>: Loads specified save state by index.\n");
+	std::fprintf(stderr, "  -statefile <filename>: Loads state from the specified filename.\n");
+	std::fprintf(stderr, "  -fullscreen: Enters fullscreen mode immediately after starting.\n");
+	std::fprintf(stderr, "  -nofullscreen: Prevents fullscreen mode from triggering if enabled.\n");
+	std::fprintf(stderr, "  --: Signals that no more arguments will follow and the remaining\n"
+						 "    parameters make up the filename. Use when the filename contains\n"
+						 "    spaces or starts with a dash.\n");
+	std::fprintf(stderr, "\n");
+}
+
+std::shared_ptr<VMBootParameters>& NoGUIHost::AutoBoot(std::shared_ptr<VMBootParameters>& autoboot)
+{
+	if (!autoboot)
+		autoboot = std::make_shared<VMBootParameters>();
+
+	return autoboot;
+}
+
+bool NoGUIHost::ParseCommandLineOptions(int argc, char* argv[], std::shared_ptr<VMBootParameters>& autoboot)
+{
+	bool no_more_args = false;
+
+	for (int i = 1; i < argc; i++)
+	{
+		if (!no_more_args)
+		{
+#define CHECK_ARG(str) !std::strcmp(argv[i], str)
+#define CHECK_ARG_PARAM(str) (!std::strcmp(argv[i], str) && ((i + 1) < argc))
+
+			if (CHECK_ARG("-help"))
+			{
+				PrintCommandLineHelp(argv[0]);
+				return false;
+			}
+			else if (CHECK_ARG("-version"))
+			{
+				PrintCommandLineVersion();
+				return false;
+			}
+			else if (CHECK_ARG("-batch"))
+			{
+				NoGUIHost::SetBatchMode(true);
+				continue;
+			}
+			else if (CHECK_ARG("-fastboot"))
+			{
+				AutoBoot(autoboot)->fast_boot = true;
+				continue;
+			}
+			else if (CHECK_ARG("-slowboot"))
+			{
+				AutoBoot(autoboot)->fast_boot = false;
+				continue;
+			}
+			else if (CHECK_ARG_PARAM("-state"))
+			{
+				AutoBoot(autoboot)->state_index = std::atoi(argv[++i]);
+				continue;
+			}
+			else if (CHECK_ARG_PARAM("-statefile"))
+			{
+				AutoBoot(autoboot)->save_state = argv[++i];
+				continue;
+			}
+			else if (CHECK_ARG_PARAM("-elf"))
+			{
+				AutoBoot(autoboot)->elf_override = argv[++i];
+				continue;
+			}
+			else if (CHECK_ARG_PARAM("-disc"))
+			{
+				AutoBoot(autoboot)->source_type = CDVD_SourceType::Disc;
+				AutoBoot(autoboot)->filename = argv[++i];
+				continue;
+			}
+			else if (CHECK_ARG("-bios"))
+			{
+				AutoBoot(autoboot)->source_type = CDVD_SourceType::NoDisc;
+				continue;
+			}
+			else if (CHECK_ARG("-fullscreen"))
+			{
+				AutoBoot(autoboot)->fullscreen = true;
+				continue;
+			}
+			else if (CHECK_ARG("-nofullscreen"))
+			{
+				AutoBoot(autoboot)->fullscreen = false;
+				continue;
+			}
+			else if (CHECK_ARG("--"))
+			{
+				no_more_args = true;
+				continue;
+			}
+			else if (argv[i][0] == '-')
+			{
+				Host::InitializeEarlyConsole();
+				std::fprintf(stderr, "Unknown parameter: '%s'", argv[i]);
+				return false;
+			}
+
+#undef CHECK_ARG
+#undef CHECK_ARG_PARAM
+		}
+
+		if (!AutoBoot(autoboot)->filename.empty())
+			AutoBoot(autoboot)->filename += ' ';
+
+		AutoBoot(autoboot)->filename += argv[i];
+	}
+
+	// check autoboot parameters, if we set something like fullscreen without a bios
+	// or disc, we don't want to actually start.
+	if (autoboot && !autoboot->source_type.has_value() && autoboot->filename.empty() && autoboot->elf_override.empty())
+	{
+		Host::InitializeEarlyConsole();
+		Console.Warning("Skipping autoboot due to no boot parameters.");
+		autoboot.reset();
+	}
+
+	// if we don't have autoboot, we definitely don't want batch mode (because that'll skip
+	// scanning the game list).
+	if (NoGUIHost::InBatchMode() && !autoboot)
+	{
+		Host::InitializeEarlyConsole();
+		Console.Warning("Disabling batch mode, because we have no autoboot.");
+		SetBatchMode(false);
+	}
+
+	return true;
+}
+
+int main(int argc, char* argv[])
+{
+	CrashHandler::Install();
+
+	std::shared_ptr<VMBootParameters> autoboot;
+	if (!NoGUIHost::ParseCommandLineOptions(argc, argv, autoboot))
+		return EXIT_FAILURE;
+
+	g_nogui_window = NoGUIHost::CreatePlatform();
+	if (!g_nogui_window)
+		return EXIT_FAILURE;
+
+	if (!NoGUIHost::InitializeConfig())
+	{
+		g_nogui_window->ReportError("Error", "Failed to initialize config.");
+		return false;
+	}
+
+	// the rest of initialization happens on the CPU thread.
+	NoGUIHost::HookSignals();
+	NoGUIHost::StartCPUThread();
+
+	if (autoboot)
+		NoGUIHost::StartVM(std::move(autoboot));
+
+	g_nogui_window->RunMessageLoop();
+
+	NoGUIHost::StopCPUThread();
+	g_nogui_window.reset();
+	return EXIT_SUCCESS;
+}
+
+#ifdef _WIN32
+
+#include "common/RedtapeWindows.h"
+#include <shellapi.h>
+
+int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nShowCmd)
+{
+	std::vector<std::string> argc_strings;
+	argc_strings.reserve(1);
+
+	// CommandLineToArgvW() only adds the program path if the command line is empty?!
+	argc_strings.push_back(FileSystem::GetProgramPath());
+
+	if (std::wcslen(lpCmdLine) > 0)
+	{
+		int argc;
+		LPWSTR* argv_wide = CommandLineToArgvW(lpCmdLine, &argc);
+		if (argv_wide)
+		{
+			for (int i = 0; i < argc; i++)
+				argc_strings.push_back(StringUtil::WideStringToUTF8String(argv_wide[i]));
+
+			LocalFree(argv_wide);
+		}
+	}
+
+	std::vector<char*> argc_pointers;
+	argc_pointers.reserve(argc_strings.size());
+	for (std::string& arg : argc_strings)
+		argc_pointers.push_back(arg.data());
+
+	return main(static_cast<int>(argc_pointers.size()), argc_pointers.data());
+}
+
+#endif
+
+#endif

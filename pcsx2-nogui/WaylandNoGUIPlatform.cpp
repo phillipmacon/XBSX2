@@ -91,10 +91,13 @@ bool WaylandNoGUIPlatform::Initialize()
 
 void WaylandNoGUIPlatform::ReportError(const std::string_view& title, const std::string_view& message)
 {
-	const std::string title_copy(title);
-	const std::string message_copy(message);
-	//SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title_copy.c_str(), message_copy.c_str(), m_window);
-	Console.Error("%s: %s", title_copy.c_str(), message_copy.c_str());
+	// not implemented
+}
+
+bool WaylandNoGUIPlatform::ConfirmMessage(const std::string_view& title, const std::string_view& message)
+{
+	// not implemented
+	return true;
 }
 
 void WaylandNoGUIPlatform::SetDefaultConfig(SettingsInterface& si)
@@ -163,9 +166,34 @@ bool WaylandNoGUIPlatform::CreatePlatformWindow(std::string title)
 
 void WaylandNoGUIPlatform::DestroyPlatformWindow()
 {
-	// TODO
-	pxFailRel("TODO");
 	m_window_info = {};
+
+	if (m_toplevel_decoration)
+	{
+		zxdg_toplevel_decoration_v1_destroy(m_toplevel_decoration);
+		m_toplevel_decoration = {};
+	}
+
+	if (m_xdg_toplevel)
+	{
+		xdg_toplevel_destroy(m_xdg_toplevel);
+		m_xdg_toplevel = {};
+	}
+
+	if (m_xdg_surface)
+	{
+		xdg_surface_destroy(m_xdg_surface);
+		m_xdg_surface = {};
+	}
+
+	if (m_surface)
+	{
+		wl_surface_destroy(m_surface);
+		m_surface = {};
+	}
+
+	wl_display_dispatch_pending(m_display);
+	wl_display_roundtrip(m_display);
 }
 
 std::optional<WindowInfo> WaylandNoGUIPlatform::GetPlatformWindowInfo()
@@ -180,6 +208,11 @@ void WaylandNoGUIPlatform::SetPlatformWindowTitle(std::string title)
 {
 	if (m_xdg_toplevel)
 		xdg_toplevel_set_title(m_xdg_toplevel, title.c_str());
+}
+
+void* WaylandNoGUIPlatform::GetPlatformWindowHandle()
+{
+	return m_surface;
 }
 
 std::optional<u32> WaylandNoGUIPlatform::ConvertHostKeyboardStringToCode(const std::string_view& str)
@@ -398,7 +431,7 @@ void WaylandNoGUIPlatform::PointerButton(void* data, wl_pointer* pointer, uint32
 	if (button < BTN_MOUSE || (button - BTN_MOUSE) >= 32)
 		return;
 
-	const s32 button_index = (button - BTN_MOUSE) + 1;
+	const s32 button_index = (button - BTN_MOUSE);
 	const bool button_pressed = (state == WL_POINTER_BUTTON_STATE_PRESSED);
 	NoGUIHost::ProcessPlatformMouseButtonEvent(button_index, button_pressed);
 }
@@ -429,6 +462,7 @@ void WaylandNoGUIPlatform::RunMessageLoop()
 			}
 		}
 
+		// TODO: Make this suck less.
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }
@@ -446,17 +480,23 @@ void WaylandNoGUIPlatform::QuitMessageLoop()
 
 void WaylandNoGUIPlatform::SetFullscreen(bool enabled)
 {
-	//m_fullscreen.store(enabled, std::memory_order_release);
-	//SDL_SetWindowFullscreen(m_window, enabled ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+	// how the heck can we do this?
 }
 
 bool WaylandNoGUIPlatform::RequestRenderWindowSize(s32 new_window_width, s32 new_window_height)
 {
-	//if (!m_window)
-	//return false;
+	return false;
+}
 
-	//SDL_SetWindowSize(m_window, new_window_width, new_window_height);
-	//return true;
+bool WaylandNoGUIPlatform::OpenURL(const std::string_view& url)
+{
+	Console.Error("WaylandNoGUIPlatform::OpenURL() not implemented: %.*s", static_cast<int>(url.size()), url.data());
+	return false;
+}
+
+bool WaylandNoGUIPlatform::CopyTextToClipboard(const std::string_view& text)
+{
+	Console.Error("WaylandNoGUIPlatform::CopyTextToClipboard() not implemented: %.*s", static_cast<int>(text.size()), text.data());
 	return false;
 }
 

@@ -157,11 +157,6 @@ u32 GSDumpReplayer::GetDumpCRC()
 	return s_dump_file->GetCRC();
 }
 
-u32 GSDumpReplayer::GetFrameNumber()
-{
-	return s_dump_frame_number;
-}
-
 void GSDumpReplayerCpuReserve()
 {
 }
@@ -250,7 +245,7 @@ void GSDumpReplayerCpuStep()
 			s_dump_loop_count--;
 		else if (s_dump_loop_count == 0)
 		{
-			Host::RequestVMShutdown(false);
+			Host::RequestVMShutdown(false, false, true);
 			s_dump_running = false;
 		}
 	}

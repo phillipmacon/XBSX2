@@ -64,6 +64,12 @@ namespace ImGuiManager
 	ImFont* GetLargeFont();
 
 #ifdef PCSX2_CORE
+	/// Returns true if imgui wants to intercept text input.
+	bool WantsTextInput();
+
+	/// Called on the UI or CPU thread in response to a key press. String is UTF-8.
+	void AddTextInput(std::string str);
+
 	/// Called on the UI or CPU thread in response to mouse movement.
 	void UpdateMousePosition(float x, float y);
 
@@ -83,4 +89,3 @@ namespace ImGuiManager
 	bool ProcessGenericInputEvent(GenericInputBinding key, float value);
 #endif
 } // namespace ImGuiManager
-

@@ -33,7 +33,5 @@ void Shutdown();
 std::string GetDumpSerial();
 u32 GetDumpCRC();
 
-u32 GetFrameNumber();
-
 void RenderUI();
 }

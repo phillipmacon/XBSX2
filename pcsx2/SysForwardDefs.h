@@ -36,6 +36,11 @@
 #define VER_INTERNAL_NAME_STR       VER_ORIGINAL_FILENAME_STR
 #define VER_COPYRIGHT_STR           "Copyright (C) 2022"
 
+#define PCSX2_FORUMS_URL "https://github.com/TheRhysWyrill/XBSX2/Issues"
+#define PCSX2_GITHUB_URL "https://github.com/TheRhysWyrill/XBSX2"
+#define PCSX2_LICENSE_URL "https://github.com/TheRhysWyrill/XBSX2/blob/master/pcsx2/Docs/License.txt"
+#define PCSX2_DISCORD_URL "https://discord.com/invite/ZKDp8U5DXZ"
+
 static const bool PCSX2_isReleaseVersion = 0;
 
 class SysCoreThread;

@@ -370,7 +370,7 @@ void Host::InitializeEarlyConsole()
 	UpdateLoggingSinks(true, false);
 }
 
-void Host::UpdateLogging()
+void Host::UpdateLogging(bool disable_system_console)
 {
 	const bool system_console_enabled = Host::GetBaseBoolSettingValue("Logging", "EnableSystemConsole", false);
 	const bool file_logging_enabled = Host::GetBaseBoolSettingValue("Logging", "EnableFileLogging", false);

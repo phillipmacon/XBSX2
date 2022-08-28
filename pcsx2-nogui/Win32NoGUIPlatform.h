@@ -30,6 +30,7 @@ public:
 	bool Initialize();
 
 	void ReportError(const std::string_view& title, const std::string_view& message) override;
+	bool ConfirmMessage(const std::string_view& title, const std::string_view& message) override;
 
 	void SetDefaultConfig(SettingsInterface& si) override;
 
@@ -37,6 +38,7 @@ public:
 	void DestroyPlatformWindow() override;
 	std::optional<WindowInfo> GetPlatformWindowInfo() override;
 	void SetPlatformWindowTitle(std::string title) override;
+	void* GetPlatformWindowHandle() override;
 
 	std::optional<u32> ConvertHostKeyboardStringToCode(const std::string_view& str) override;
 	std::optional<std::string> ConvertHostKeyboardCodeToString(u32 code) override;
@@ -48,6 +50,9 @@ public:
 	void SetFullscreen(bool enabled) override;
 
 	bool RequestRenderWindowSize(s32 new_window_width, s32 new_window_height) override;
+
+	bool OpenURL(const std::string_view& url) override;
+	bool CopyTextToClipboard(const std::string_view& text) override;
 
 private:
 	enum : u32

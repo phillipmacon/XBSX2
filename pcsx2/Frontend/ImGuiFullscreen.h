@@ -123,13 +123,12 @@ namespace ImGuiFullscreen
 	void QueueResetFocus();
 	bool ResetFocusHere();
 	bool WantsToCloseMenu();
+	void ResetCloseMenuIfNeeded();
 
 	void PushPrimaryColor();
 	void PopPrimaryColor();
 	void PushSecondaryColor();
 	void PopSecondaryColor();
-
-	bool IsCancelButtonPressed();
 
 	void DrawWindowTitle(const char* title);
 
@@ -218,6 +217,12 @@ namespace ImGuiFullscreen
 	void OpenChoiceDialog(const char* title, bool checkable, ChoiceDialogOptions options, ChoiceDialogCallback callback);
 	void CloseChoiceDialog();
 
+	using InputStringDialogCallback = std::function<void(std::string text)>;
+	bool IsInputDialogOpen();
+	void OpenInputStringDialog(
+		std::string title, std::string message, std::string caption, std::string ok_button_text, InputStringDialogCallback callback);
+	void CloseInputDialog();
+	
 	float GetNotificationVerticalPosition();
 	float GetNotificationVerticalDirection();
 	void SetNotificationVerticalPosition(float position, float direction);

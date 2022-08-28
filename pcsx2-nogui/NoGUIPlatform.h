@@ -30,6 +30,7 @@ public:
 	virtual ~NoGUIPlatform() = default;
 
 	virtual void ReportError(const std::string_view& title, const std::string_view& message) = 0;
+	//virtual bool ConfirmMessage(const std::string_view& title, const std::string_view& message) = 0;
 
 	virtual void SetDefaultConfig(SettingsInterface& si) = 0;
 
@@ -38,6 +39,7 @@ public:
 
 	virtual std::optional<WindowInfo> GetPlatformWindowInfo() = 0;
 	virtual void SetPlatformWindowTitle(std::string title) = 0;
+	//virtual void* GetPlatformWindowHandle() = 0;
 
 	virtual std::optional<u32> ConvertHostKeyboardStringToCode(const std::string_view& str) = 0;
 	virtual std::optional<std::string> ConvertHostKeyboardCodeToString(u32 code) = 0;
@@ -49,6 +51,11 @@ public:
 	virtual void SetFullscreen(bool enabled) = 0;
 
 	virtual bool RequestRenderWindowSize(s32 new_window_width, s32 new_window_height) = 0;
+	
+#ifndef _UWP
+	virtual bool OpenURL(const std::string_view& url) = 0;
+	virtual bool CopyTextToClipboard(const std::string_view& text) = 0;
+#endif
 
 #ifdef _WIN32
 	static std::unique_ptr<NoGUIPlatform> CreateWin32Platform();
@@ -56,6 +63,14 @@ public:
 
 #ifdef NOGUI_PLATFORM_WAYLAND
 	static std::unique_ptr<NoGUIPlatform> CreateWaylandPlatform();
+#endif
+
+#ifdef NOGUI_PLATFORM_X11
+	static std::unique_ptr<NoGUIPlatform> CreateX11Platform();
+#endif
+
+#ifdef NOGUI_PLATFORM_VTY
+	static std::unique_ptr<NoGUIPlatform> CreateVTYPlatform();
 #endif
 
 protected:

@@ -36,6 +36,7 @@ public:
 	bool Initialize();
 
 	void ReportError(const std::string_view& title, const std::string_view& message) override;
+	bool ConfirmMessage(const std::string_view& title, const std::string_view& message) override;
 
 	void SetDefaultConfig(SettingsInterface& si) override;
 
@@ -43,6 +44,7 @@ public:
 	void DestroyPlatformWindow() override;
 	std::optional<WindowInfo> GetPlatformWindowInfo() override;
 	void SetPlatformWindowTitle(std::string title) override;
+	void* GetPlatformWindowHandle() override;
 
 	std::optional<u32> ConvertHostKeyboardStringToCode(const std::string_view& str) override;
 	std::optional<std::string> ConvertHostKeyboardCodeToString(u32 code) override;
@@ -54,6 +56,9 @@ public:
 	void SetFullscreen(bool enabled) override;
 
 	bool RequestRenderWindowSize(s32 new_window_width, s32 new_window_height) override;
+
+	bool OpenURL(const std::string_view& url) override;
+	bool CopyTextToClipboard(const std::string_view& text) override;
 
 private:
 	void InitializeKeyMap();
@@ -109,7 +114,7 @@ private:
 	xkb_context* m_xkb_context = nullptr;
 	xkb_keymap* m_xkb_keymap = nullptr;
 	xkb_state* m_xkb_state = nullptr;
-	
+
 	std::unordered_map<s32, std::string> m_key_map;
 	std::mutex m_key_map_mutex;
 

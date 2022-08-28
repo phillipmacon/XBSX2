@@ -185,8 +185,7 @@ void VMManager::SetState(VMState state)
 
 	if (state != VMState::Stopping && (state == VMState::Paused || old_state == VMState::Paused))
 	{
-		const bool paused = (state == VMState::Paused);
-		if (paused)
+		if (state == VMState::Paused)
 		{
 			if (THREAD_VU1)
 				vu1Thread.WaitVU();
@@ -199,10 +198,8 @@ void VMManager::SetState(VMState state)
 			frameLimitReset();
 		}
 
-		SPU2SetOutputPaused(paused);
-
-		// Host notification comes last after everything else.
-		if (paused)
+		SPU2SetOutputPaused(state == VMState::Paused);
+		if (state == VMState::Paused)
 		{
 			Host::OnVMPaused();
 			FullscreenUI::OnVMPaused();
@@ -869,8 +866,6 @@ bool VMManager::Initialize(VMBootParameters boot_params)
 		Host::OnVMDestroyed();
 	};
 
-	LoadSettings();
-
 	std::string state_to_load;
 	if (!ApplyBootParameters(std::move(boot_params), &state_to_load))
 		return false;
@@ -1076,7 +1071,11 @@ void VMManager::Shutdown(bool save_resume_state)
 	DoCDVDclose();
 	FWclose();
 	FileMcd_EmuClose();
-	if (!s_gs_open_on_initialize)
+	// If the fullscreen UI is running, do a hardware reset on the GS
+	// so that the texture cache and targets are all cleared.
+	if (s_gs_open_on_initialize)
+		GetMTGS().ResetGS(true);
+	else
 		GetMTGS().WaitForClose();
 	USBshutdown();
 	SPU2shutdown();
@@ -1655,20 +1654,27 @@ void VMManager::CheckForMemoryCardConfigChanges(const Pcsx2Config& old_config)
 
 void VMManager::CheckForConfigChanges(const Pcsx2Config& old_config)
 {
-	CheckForCPUConfigChanges(old_config);
-	CheckForGSConfigChanges(old_config);
-	CheckForFramerateConfigChanges(old_config);
-	CheckForPatchConfigChanges(old_config);
-	CheckForSPU2ConfigChanges(old_config);
-	CheckForDEV9ConfigChanges(old_config);
-	CheckForMemoryCardConfigChanges(old_config);
-
-	if (EmuConfig.EnableCheats != old_config.EnableCheats ||
-		EmuConfig.EnableWideScreenPatches != old_config.EnableWideScreenPatches ||
-		EmuConfig.EnableNoInterlacingPatches != old_config.EnableNoInterlacingPatches)
+	if (HasValidVM())
 	{
-		VMManager::ReloadPatches(true, true);
+		CheckForCPUConfigChanges(old_config);
+		CheckForFramerateConfigChanges(old_config);
+		CheckForPatchConfigChanges(old_config);
+		CheckForSPU2ConfigChanges(old_config);
+		CheckForDEV9ConfigChanges(old_config);
+		CheckForMemoryCardConfigChanges(old_config);
+
+		if (EmuConfig.EnableCheats != old_config.EnableCheats ||
+			EmuConfig.EnableWideScreenPatches != old_config.EnableWideScreenPatches ||
+			EmuConfig.EnableNoInterlacingPatches != old_config.EnableNoInterlacingPatches)
+		{
+			VMManager::ReloadPatches(true, true);
+		}
 	}
+
+	// For the big picture UI, we still need to update GS settings, since it's running,
+	// and we don't update its config when we start the VM.
+	if (HasValidVM() || GetMTGS().IsOpen())
+		CheckForGSConfigChanges(old_config);
 
 }
 
@@ -1687,17 +1693,7 @@ void VMManager::ApplySettings()
 
 	const Pcsx2Config old_config(EmuConfig);
 	LoadSettings();
-
-	if (HasValidVM())
-	{
-		CheckForConfigChanges(old_config);
-	}
-	else if (GetMTGS().IsOpen())
-	{
-		// for the big picture UI, we still need to update GS settings, since it's running,
-		// and we don't update its config when we start the VM
-		CheckForGSConfigChanges(old_config);
-	}
+	CheckForConfigChanges(old_config);
 }
 
 bool VMManager::ReloadGameSettings()
@@ -1782,6 +1778,10 @@ static void HotkeySaveStateSlot(s32 slot)
 }
 
 BEGIN_HOTKEY_LIST(g_vm_manager_hotkeys)
+DEFINE_HOTKEY("OpenPauseMenu", "1. User Interface", "Open Pause Menu", [](s32 pressed) {
+	if (!pressed)
+		FullscreenUI::OpenPauseMenu();
+})
 DEFINE_HOTKEY("ToggleFrameLimit", "2. Emulator", "Toggle Frame Limit", [](s32 pressed) {
 	if (!pressed)
 	{
@@ -1828,6 +1828,10 @@ DEFINE_HOTKEY("ToggleSlowMotion", "2. Emulator", "Toggle Slow Motion", [](s32 pr
 //  	if (!pressed)
 //  		HotkeyAdjustTargetSpeed(-0.1);
 //  })
+//  DEFINE_HOTKEY("ShutdownVM", "System", "Shut Down Virtual Machine", [](s32 pressed) {
+//		if (!pressed && VMManager::HasValidVM())
+//  		Host::RequestVMShutdown(true, true, EmuConfig.SaveStateOnShutdown);
+//	})
 //  DEFINE_HOTKEY("ResetVM", "System", "Reset Virtual Machine", [](s32 pressed) {
 //  	if (!pressed && VMManager::HasValidVM())
 //  		VMManager::Reset();
@@ -1874,11 +1878,6 @@ DEFINE_HOTKEY_LOADSTATE_X(5, 05)
 
 #undef DEFINE_HOTKEY_SAVESTATE_X
 #undef DEFINE_HOTKEY_LOADSTATE_X
-
-DEFINE_HOTKEY("OpenPauseMenu", "1. User Interface", "Open Pause Menu", [](s32 pressed) {
-	if (!pressed)
-		FullscreenUI::OpenPauseMenu();
-})
 END_HOTKEY_LIST()
 
 #if defined(_WIN32) && !defined(_UWP)

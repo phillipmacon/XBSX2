@@ -536,7 +536,6 @@ u32 GameDatabaseSchema::GameEntry::applyGSHardwareFixes(Pcsx2Config::GSOptions& 
 		if (isUserHackHWFix(id) && !apply_auto_fixes)
 		{
 			if (configMatchesHWFix(config, id, value))
-				continue;
 			PatchesCon->Warning("[GameDB] Skipping GS Hardware Fix: %s to [mode=%d]", getHWFixName(id), value);
 			fmt::format_to(std::back_inserter(disabled_fixes), "{} {} = {}", disabled_fixes.empty() ? " " : "\n ", getHWFixName(id), value);
 			continue;
@@ -826,13 +825,7 @@ static bool WriteU64(std::FILE* stream, u64 dest)
 
 static s64 GetExpectedMTime()
 {
-	const std::string yaml_filename(Path::Combine(EmuFolders::Resources, GAMEDB_YAML_FILE_NAME));
-
-	FILESYSTEM_STAT_DATA yaml_sd;
-	if (!FileSystem::StatFile(yaml_filename.c_str(), &yaml_sd))
-		return -1;
-
-	return yaml_sd.ModificationTime;
+	return Host::GetResourceFileTimestamp(GAMEDB_YAML_FILE_NAME).value_or(-1);
 }
 
 bool GameDatabase::checkAndLoad(const char* cached_filename, s64 expected_mtime)

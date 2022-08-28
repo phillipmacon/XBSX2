@@ -19,11 +19,15 @@
 #include "Win32KeyNames.h"
 #include "NoGUIHost.h"
 
+#include "common/ScopedGuard.h"
 #include "common/StringUtil.h"
 #include "common/Threading.h"
 
+#include "pcsx2/Frontend/ImGuiManager.h"
 #include "pcsx2/HostSettings.h"
 #include "pcsx2/windows/resource.h"
+
+#include <shellapi.h>
 
 static constexpr LPCWSTR WINDOW_CLASS_NAME = L"PCSX2NoGUI";
 static constexpr DWORD WINDOWED_STYLE = WS_OVERLAPPEDWINDOW | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU | WS_SIZEBOX;
@@ -91,8 +95,17 @@ void Win32NoGUIPlatform::ReportError(const std::string_view& title, const std::s
 	MessageBoxW(m_hwnd, message_copy.c_str(), title_copy.c_str(), MB_ICONERROR | MB_OK);
 }
 
+bool Win32NoGUIPlatform::ConfirmMessage(const std::string_view& title, const std::string_view& message)
+{
+	const std::wstring title_copy(StringUtil::UTF8StringToWideString(title));
+	const std::wstring message_copy(StringUtil::UTF8StringToWideString(message));
+
+	return (MessageBoxW(m_hwnd, message_copy.c_str(), title_copy.c_str(), MB_ICONQUESTION | MB_YESNO) == IDYES);
+}
+
 void Win32NoGUIPlatform::SetDefaultConfig(SettingsInterface& si)
 {
+	// noop
 }
 
 bool Win32NoGUIPlatform::CreatePlatformWindow(std::string title)
@@ -165,6 +178,11 @@ void Win32NoGUIPlatform::SetPlatformWindowTitle(std::string title)
 		return;
 
 	SetWindowTextW(m_hwnd, StringUtil::UTF8StringToWideString(title).c_str());
+}
+
+void* Win32NoGUIPlatform::GetPlatformWindowHandle()
+{
+	return m_hwnd;
 }
 
 std::optional<u32> Win32NoGUIPlatform::ConvertHostKeyboardStringToCode(const std::string_view& str)
@@ -263,6 +281,36 @@ bool Win32NoGUIPlatform::RequestRenderWindowSize(s32 new_window_width, s32 new_w
 	return SetWindowPos(m_hwnd, NULL, rc.left, rc.top, new_window_width, new_window_height, SWP_SHOWWINDOW);
 }
 
+bool Win32NoGUIPlatform::OpenURL(const std::string_view& url)
+{
+	return (ShellExecuteW(nullptr, L"open", StringUtil::UTF8StringToWideString(url).c_str(), nullptr, nullptr, SW_SHOWNORMAL) != NULL);
+}
+
+bool Win32NoGUIPlatform::CopyTextToClipboard(const std::string_view& text)
+{
+	const int wlen = MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.length()), nullptr, 0);
+	if (wlen < 0)
+		return false;
+
+	if (!OpenClipboard(m_hwnd))
+		return false;
+
+	ScopedGuard clipboard_cleanup([]() { CloseClipboard(); });
+	EmptyClipboard();
+
+	const HANDLE hText = GlobalAlloc(GMEM_MOVEABLE, (wlen + 1) * sizeof(wchar_t));
+	if (hText == NULL)
+		return false;
+
+	LPWSTR mem = static_cast<LPWSTR>(GlobalLock(hText));
+	MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.length()), mem, wlen);
+	mem[wlen] = 0;
+	GlobalUnlock(hText);
+
+	SetClipboardData(CF_UNICODETEXT, hText);
+	return true;
+}
+
 LRESULT CALLBACK Win32NoGUIPlatform::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	Win32NoGUIPlatform* platform = static_cast<Win32NoGUIPlatform*>(g_nogui_window.get());
@@ -283,7 +331,23 @@ LRESULT CALLBACK Win32NoGUIPlatform::WndProc(HWND hwnd, UINT msg, WPARAM wParam,
 		case WM_KEYUP:
 		{
 			const bool pressed = (msg == WM_KEYDOWN);
-			NoGUIHost::ProcessPlatformKeyEvent(wParam, pressed);
+			NoGUIHost::ProcessPlatformKeyEvent(static_cast<s32>(wParam), pressed);
+		}
+		break;
+
+		case WM_CHAR:
+		{
+			if (ImGuiManager::WantsTextInput())
+			{
+				const WCHAR utf16[2] = {static_cast<wchar_t>(wParam), 0};
+				char utf8[8] = {};
+				const int utf8_len = WideCharToMultiByte(CP_UTF8, 0, utf16, sizeof(utf16), utf8, sizeof(utf8) - 1, nullptr, nullptr);
+				if (utf8_len > 0)
+				{
+					utf8[utf8_len] = 0;
+					NoGUIHost::ProcessPlatformTextEvent(utf8);
+				}
+			}
 		}
 		break;
 
@@ -322,6 +386,15 @@ LRESULT CALLBACK Win32NoGUIPlatform::WndProc(HWND hwnd, UINT msg, WPARAM wParam,
 		{
 			const float d = std::clamp(static_cast<float>(static_cast<s16>(HIWORD(wParam))) / static_cast<float>(WHEEL_DELTA), -1.0f, 1.0f);
 			NoGUIHost::ProcessPlatformMouseWheelEvent((msg == WM_MOUSEHWHEEL) ? d : 0.0f, (msg == WM_MOUSEWHEEL) ? d : 0.0f);
+		}
+		break;
+
+		case WM_ACTIVATEAPP:
+		{
+			if (wParam)
+				NoGUIHost::PlatformWindowFocusGained();
+			else
+				NoGUIHost::PlatformWindowFocusLost();
 		}
 		break;
 

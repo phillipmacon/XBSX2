@@ -31,6 +31,7 @@
 #include "fmt/core.h"
 #include "HostDisplay.h"
 #include "imgui_internal.h"
+#include "misc/cpp/imgui_stdlib.h"								  
 #include <cmath>
 #include <deque>
 #include <mutex>
@@ -43,6 +44,7 @@ namespace ImGuiFullscreen
 
 	static void DrawFileSelector();
 	static void DrawChoiceDialog();
+	// static void DrawInputDialog();						   
 	static void DrawBackgroundProgressDialogs(ImVec2& position, float spacing);
 	static void DrawNotifications(ImVec2& position, float spacing);
 	static void DrawToast();
@@ -99,6 +101,14 @@ namespace ImGuiFullscreen
 	static ImGuiID s_enum_choice_button_id = 0;
 	static s32 s_enum_choice_button_value = 0;
 	static bool s_enum_choice_button_set = false;
+
+	static bool s_input_dialog_open = false;
+	static std::string s_input_dialog_title;
+	static std::string s_input_dialog_message;
+	static std::string s_input_dialog_caption;
+	static std::string s_input_dialog_text;
+	static std::string s_input_dialog_ok_text;
+	static InputStringDialogCallback s_input_dialog_callback;
 
 	struct FileSelectorItem
 	{
@@ -204,6 +214,7 @@ void ImGuiFullscreen::Shutdown()
 
 	s_notifications.clear();
 	s_background_progress_dialogs.clear();
+	CloseInputDialog();			
 	s_choice_dialog_open = false;
 	s_choice_dialog_checkable = false;
 	s_choice_dialog_title = {};
@@ -447,6 +458,7 @@ void ImGuiFullscreen::EndLayout()
 {
 	DrawFileSelector();
 	DrawChoiceDialog();
+	// DrawInputDialog();			   
 
 	const float notification_margin = LayoutScale(10.0f);
 	const float spacing = LayoutScale(10.0f);
@@ -484,20 +496,28 @@ bool ImGuiFullscreen::WantsToCloseMenu()
 	// Wait for the Close button to be released, THEN pressed
 	if (s_close_button_state == 0)
 	{
-		if (!IsCancelButtonPressed())
+		if (ImGui::IsNavInputTest(ImGuiNavInput_Cancel, ImGuiNavReadMode_Pressed))
 			s_close_button_state = 1;
 	}
 	else if (s_close_button_state == 1)
 	{
-		if (IsCancelButtonPressed())
+		if (ImGui::IsNavInputTest(ImGuiNavInput_Cancel, ImGuiNavReadMode_Released))
 		{
-			s_close_button_state = 0;
-			return true;
+			s_close_button_state = 2;
+			   
 		}
 	}
-	return false;
+	return s_close_button_state > 1;
 }
 
+void ImGuiFullscreen::ResetCloseMenuIfNeeded()
+{
+	// If s_close_button_state reached the "Released" state, reset it after the tick
+	if (s_close_button_state > 1)
+	{
+		s_close_button_state = 0;
+	}
+}
 void ImGuiFullscreen::PushPrimaryColor()
 {
 	ImGui::PushStyleColor(ImGuiCol_Text, UIPrimaryTextColor);
@@ -524,12 +544,6 @@ void ImGuiFullscreen::PushSecondaryColor()
 void ImGuiFullscreen::PopSecondaryColor()
 {
 	ImGui::PopStyleColor(5);
-}
-
-
-bool ImGuiFullscreen::IsCancelButtonPressed()
-{
-	return ImGui::IsNavInputTest(ImGuiNavInput_Cancel, ImGuiNavReadMode_Pressed);
 }
 
 bool ImGuiFullscreen::BeginFullscreenColumns(const char* title)
@@ -1044,7 +1058,7 @@ bool ImGuiFullscreen::ToggleButton(
 	float t = *v ? 1.0f : 0.0f;
 	ImDrawList* dl = ImGui::GetWindowDrawList();
 	ImGuiContext& g = *GImGui;
-	if (g.LastActiveId == g.CurrentWindow->GetID(title)) // && g.LastActiveIdTimer < ANIM_SPEED)
+	if (g.LastActiveId == g.CurrentWindow->GetID(title))
 	{
 		static constexpr const float ANIM_SPEED = 0.08f;
 		float t_anim = ImSaturate(g.LastActiveIdTimer / ANIM_SPEED);
@@ -1123,8 +1137,9 @@ bool ImGuiFullscreen::ThreeWayToggleButton(
 	ImDrawList* dl = ImGui::GetWindowDrawList();
 	ImGuiContext& g = *GImGui;
 	float ANIM_SPEED = 0.08f;
-	if (g.LastActiveId == g.CurrentWindow->GetID(title)) // && g.LastActiveIdTimer < ANIM_SPEED)
+	if (g.LastActiveId == g.CurrentWindow->GetID(title))
 	{
+		static constexpr const float ANIM_SPEED = 0.8f;										  
 		float t_anim = ImSaturate(g.LastActiveIdTimer / ANIM_SPEED);
 		t = (v->has_value() ? (v->value() ? std::min(t_anim + 0.5f, 1.0f) : (1.0f - t_anim)) : (t_anim * 0.5f));
 	}
@@ -1612,7 +1627,7 @@ void ImGuiFullscreen::DrawFileSelector()
 	ImGui::PushStyleColor(ImGuiCol_TitleBgActive, UIPrimaryColor);
 	ImGui::PushStyleColor(ImGuiCol_PopupBg, UIBackgroundColor);
 
-	bool is_open = !IsCancelButtonPressed();
+	bool is_open = !WantsToCloseMenu();
 	bool directory_selected = false;
 	if (ImGui::BeginPopupModal(
 			s_file_selector_title.c_str(), &is_open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))
@@ -1728,7 +1743,7 @@ void ImGuiFullscreen::DrawChoiceDialog()
 	ImGui::PushStyleColor(ImGuiCol_TitleBgActive, UIPrimaryColor);
 	ImGui::PushStyleColor(ImGuiCol_PopupBg, UIBackgroundColor);
 
-	bool is_open = !IsCancelButtonPressed();
+	bool is_open = !WantsToCloseMenu();
 	s32 choice = -1;
 
 	if (ImGui::BeginPopupModal(
@@ -1799,6 +1814,94 @@ void ImGuiFullscreen::DrawChoiceDialog()
 	}
 }
 
+
+bool ImGuiFullscreen::IsInputDialogOpen()
+{
+	return s_input_dialog_open;
+}
+
+void ImGuiFullscreen::OpenInputStringDialog(
+	std::string title, std::string message, std::string caption, std::string ok_button_text, InputStringDialogCallback callback)
+{
+	s_input_dialog_open = true;
+	s_input_dialog_title = std::move(title);
+	s_input_dialog_message = std::move(message);
+	s_input_dialog_caption = std::move(caption);
+	s_input_dialog_ok_text = std::move(ok_button_text);
+	s_input_dialog_callback = std::move(callback);
+}
+
+//void ImGuiFullscreen::DrawInputDialog()
+//{
+//	if (!s_input_dialog_open)
+//		return;
+//
+//	ImGui::SetNextWindowSize(LayoutScale(700.0f, 0.0f));
+//	ImGui::SetNextWindowPos(ImGui::GetIO().DisplaySize * 0.5f, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+//	ImGui::OpenPopup(s_input_dialog_title.c_str());
+//
+//	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, LayoutScale(10.0f));
+//	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, LayoutScale(20.0f, 20.0f));
+//	ImGui::PushFont(g_large_font);
+//
+//	bool is_open = true;
+//	if (ImGui::BeginPopupModal(s_input_dialog_title.c_str(), &is_open,
+//			ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))
+//	{
+//		ImGui::TextWrapped("%s", s_input_dialog_message.c_str());
+//		ImGui::NewLine();
+//
+//		if (!s_input_dialog_caption.empty())
+//			ImGui::TextUnformatted(s_input_dialog_caption.c_str());
+//		ImGui::InputText("##input", &s_input_dialog_text);
+//
+//		ImGui::NewLine();
+//
+//		BeginMenuButtons();
+//
+//		const bool ok_enabled = !s_input_dialog_text.empty();
+//
+//		if (ActiveButton(s_input_dialog_ok_text.c_str(), false, ok_enabled) && ok_enabled)
+//		{
+//			// have to move out in case they open another dialog in the callback
+//			InputStringDialogCallback cb(std::move(s_input_dialog_callback));
+//			std::string text(std::move(s_input_dialog_text));
+//			CloseInputDialog();
+//			ImGui::CloseCurrentPopup();
+//			cb(std::move(text));
+//		}
+//
+//		if (ActiveButton(ICON_FA_TIMES "  Cancel", false))
+//		{
+//			CloseInputDialog();
+//
+//			ImGui::CloseCurrentPopup();
+//		}
+//
+//		EndMenuButtons();
+//
+//		ImGui::EndPopup();
+//	}
+//	if (!is_open)
+//		CloseInputDialog();
+//
+//	ImGui::PopFont();
+//	ImGui::PopStyleVar(2);
+//}
+
+void ImGuiFullscreen::CloseInputDialog()
+{
+	if (!s_input_dialog_open)
+		return;
+
+	s_input_dialog_open = false;
+	s_input_dialog_title = {};
+	s_input_dialog_message = {};
+	s_input_dialog_caption = {};
+	s_input_dialog_ok_text = {};
+	s_input_dialog_text = {};
+	s_input_dialog_callback = {};
+}
 static float s_notification_vertical_position = 0.3f;
 static float s_notification_vertical_direction = -1.0f;
 
@@ -2110,14 +2213,14 @@ void ImGuiFullscreen::DrawToast()
 	{
 		const float offset = (comb_size.x - title_size.x) * 0.5f;
 		dl->AddText(title_font, title_font->FontSize, box_pos + ImVec2(offset + padding, padding),
-			ImGui::GetColorU32(ModAlpha(UIPrimaryTextColor, alpha)), s_toast_title.c_str(), s_toast_title.c_str() + s_toast_title.length());
+			ImGui::GetColorU32(ModAlpha(UIPrimaryTextColor, alpha)), s_toast_title.c_str(), s_toast_title.c_str() + s_toast_title.length(), max_width);
 	}
 	if (!s_toast_message.empty())
 	{
 		const float offset = (comb_size.x - message_size.x) * 0.5f;
 		dl->AddText(message_font, message_font->FontSize, box_pos + ImVec2(offset + padding, padding + spacing + title_size.y),
 			ImGui::GetColorU32(ModAlpha(UIPrimaryTextColor, alpha)), s_toast_message.c_str(),
-			s_toast_message.c_str() + s_toast_message.length());
+			s_toast_message.c_str() + s_toast_message.length(), max_width);
 	}
 }
 
