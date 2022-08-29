@@ -2226,39 +2226,61 @@ void ImGuiFullscreen::DrawToast()
 
 void ImGuiFullscreen::SetTheme()
 {
-#if 1
-	// dark
-	UIBackgroundColor = HEX_TO_IMVEC4(0x160021, 0xff); // Right of Main, Left of Game List, Settings
-	UIBackgroundTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
-	UIBackgroundLineColor = HEX_TO_IMVEC4(0x160021, 0xff); // Cursor Highlight
-	UIBackgroundHighlightColor = HEX_TO_IMVEC4(0x440066, 0xff); // Cursor
-	UIPrimaryColor = HEX_TO_IMVEC4(0x1f002e, 0xff); // Settings Nav Bar
-	UIPrimaryLightColor = HEX_TO_IMVEC4(0x484848, 0xff);
-	UIPrimaryDarkColor = HEX_TO_IMVEC4(0x1f002e, 0xff); // Left of Main, Right of Game List
-	UIPrimaryTextColor = HEX_TO_IMVEC4(0x9769ff, 0xff); // Settings Nav Bar Text/Icons
-	UIDisabledColor = HEX_TO_IMVEC4(0xcccccc, 0xff); // Menu Headings Settings
-	UITextHighlightColor = HEX_TO_IMVEC4(0xffffff, 0xff); 
-	UIPrimaryLineColor = HEX_TO_IMVEC4(0xffffff, 0xff);
-	UISecondaryColor = HEX_TO_IMVEC4(0x440066, 0xff); // Scanning Bar
-	UISecondaryLightColor = HEX_TO_IMVEC4(0x440066, 0xff); // Active Buttons 
-	UISecondaryDarkColor = HEX_TO_IMVEC4(0x002171, 0xff);
-	UISecondaryTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
-#elif 1
-	// light
-	UIBackgroundColor = HEX_TO_IMVEC4(0xf5f5f6, 0xff);
-	UIBackgroundTextColor = HEX_TO_IMVEC4(0x000000, 0xff);
-	UIBackgroundLineColor = HEX_TO_IMVEC4(0xe1e2e1, 0xff);
-	UIBackgroundHighlightColor = HEX_TO_IMVEC4(0xe1e2e1, 0xff);
-	UIPrimaryColor = HEX_TO_IMVEC4(0x0d47a1, 0xff);
-	UIPrimaryLightColor = HEX_TO_IMVEC4(0x5472d3, 0xff);
-	UIPrimaryDarkColor = HEX_TO_IMVEC4(0x002171, 0xff);
-	UIPrimaryTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
-	UIDisabledColor = HEX_TO_IMVEC4(0xaaaaaa, 0xff);
-	UITextHighlightColor = HEX_TO_IMVEC4(0x8e8e8e, 0xff);
-	UIPrimaryLineColor = HEX_TO_IMVEC4(0x000000, 0xff);
-	UISecondaryColor = HEX_TO_IMVEC4(0x3d5afe, 0xff);
-	UISecondaryLightColor = HEX_TO_IMVEC4(0xc0cfff, 0xff);
-	UISecondaryDarkColor = HEX_TO_IMVEC4(0x0031ca, 0xff);
-	UISecondaryTextColor = HEX_TO_IMVEC4(0x000000, 0xff);
-#endif
+	if (theme == 0)
+	{
+		// Dark
+		UIBackgroundColor = HEX_TO_IMVEC4(0x000000, 0xff);
+		UIBackgroundTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
+		UIBackgroundLineColor = HEX_TO_IMVEC4(0x330055, 0xff);
+		UIBackgroundHighlightColor = HEX_TO_IMVEC4(0x330055, 0xff);
+		UIPrimaryColor = HEX_TO_IMVEC4(0x000000, 0xff);
+		UIPrimaryLightColor = HEX_TO_IMVEC4(0x484848, 0xff);
+		UIPrimaryDarkColor = HEX_TO_IMVEC4(0x000000, 0xff);
+		UIPrimaryTextColor = HEX_TO_IMVEC4(0x9769ff, 0xff);
+		UIDisabledColor = HEX_TO_IMVEC4(0xcccccc, 0xff);
+		UITextHighlightColor = HEX_TO_IMVEC4(0xffffff, 0xff);
+		UIPrimaryLineColor = HEX_TO_IMVEC4(0xffffff, 0xff);
+		UISecondaryColor = HEX_TO_IMVEC4(0x440066, 0xff);
+		UISecondaryLightColor = HEX_TO_IMVEC4(0x440066, 0xff);
+		UISecondaryDarkColor = HEX_TO_IMVEC4(0x002171, 0xff);
+		UISecondaryTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
+	}
+	else if (theme == 1)
+	{
+		// Purple
+		UIBackgroundColor = HEX_TO_IMVEC4(0x160021, 0xff); // Right of Main, Left of Game List, Settings
+		UIBackgroundTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
+		UIBackgroundLineColor = HEX_TO_IMVEC4(0x160021, 0xff); // Cursor Highlight
+		UIBackgroundHighlightColor = HEX_TO_IMVEC4(0x440066, 0xff); // Cursor
+		UIPrimaryColor = HEX_TO_IMVEC4(0x1f002e, 0xff); // Settings Nav Bar
+		UIPrimaryLightColor = HEX_TO_IMVEC4(0x484848, 0xff);
+		UIPrimaryDarkColor = HEX_TO_IMVEC4(0x1f002e, 0xff); // Left of Main, Right of Game List
+		UIPrimaryTextColor = HEX_TO_IMVEC4(0x9769ff, 0xff); // Settings Nav Bar Text/Icons
+		UIDisabledColor = HEX_TO_IMVEC4(0xcccccc, 0xff); // Menu Headings Settings
+		UITextHighlightColor = HEX_TO_IMVEC4(0xffffff, 0xff);
+		UIPrimaryLineColor = HEX_TO_IMVEC4(0xffffff, 0xff);
+		UISecondaryColor = HEX_TO_IMVEC4(0x440066, 0xff); // Scanning Bar
+		UISecondaryLightColor = HEX_TO_IMVEC4(0x440066, 0xff); // Active Buttons
+		UISecondaryDarkColor = HEX_TO_IMVEC4(0x002171, 0xff);
+		UISecondaryTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
+	}
+	else if (theme == 2)
+	{
+		// Light
+		UIBackgroundColor = HEX_TO_IMVEC4(0xf5f5f6, 0xff);
+		UIBackgroundTextColor = HEX_TO_IMVEC4(0x000000, 0xff);
+		UIBackgroundLineColor = HEX_TO_IMVEC4(0xe1e2e1, 0xff);
+		UIBackgroundHighlightColor = HEX_TO_IMVEC4(0xe1e2e1, 0xff);
+		UIPrimaryColor = HEX_TO_IMVEC4(0x0d47a1, 0xff);
+		UIPrimaryLightColor = HEX_TO_IMVEC4(0x5472d3, 0xff);
+		UIPrimaryDarkColor = HEX_TO_IMVEC4(0x002171, 0xff);
+		UIPrimaryTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
+		UIDisabledColor = HEX_TO_IMVEC4(0xaaaaaa, 0xff);
+		UITextHighlightColor = HEX_TO_IMVEC4(0x8e8e8e, 0xff);
+		UIPrimaryLineColor = HEX_TO_IMVEC4(0x000000, 0xff);
+		UISecondaryColor = HEX_TO_IMVEC4(0x3d5afe, 0xff);
+		UISecondaryLightColor = HEX_TO_IMVEC4(0xc0cfff, 0xff);
+		UISecondaryDarkColor = HEX_TO_IMVEC4(0x0031ca, 0xff);
+		UISecondaryTextColor = HEX_TO_IMVEC4(0x000000, 0xff);
+	}
 }
