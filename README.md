@@ -31,5 +31,21 @@ https://github.com/PCSX2/pcsx2/archive/a3eeed316a0bdcb60a445fe6237b0777f40d553b.
 
 - Networking features are enabled by default making online play much simpler for new users.
 
+- Disables the Enable XInput Source option from Controller Settings to avoid any users potentially disabling it.
+
+- Pressure Sensitive Buttons will now actually work with the Apply Pressure setting in controls, before the pressure modifier was set too high resulting in the button press being registered as a hold regardless.
+
+- When saving to a Memory Card Folder there will now be an appropriate OSD message displaying as such.
+
+- New Exploded PS2 App, Splash and Menu Icon.
+
+- Adjusted how the PAD values were stored resulting in only being able to choose between 0/1/2% instead of the intended 100%/200% for most settings.
+
+- The Back Button is no longer hard coded to be the "Go Back" button, instead you now can use the B button to close menus AND use it to go back, doing this previously wasn't possible.
+
+- The icons used on the Settings/Game Settings bar have been resized (slightly larger) and they are no longer marginally cut off on the left hand side.
+
+- The CRC code of the selected game is now displayed along side Filename, Region etc which should make confirming the CRC less inconvenient.
+
 # Known Issues
 - Some widescreen patches/cheats causing a crash when booting a game.

@@ -870,7 +870,7 @@ void FullscreenUI::DrawLandingWindow()
 
 		ImGui::SetCursorPos(ImVec2(LayoutScale(20.0f), ImGui::GetWindowHeight() - g_medium_font->FontSize - LayoutScale(20.0f)));
 		ImGui::PushFont(g_medium_font);
-		ImGui::Text(GIT_TAG);
+		ImGui::Text(GIT_REV);
 		ImGui::PopFont();
 	}
 	EndFullscreenColumnWindow();
