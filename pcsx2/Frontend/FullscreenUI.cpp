@@ -3783,6 +3783,8 @@ void FullscreenUI::DrawGameListWindow()
 				ImGuiFullscreen::ChoiceDialogOptions options = {
 					{ICON_FA_WRENCH "  Game Settings", false},
 					{ICON_FA_UPLOAD "  Load State", false},
+					{ICON_FA_FORWARD "  Fast Boot", false},
+					{ICON_FA_CLOCK "  Slow Boot", false},
 					{ICON_FA_BACKWARD "  Close Menu", false},
 				};
 
@@ -3795,6 +3797,12 @@ void FullscreenUI::DrawGameListWindow()
 								break;
 							case 1: // Load State
 								OpenLoadStateSelectorForGame(entry_path);
+								break;
+							case 2: // Fast Boot
+								DoStartPath(entry_path, std::nullopt, true);
+								break;
+							case 3: // Slow Boot
+								DoStartPath(entry_path, std::nullopt, false);
 								break;
 							default:
 								break;
