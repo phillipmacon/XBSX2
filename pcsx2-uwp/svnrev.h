@@ -1,5 +1,5 @@
-#define SVN_REV 20220829001718ll 
-#define GIT_REV "v1.7.3256-1-g461f412e9" 
-#define GIT_HASH "461f412e9da4bff318216d059d4978dda341f679" 
-#define GIT_TAG "" 
-#define GIT_TAGGED_COMMIT 0 
+#define SVN_REV 20220829021413ll 
+#define GIT_REV "" 
+#define GIT_HASH "6e0f9cd9802b8698e0359d59cdd56d1db329bb4e" 
+#define GIT_TAG "29/08/2022" 
+#define GIT_TAGGED_COMMIT 1 

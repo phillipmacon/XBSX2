@@ -1902,13 +1902,14 @@ void FullscreenUI::DrawSummarySettingsPage()
 		DoCopyGameSettings();
 	if (MenuButton(ICON_FA_TRASH "  Clear Settings", "Clears all settings set for this game."))
 		DoClearGameSettings();
+
+	EndMenuButtons();
+
 	if (WantsToCloseMenu())
 	{
 		if (ImGui::IsWindowFocused())
 			SwitchToGameList();
 	}
-
-	EndMenuButtons();
 }
 
 void FullscreenUI::DrawInterfaceSettingsPage()

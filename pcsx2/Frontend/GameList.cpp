@@ -562,7 +562,7 @@ void GameList::ScanDirectory(const char* path, bool recursive, bool only_cache, 
 		{
 			std::unique_lock lock(s_mutex);
 			if (GetEntryForPath(ffd.FileName.c_str()) ||
-				AddFileFromCache(ffd.FileName, ffd.ModificationTime) || only_cache);
+				AddFileFromCache(ffd.FileName, ffd.ModificationTime) || only_cache)
 			{
 				progress->IncrementProgressValue();
 				continue;
