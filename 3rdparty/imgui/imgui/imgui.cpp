@@ -10541,8 +10541,6 @@ static void ImGui::NavUpdateCancelRequest()
         IM_ASSERT(child_window->ChildId != 0);
         ImRect child_rect = child_window->Rect();
         FocusWindow(parent_window);
-        SetNavID(child_window->ChildId, ImGuiNavLayer_Main, 0, WindowRectAbsToRel(parent_window, child_rect));
-        NavRestoreHighlightAfterMove();
     }
     else if (g.OpenPopupStack.Size > 0)
     {

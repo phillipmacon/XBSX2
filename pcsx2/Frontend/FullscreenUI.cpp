@@ -4016,8 +4016,8 @@ void FullscreenUI::DrawAboutWindow()
 	ImGui::OpenPopup("About XBSX2");
 
 	ImGui::PushFont(g_large_font);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, LayoutScale(5.0f));
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, LayoutScale(10.0f, 10.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, LayoutScale(10.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, LayoutScale(20.0f, 20.0f));
 
 	if (ImGui::BeginPopupModal("About XBSX2", &s_about_window_open, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
 	{
