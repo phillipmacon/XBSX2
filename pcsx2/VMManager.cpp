@@ -51,6 +51,7 @@
 #include "PAD/Host/PAD.h"
 #include "Sio.h"
 #include "ps2/BiosTools.h"
+#include "Recording/InputRecordingControls.h"											 
 
 #include "DebugTools/MIPSAnalyst.h"
 #include "DebugTools/SymbolMap.h"
@@ -499,8 +500,6 @@ bool VMManager::UpdateGameSettingsLayer()
 
 	s_input_settings_interface = std::move(input_interface);
 	s_input_profile_name = std::move(input_profile_name);
-
-
 	return true;
 }
 
@@ -1009,7 +1008,6 @@ bool VMManager::Initialize(VMBootParameters boot_params)
 
 void VMManager::Shutdown(bool save_resume_state)
 {
-
 	// we'll probably already be stopping (this is how Qt calls shutdown),
 	// but just in case, so any of the stuff we call here knows we don't have a valid VM.
 	s_state.store(VMState::Stopping, std::memory_order_release);
@@ -1071,6 +1069,7 @@ void VMManager::Shutdown(bool save_resume_state)
 	DoCDVDclose();
 	FWclose();
 	FileMcd_EmuClose();
+	
 	// If the fullscreen UI is running, do a hardware reset on the GS
 	// so that the texture cache and targets are all cleared.
 	if (s_gs_open_on_initialize)
@@ -1460,7 +1459,6 @@ void VMManager::Internal::GameStartingOnCPUThread()
 void VMManager::Internal::VSyncOnCPUThread()
 {
 	// TODO: Move frame limiting here to reduce CPU usage after sleeping...
-
 	ApplyLoadedPatches(PPT_CONTINUOUSLY);
 	ApplyLoadedPatches(PPT_COMBINED_0_1);
 
@@ -1675,7 +1673,6 @@ void VMManager::CheckForConfigChanges(const Pcsx2Config& old_config)
 	// and we don't update its config when we start the VM.
 	if (HasValidVM() || GetMTGS().IsOpen())
 		CheckForGSConfigChanges(old_config);
-
 }
 
 void VMManager::ApplySettings()

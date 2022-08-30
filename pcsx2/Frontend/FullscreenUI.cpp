@@ -1948,9 +1948,6 @@ void FullscreenUI::DrawInterfaceSettingsPage()
 #endif
 	DrawToggleSetting(bsi, ICON_FA_WINDOW_MAXIMIZE "  Pause On Menu",
 		"Pauses the emulator when you open the quick menu, and unpauses when you close it.", "UI", "PauseOnMenu", true);
-	DrawToggleSetting(bsi, ICON_FA_SAVE "  Save State On Shutdown",
-		"Automatically saves the emulator state when powering down or exiting. You can then resume directly from where you left off next "
-		"time.", "EmuCore", "SaveStateOnShutdown", false);
 
 	EndMenuButtons();
 }
@@ -2478,8 +2475,8 @@ void FullscreenUI::DrawEnhancementsSettingsPage()
 				s_half_pixel_offset_options, std::size(s_half_pixel_offset_options));
 			DrawIntListSetting(bsi, "Round Sprite", "Adjusts sprite coordinates.", "EmuCore/GS", "UserHacks_round_sprite_offset", 0,
 				s_round_sprite_options, std::size(s_round_sprite_options));
-			DrawIntRangeSetting(bsi, "TC Offset X", "Adjusts target texture offsets.", "EmuCore/GS", "UserHacks_TCOffsetX", 0, -4096, 4096);
-			DrawIntRangeSetting(bsi, "TC Offset Y", "Adjusts target texture offsets.", "EmuCore/GS", "UserHacks_TCOffsetY", 0, -4096, 4096);
+			DrawIntRangeSetting(bsi, "TC Offset X", "Adjusts target texture offsets.", "EmuCore/GS", "UserHacks_TCOffsetX", 0, -1000, 1000);
+			DrawIntRangeSetting(bsi, "TC Offset Y", "Adjusts target texture offsets.", "EmuCore/GS", "UserHacks_TCOffsetY", 0, -1000, 1000);
 			DrawToggleSetting(bsi, "Align Sprite", "Fixes issues with upscaling (vertical lines) in some games.", "EmuCore/GS",
 				"UserHacks_align_sprite_X", false, manual_hw_fixes);
 			DrawToggleSetting(bsi, "Merge Sprite", "Replaces multiple post-processing sprites with a larger single sprite.", "EmuCore/GS",
@@ -3357,11 +3354,10 @@ void FullscreenUI::DrawPauseMenu(MainWindowType type)
 				if (ActiveButton(ICON_FA_SIGN_OUT_ALT "  Close Game", false))
 				{
 					// skip submenu when we can't save anyway
-					DoShutdown(false);
-					/*if (!can_load_or_save_state)
-					DoShutdown(false);
-				else
-					OpenPauseSubMenu(PauseSubMenu::Exit);*/
+					if (!can_load_or_save_state)
+						DoShutdown(false);
+					else
+						OpenPauseSubMenu(PauseSubMenu::Exit);
 				}
 
 				if (ActiveButton(ICON_FA_DOWNLOAD "  Save State", false, can_load_or_save_state))
@@ -3416,8 +3412,6 @@ void FullscreenUI::DrawPauseMenu(MainWindowType type)
 				{
 					OpenPauseSubMenu(PauseSubMenu::None);
 				}
-
-
 
 				if (ActiveButton(ICON_FA_SAVE "  Exit And Save State", false))
 					DoShutdown(true);
@@ -3782,6 +3776,7 @@ void FullscreenUI::DrawGameListWindow()
 			{
 				ImGuiFullscreen::ChoiceDialogOptions options = {
 					{ICON_FA_WRENCH "  Game Settings", false},
+					{ICON_FA_PLAY "  Resume Game", false},
 					{ICON_FA_UPLOAD "  Load State", false},
 					{ICON_FA_FORWARD "  Fast Boot", false},
 					{ICON_FA_CLOCK "  Slow Boot", false},
@@ -3795,13 +3790,16 @@ void FullscreenUI::DrawGameListWindow()
 							case 0: // Open Game Settings
 								SwitchToGameSettings(entry_path);
 								break;
-							case 1: // Load State
+							case 1: // Resume Game
+								DoStartPath(entry_path, -1);
+								break;
+							case 2: // Load State
 								OpenLoadStateSelectorForGame(entry_path);
 								break;
-							case 2: // Fast Boot
+							case 3: // Fast Boot
 								DoStartPath(entry_path, std::nullopt, true);
 								break;
-							case 3: // Slow Boot
+							case 4: // Slow Boot
 								DoStartPath(entry_path, std::nullopt, false);
 								break;
 							default:
