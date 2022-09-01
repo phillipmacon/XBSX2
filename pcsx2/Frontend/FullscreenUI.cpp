@@ -2542,8 +2542,8 @@ void FullscreenUI::DrawEnhancementsSettingsPage()
 			DrawIntListSetting(bsi, "CPU Sprite Render Size", "Uses sofware renderer to draw texture decompression-like sprites.", "EmuCore/GS",
 				"UserHacks_CPUSpriteRenderBW", 0, s_cpu_sprite_render_bw_options, std::size(s_cpu_sprite_render_bw_options));
 
-			DrawIntRangeSetting(bsi, "Skip Draw Start", "Object range to skip drawing.", "EmuCore/GS", "UserHacks_SkipDraw_Start", 0, 0, 5000);
-			DrawIntRangeSetting(bsi, "Skip Draw End", "Object range to skip drawing.", "EmuCore/GS", "UserHacks_SkipDraw_End", 0, 0, 5000);
+			DrawIntRangeSetting(bsi, "Skip Draw Start", "Object range to skip drawing.", "EmuCore/GS", "UserHacks_SkipDraw_Start", 0, 0, 100);
+			DrawIntRangeSetting(bsi, "Skip Draw End", "Object range to skip drawing.", "EmuCore/GS", "UserHacks_SkipDraw_End", 0, 0, 100);
 			DrawToggleSetting(bsi, "Auto Flush (Hardware)", "Force a primitive flush when a framebuffer is also an input texture.", "EmuCore/GS",
 				"UserHacks_AutoFlush", false, manual_hw_fixes);
 			DrawToggleSetting(bsi, "CPU Framebuffer Conversion", "Convert 4-bit and 8-bit frame buffer on the CPU instead of the GPU.",
