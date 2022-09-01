@@ -1287,12 +1287,6 @@ void GSRendererHW::Draw()
 	GSDrawingContext* context = m_context;
 	const GSLocalMemory::psm_t& tex_psm = GSLocalMemory::m_psm[m_context->TEX0.PSM];
 
-	if (!context->FRAME.FBW)
-	{
-		GL_CACHE("Skipping draw with FRAME.FBW = 0.");
-		return;
-	}
-
 	// When the format is 24bit (Z or C), DATE ceases to function.
 	// It was believed that in 24bit mode all pixels pass because alpha doesn't exist
 	// however after testing this on a PS2 it turns out nothing passes, it ignores the draw.
@@ -2485,6 +2479,8 @@ void GSRendererHW::EmulateBlending(bool& DATE_PRIMID, bool& DATE_BARRIER, bool& 
 	// Compute the blending equation to detect special case
 	const GSDevice::FeatureSupport features(g_gs_device->Features());
 	const GIFRegALPHA& ALPHA = m_context->ALPHA;
+	// AFIX: Afix factor.
+	u8 AFIX = ALPHA.FIX;
 
 	// Set blending to shader bits
 	m_conf.ps.blend_a = ALPHA.A;
@@ -2500,17 +2496,25 @@ void GSRendererHW::EmulateBlending(bool& DATE_PRIMID, bool& DATE_BARRIER, bool& 
 		m_conf.ps.blend_c = 0;
 	}
 
+	// 24 bits doesn't have an alpha channel so use 128 (1.0f) fix factor as equivalent.
+	else if (m_conf.ps.dfmt == 1 && m_conf.ps.blend_c == 1)
+	{
+		AFIX = 128;
+		m_conf.ps.blend_c = 2;
+	}
+
 	// Get alpha value
 	const bool alpha_c0_zero = (m_conf.ps.blend_c == 0 && GetAlphaMinMax().max == 0) && !IsCoverageAlpha();
 	const bool alpha_c0_one = (m_conf.ps.blend_c == 0 && (GetAlphaMinMax().min == 128) && (GetAlphaMinMax().max == 128)) || IsCoverageAlpha();
 	const bool alpha_c0_high_min_one = (m_conf.ps.blend_c == 0 && GetAlphaMinMax().min > 128) && !IsCoverageAlpha();
 	const bool alpha_c0_high_max_one = (m_conf.ps.blend_c == 0 && GetAlphaMinMax().max > 128) && !IsCoverageAlpha();
-	const bool alpha_c2_zero = (m_conf.ps.blend_c == 2 && ALPHA.FIX == 0u);
-	const bool alpha_c2_one = (m_conf.ps.blend_c == 2 && ALPHA.FIX == 128u);
-	const bool alpha_c2_high_one = (m_conf.ps.blend_c == 2 && ALPHA.FIX > 128u);
+	const bool alpha_c2_zero = (m_conf.ps.blend_c == 2 && AFIX == 0u);
+	const bool alpha_c2_one = (m_conf.ps.blend_c == 2 && AFIX == 128u);
+	const bool alpha_c2_high_one = (m_conf.ps.blend_c == 2 && AFIX > 128u);
+	const bool alpha_one = alpha_c0_one || alpha_c2_one;
 
 	// Optimize blending equations, must be done before index calculation
-	if ((m_conf.ps.blend_a == m_conf.ps.blend_b) || ((m_conf.ps.blend_b == m_conf.ps.blend_d) && (alpha_c0_one || alpha_c2_one)))
+	if ((m_conf.ps.blend_a == m_conf.ps.blend_b) || ((m_conf.ps.blend_b == m_conf.ps.blend_d) && alpha_one))
 	{
 		// Condition 1:
 		// A == B
@@ -2550,7 +2554,8 @@ void GSRendererHW::EmulateBlending(bool& DATE_PRIMID, bool& DATE_BARRIER, bool& 
 		blend_ad_alpha_masked = false;
 
 	u8 blend_index = u8(((m_conf.ps.blend_a * 3 + m_conf.ps.blend_b) * 3 + m_conf.ps.blend_c) * 3 + m_conf.ps.blend_d);
-	const int blend_flag = GSDevice::GetBlendFlags(blend_index);
+	const HWBlend blend_preliminary = GSDevice::GetBlend(blend_index, false);
+	const int blend_flag = blend_preliminary.flags;
 
 	// Re set alpha, it was modified, must be done after index calculation
 	if (blend_ad_alpha_masked)
@@ -2561,6 +2566,11 @@ void GSRendererHW::EmulateBlending(bool& DATE_PRIMID, bool& DATE_BARRIER, bool& 
 
 	// Do the multiplication in shader for blending accumulation: Cs*As + Cd or Cs*Af + Cd
 	bool accumulation_blend = !!(blend_flag & BLEND_ACCU);
+	// If alpha == 1.0, almost everything is an accumulation blend!
+	// Ones that use (1 + Alpha) can't guarante the mixed sw+hw blending this enables will give an identical result to sw due to clamping
+	// But enable for everything else that involves dst color
+	if (alpha_one && (m_conf.ps.blend_a != m_conf.ps.blend_d) && blend_preliminary.dst != GSDevice::CONST_ZERO)
+		accumulation_blend = true;
 
 	// Blending doesn't require barrier, or sampling of the rt
 	const bool blend_non_recursive = !!(blend_flag & BLEND_NO_REC);
@@ -2829,13 +2839,29 @@ void GSRendererHW::EmulateBlending(bool& DATE_PRIMID, bool& DATE_BARRIER, bool& 
 	{
 		// Require the fix alpha vlaue
 		if (m_conf.ps.blend_c == 2)
-			m_conf.cb_ps.TA_MaxDepth_Af.a = static_cast<float>(ALPHA.FIX) / 128.0f;
+			m_conf.cb_ps.TA_MaxDepth_Af.a = static_cast<float>(AFIX) / 128.0f;
 
 		const HWBlend blend = GSDevice::GetBlend(blend_index, replace_dual_src);
 		if (accumulation_blend)
 		{
 			// Keep HW blending to do the addition/subtraction
 			m_conf.blend = {true, GSDevice::CONST_ONE, GSDevice::CONST_ONE, blend.op, false, 0};
+			// Remove Cd from sw blend, it's handled in hw
+			if (m_conf.ps.blend_a == 1)
+				m_conf.ps.blend_a = 2;
+			if (m_conf.ps.blend_b == 1)
+				m_conf.ps.blend_b = 2;
+			if (m_conf.ps.blend_d == 1)
+				m_conf.ps.blend_d = 2;
+
+			if (m_conf.ps.blend_a == 2)
+			{
+				// Accumulation blend is only available in (Cs - 0)*Something + Cd, or with alpha == 1
+				ASSERT(m_conf.ps.blend_d == 2 || alpha_one);
+				// A bit of normalization
+				m_conf.ps.blend_a = m_conf.ps.blend_d;
+				m_conf.ps.blend_d = 2;
+			}
 			if (m_conf.ps.blend_a == 2)
 			{
 				// The blend unit does a reverse subtraction so it means
@@ -2844,8 +2870,6 @@ void GSRendererHW::EmulateBlending(bool& DATE_PRIMID, bool& DATE_BARRIER, bool& 
 				m_conf.ps.blend_a = m_conf.ps.blend_b;
 				m_conf.ps.blend_b = 2;
 			}
-			// Remove the addition/substraction from the SW blending
-			m_conf.ps.blend_d = 2;
 
 			// Dual source output not needed (accumulation blend replaces it with ONE).
 			m_conf.ps.no_color1 = true;
@@ -2856,7 +2880,7 @@ void GSRendererHW::EmulateBlending(bool& DATE_PRIMID, bool& DATE_BARRIER, bool& 
 		else if (blend_mix)
 		{
 			// For mixed blend, the source blend is done in the shader (so we use CONST_ONE as a factor).
-			m_conf.blend = {true, GSDevice::CONST_ONE, blend.dst, blend.op, m_conf.ps.blend_c == 2, ALPHA.FIX};
+			m_conf.blend = {true, GSDevice::CONST_ONE, blend.dst, blend.op, m_conf.ps.blend_c == 2, AFIX};
 			m_conf.ps.blend_mix = (blend.op == GSDevice::OP_REV_SUBTRACT) ? 2 : 1;
 
 			// Elide DSB colour output if not used by dest.
@@ -2952,7 +2976,7 @@ void GSRendererHW::EmulateBlending(bool& DATE_PRIMID, bool& DATE_BARRIER, bool& 
 			else if (m_conf.ps.blend_c == 2)
 			{
 				m_conf.ps.blend_c = 2;
-				m_conf.cb_ps.TA_MaxDepth_Af.a = static_cast<float>(ALPHA.FIX) / 128.0f;
+				m_conf.cb_ps.TA_MaxDepth_Af.a = static_cast<float>(AFIX) / 128.0f;
 				m_conf.ps.clr_hw = 2;
 			}
 			else // m_conf.ps.blend_c == 0
@@ -2971,18 +2995,8 @@ void GSRendererHW::EmulateBlending(bool& DATE_PRIMID, bool& DATE_BARRIER, bool& 
 			m_conf.ps.clr_hw = 6;
 			m_conf.require_one_barrier |= true;
 		}
-
-		if (m_conf.ps.dfmt == 1 && m_conf.ps.blend_c == 1)
-		{
-			// 24 bits doesn't have an alpha channel so use 1.0f fix factor as equivalent
-			const HWBlend blend(GSDevice::GetBlend(blend_index + 3, replace_dual_src)); // +3 <=> +1 on C
-			m_conf.blend = {true, blend.src, blend.dst, blend.op, true, 128};
-		}
-		else
-		{
-			const HWBlend blend(GSDevice::GetBlend(blend_index, replace_dual_src));
-			m_conf.blend = {true, blend.src, blend.dst, blend.op, m_conf.ps.blend_c == 2, ALPHA.FIX};
-		}
+		const HWBlend blend(GSDevice::GetBlend(blend_index, replace_dual_src));
+		m_conf.blend = {true, blend.src, blend.dst, blend.op, m_conf.ps.blend_c == 2, AFIX};
 
 		// Remove second color output when unused. Works around bugs in some drivers (e.g. Intel).
 		m_conf.ps.no_color1 |= !GSDevice::IsDualSourceBlendFactor(m_conf.blend.src_factor) &&
@@ -3914,8 +3928,6 @@ bool GSRendererHW::SwPrimRender()
 		if (bbox.y == bbox.w)
 			bbox.w++;
 	}
-
-	scissor.z = std::min<int>(scissor.z, (int)context->FRAME.FBW * 64); // TODO: find a game that overflows and check which one is the right behaviour
 
 	data.scissor = scissor;
 	data.bbox = bbox;
