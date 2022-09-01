@@ -631,7 +631,7 @@ void VMManager::LoadPatches(const std::string& serial, u32 crc, bool show_messag
 		}
 		else if (show_messages_when_disabled)
 		{
-			Host::AddIconOSDMessage("LoadPatches", ICON_FA_FILE_CODE, "No cheats or patches (widescreen, compatibility or others) are found / enabled.", 3.0f);
+			Host::AddIconOSDMessage("LoadPatches", ICON_FA_FILE_CODE, "No cheats or patches (widescreen, compatibility or others) are found / enabled.", 5.0f);
 		}
 	}
 }
@@ -1220,7 +1220,7 @@ bool VMManager::DoSaveState(const char* filename, s32 slot_for_message, bool zip
 	}
 	catch (Exception::BaseException& e)
 	{
-		Host::AddIconOSDMessage(std::move(osd_key), ICON_FA_EXCLAMATION_TRIANGLE, fmt::format("Failed to save state: {}.", e.DiagMsg()), 3.0f);
+		Host::AddIconOSDMessage(std::move(osd_key), ICON_FA_EXCLAMATION_TRIANGLE, fmt::format("Failed to save state: {}.", e.DiagMsg()), 5.0f);
 		return false;
 	}
 }
@@ -1234,11 +1234,11 @@ void VMManager::ZipSaveState(std::unique_ptr<ArchiveEntryList> elist,
 	if (SaveState_ZipToDisk(std::move(elist), std::move(screenshot), filename))
 	{
 		if (slot_for_message >= 0 && VMManager::HasValidVM())
-			Host::AddIconOSDMessage(std::move(osd_key), ICON_FA_SAVE, fmt::format("State saved to slot {}.", slot_for_message), 3.0f);
+			Host::AddIconOSDMessage(std::move(osd_key), ICON_FA_SAVE, fmt::format("State saved to slot {}.", slot_for_message), 5.0f);
 	}
 	else
 	{
-		Host::AddIconOSDMessage(std::move(osd_key), ICON_FA_EXCLAMATION_TRIANGLE, fmt::format("Failed to save state to slot {}.", slot_for_message), 3.0f);
+		Host::AddIconOSDMessage(std::move(osd_key), ICON_FA_EXCLAMATION_TRIANGLE, fmt::format("Failed to save state to slot {}.", slot_for_message), 5.0f);
 	}
 
 	DevCon.WriteLn("Zipping save state to '%s' took %.2f ms", filename, timer.GetTimeMilliseconds());
@@ -1295,11 +1295,11 @@ bool VMManager::LoadStateFromSlot(s32 slot)
 	const std::string filename(GetCurrentSaveStateFileName(slot));
 	if (filename.empty())
 	{
-		Host::AddIconOSDMessage("LoadStateFromSlot", ICON_FA_EXCLAMATION_TRIANGLE, fmt::format("There is no save state in slot {}.", slot), 3.0f);
+		Host::AddIconOSDMessage("LoadStateFromSlot", ICON_FA_EXCLAMATION_TRIANGLE, fmt::format("There is no save state in slot {}.", slot), 5.0f);
 		return false;
 	}
 
-	Host::AddIconOSDMessage("LoadStateFromSlot", ICON_FA_FOLDER_OPEN, fmt::format("Loading state from slot {}...", slot), 3.0f);
+	Host::AddIconOSDMessage("LoadStateFromSlot", ICON_FA_FOLDER_OPEN, fmt::format("Loading state from slot {}...", slot), 5.0f);
 	return DoLoadState(filename.c_str());
 }
 
@@ -1357,19 +1357,19 @@ bool VMManager::ChangeDisc(CDVD_SourceType source, std::string path)
 	if (result)
 	{
 		if (source == CDVD_SourceType::NoDisc)
-			Host::AddIconOSDMessage("ChangeDisc", ICON_FA_COMPACT_DISC, "Disc removed.", 3.0f);
+			Host::AddIconOSDMessage("ChangeDisc", ICON_FA_COMPACT_DISC, "Disc removed.", 5.0f);
 		else
-			Host::AddIconOSDMessage("ChangeDisc", ICON_FA_COMPACT_DISC, fmt::format("Disc changed to '{}'.", display_name), 3.0f);
+			Host::AddIconOSDMessage("ChangeDisc", ICON_FA_COMPACT_DISC, fmt::format("Disc changed to '{}'.", display_name), 5.0f);
 	}
 	else
 	{
-		Host::AddIconOSDMessage("ChangeDisc", ICON_FA_COMPACT_DISC, fmt::format("Failed to open new disc image '{}'. Reverting to old image.", display_name), 3.0f);
+		Host::AddIconOSDMessage("ChangeDisc", ICON_FA_COMPACT_DISC, fmt::format("Failed to open new disc image '{}'. Reverting to old image.", display_name), 5.0f);
 		CDVDsys_ChangeSource(old_type);
 		if (!old_path.empty())
 			CDVDsys_SetFile(old_type, std::move(old_path));
 		if (!DoCDVDopen())
 		{
-			Host::AddIconOSDMessage("ChangeDisc", ICON_FA_COMPACT_DISC, "Failed to switch back to old disc image. Removing disc.", 3.0f);
+			Host::AddIconOSDMessage("ChangeDisc", ICON_FA_COMPACT_DISC, "Failed to switch back to old disc image. Removing disc.", 5.0f);
 			CDVDsys_ChangeSource(CDVD_SourceType::NoDisc);
 			DoCDVDopen();
 		}
@@ -1738,11 +1738,11 @@ static void HotkeyCycleSaveSlot(s32 delta)
 		if (len > 0 && date_buf[len - 1] == '\n')
 			date_buf[len - 1] = 0;
 
-		Host::AddIconOSDMessage("CycleSaveSlot", ICON_FA_SEARCH, fmt::format("Save slot {} selected (last save: {}).", s_current_save_slot, date_buf), 3.0f);
+		Host::AddIconOSDMessage("CycleSaveSlot", ICON_FA_SEARCH, fmt::format("Save slot {} selected (last save: {}).", s_current_save_slot, date_buf), 5.0f);
 	}
 	else
 	{
-		Host::AddIconOSDMessage("CycleSaveSlot", ICON_FA_SEARCH, fmt::format("Save slot {} selected (no save yet).", s_current_save_slot), 3.0f);
+		Host::AddIconOSDMessage("CycleSaveSlot", ICON_FA_SEARCH, fmt::format("Save slot {} selected (no save yet).", s_current_save_slot), 5.0f);
 	}
 }
 
@@ -1750,7 +1750,7 @@ static void HotkeyLoadStateSlot(s32 slot)
 {
 	if (s_game_crc == 0)
 	{
-		Host::AddIconOSDMessage("LoadStateFromSlot", ICON_FA_EXCLAMATION_TRIANGLE, "Cannot load state from a slot without a game running.", 3.0f);
+		Host::AddIconOSDMessage("LoadStateFromSlot", ICON_FA_EXCLAMATION_TRIANGLE, "Cannot load state from a slot without a game running.", 5.0f);
 		return;
 	}
 
@@ -1767,7 +1767,7 @@ static void HotkeySaveStateSlot(s32 slot)
 {
 	if (s_game_crc == 0)
 	{
-		Host::AddIconOSDMessage("SaveStateToSlot", ICON_FA_EXCLAMATION_TRIANGLE, "Cannot save state to a slot without a game running.", 3.0f);
+		Host::AddIconOSDMessage("SaveStateToSlot", ICON_FA_EXCLAMATION_TRIANGLE, "Cannot save state to a slot without a game running.", 5.0f);
 		return;
 	}
 

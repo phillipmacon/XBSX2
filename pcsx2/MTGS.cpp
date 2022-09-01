@@ -979,7 +979,7 @@ void SysMtgsThread::SwitchRenderer(GSRendererType renderer, bool display_message
 
 	if (display_message)
 	{
-		Host::AddKeyedFormattedOSDMessage("SwitchRenderer", 3.0f, "%s Renderer.",
+		Host::AddKeyedFormattedOSDMessage("SwitchRenderer", 5.0f, "%s Renderer.",
 			Pcsx2Config::GSOptions::GetRendererName(renderer));
 	}
 

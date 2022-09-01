@@ -82,7 +82,6 @@ namespace GameDatabaseSchema
 		TexturePreloading,
 		Deinterlace,
 		CPUSpriteRenderBW,
-		TextureBarriers,
 
 		Count
 	};

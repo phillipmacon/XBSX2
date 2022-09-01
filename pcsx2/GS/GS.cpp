@@ -348,7 +348,7 @@ bool GSreopen(bool recreate_display, const Pcsx2Config::GSOptions& old_config)
 
 			Host::AddKeyedOSDMessage("GSReopenFailed", fmt::format("Failed to open {} display, switching back to {}.",
 														   HostDisplay::RenderAPIToString(GetAPIForRenderer(GSConfig.Renderer)),
-														   HostDisplay::RenderAPIToString(GetAPIForRenderer(old_config.Renderer)), 3.0f));
+														   HostDisplay::RenderAPIToString(GetAPIForRenderer(old_config.Renderer)), 5.0f));
 			GSConfig = old_config;
 		}
 	}
@@ -368,7 +368,7 @@ bool GSreopen(bool recreate_display, const Pcsx2Config::GSOptions& old_config)
 			}
 		}
 
-		Host::AddKeyedOSDMessage("GSReopenFailed","Failed to reopen, restoring old configuration.", 3.0f);
+		Host::AddKeyedOSDMessage("GSReopenFailed","Failed to reopen, restoring old configuration.", 5.0f);
 		GSConfig = old_config;
 		if (!DoGSOpen(GSConfig.Renderer, basemem))
 		{
@@ -1785,7 +1785,7 @@ void GSApp::SetConfig(const char* entry, int value)
 static void HotkeyAdjustUpscaleMultiplier(s32 delta)
 {
 	const u32 new_multiplier = static_cast<u32>(std::clamp(static_cast<s32>(EmuConfig.GS.UpscaleMultiplier) + delta, 1, 8));
-	Host::AddKeyedFormattedOSDMessage("UpscaleMultiplierChanged", 3.0f, "Upscale multiplier set to %ux.", new_multiplier);
+	Host::AddKeyedFormattedOSDMessage("UpscaleMultiplierChanged", 5.0f, "Upscale multiplier set to %ux.", new_multiplier);
 	EmuConfig.GS.UpscaleMultiplier = new_multiplier;
 
 	// this is pretty slow. we only really need to flush the TC and recompile shaders.
@@ -1796,7 +1796,7 @@ static void HotkeyAdjustUpscaleMultiplier(s32 delta)
 static void HotkeyAdjustZoom(double delta)
 {
 	const double new_zoom = std::clamp(EmuConfig.GS.Zoom + delta, 1.0, 200.0);
-	Host::AddKeyedFormattedOSDMessage("ZoomChanged", 3.0f, "Zoom set to %.1f%%.", new_zoom);
+	Host::AddKeyedFormattedOSDMessage("ZoomChanged", 5.0f, "Zoom set to %.1f%%.", new_zoom);
 	EmuConfig.GS.Zoom = new_zoom;
 
 	// no need to go through the full settings update for this
@@ -1856,7 +1856,7 @@ BEGIN_HOTKEY_LIST(g_gs_hotkeys)
 		 static constexpr std::array<const char*, CYCLE_COUNT> option_names = {{"Automatic", "Off", "Basic (Generated)", "Full (PS2)"}};
 
 		 const HWMipmapLevel new_level = static_cast<HWMipmapLevel>(((static_cast<s32>(EmuConfig.GS.HWMipmap) + 2) % CYCLE_COUNT) - 1);
-		 Host::AddKeyedFormattedOSDMessage("CycleMipmapMode", 3.0f, "Hardware mipmapping set to '%s'.", option_names[static_cast<s32>(new_level) + 1]);
+		 Host::AddKeyedFormattedOSDMessage("CycleMipmapMode", 5.0f, "Hardware mipmapping set to '%s'.", option_names[static_cast<s32>(new_level) + 1]);
 		 EmuConfig.GS.HWMipmap = new_level;
 
 		 GetMTGS().RunOnGSThread([new_level]() {
@@ -1881,7 +1881,7 @@ BEGIN_HOTKEY_LIST(g_gs_hotkeys)
 		 }};
 
 		 const GSInterlaceMode new_mode = static_cast<GSInterlaceMode>((static_cast<s32>(EmuConfig.GS.InterlaceMode) + 1) % static_cast<s32>(GSInterlaceMode::Count));
-		 Host::AddKeyedFormattedOSDMessage("CycleInterlaceMode", 3.0f, "Deinterlace mode set to '%s'.", option_names[static_cast<s32>(new_mode)]);
+		 Host::AddKeyedFormattedOSDMessage("CycleInterlaceMode", 5.0f, "Deinterlace mode set to '%s'.", option_names[static_cast<s32>(new_mode)]);
 		 EmuConfig.GS.InterlaceMode = new_mode;
 
 		 GetMTGS().RunOnGSThread([new_mode]() { GSConfig.InterlaceMode = new_mode; });
@@ -1898,7 +1898,7 @@ BEGIN_HOTKEY_LIST(g_gs_hotkeys)
 		 if (!pressed)
 		 {
 			 EmuConfig.GS.DumpReplaceableTextures = !EmuConfig.GS.DumpReplaceableTextures;
-			 Host::AddKeyedOSDMessage("ToggleTextureReplacements", EmuConfig.GS.DumpReplaceableTextures ? "Texture dumping is now enabled." : "Texture dumping is now disabled.", 3.0f);
+			 Host::AddKeyedOSDMessage("ToggleTextureReplacements", EmuConfig.GS.DumpReplaceableTextures ? "Texture dumping is now enabled." : "Texture dumping is now disabled.", 5.0f);
 			 GetMTGS().ApplySettings();
 		 }
 	 }},
@@ -1906,7 +1906,7 @@ BEGIN_HOTKEY_LIST(g_gs_hotkeys)
 		 if (!pressed)
 		 {
 			 EmuConfig.GS.LoadTextureReplacements = !EmuConfig.GS.LoadTextureReplacements;
-			 Host::AddKeyedOSDMessage("ToggleTextureReplacements", EmuConfig.GS.LoadTextureReplacements ? "Texture replacements are now enabled." : "Texture replacements are now disabled.", 3.0f);
+			 Host::AddKeyedOSDMessage("ToggleTextureReplacements", EmuConfig.GS.LoadTextureReplacements ? "Texture replacements are now enabled." : "Texture replacements are now disabled.", 5.0f);
 			 GetMTGS().ApplySettings();
 		 }
 	 }},
@@ -1915,11 +1915,11 @@ BEGIN_HOTKEY_LIST(g_gs_hotkeys)
 		 {
 			 if (!EmuConfig.GS.LoadTextureReplacements)
 			 {
-				 Host::AddKeyedOSDMessage("ReloadTextureReplacements", "Texture replacements are not enabled.", 3.0f);
+				 Host::AddKeyedOSDMessage("ReloadTextureReplacements", "Texture replacements are not enabled.", 5.0f);
 			 }
 			 else
 			 {
-				 Host::AddKeyedOSDMessage("ReloadTextureReplacements", "Reloading texture replacements...", 3.0f);
+				 Host::AddKeyedOSDMessage("ReloadTextureReplacements", "Reloading texture replacements...", 5.0f);
 				 GetMTGS().RunOnGSThread([]() {
 					 GSTextureReplacements::ReloadReplacementMap();
 				 });

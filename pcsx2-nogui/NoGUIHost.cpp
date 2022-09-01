@@ -746,13 +746,13 @@ bool Host::ConfirmMessage(const std::string_view& title, const std::string_view&
 void Host::OnInputDeviceConnected(const std::string_view& identifier, const std::string_view& device_name)
 {
 	Host::AddIconOSDMessage(fmt::format("{} Connected.", identifier), ICON_FA_GAMEPAD, 
-		fmt::format("{} Connected.", device_name, identifier), 3.0f);
+		fmt::format("{} Connected.", device_name, identifier), 5.0f);
 }
 
 void Host::OnInputDeviceDisconnected(const std::string_view& identifier)
 {
 	Host::AddIconOSDMessage(
-		fmt::format("{} Connected.", identifier), ICON_FA_GAMEPAD, fmt::format("{} Disconnected.", identifier), 3.0f);
+		fmt::format("{} Connected.", identifier), ICON_FA_GAMEPAD, fmt::format("{} Disconnected.", identifier), 5.0f);
 }
 
 HostDisplay* Host::GetHostDisplay()

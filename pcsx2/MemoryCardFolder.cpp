@@ -2334,7 +2334,7 @@ s32 FolderMemoryCardAggregator::Save(uint slot, const u8* src, u32 adr, int size
 	if (saveResult)
 	{
 		Host::AddIconOSDMessage(fmt::format("MemoryCardSave{}", slot), ICON_FA_SD_CARD, fmt::format
-			("Writing To '{}'.", Path::GetFileName(m_cards[slot].GetFolderName())), 3.0f);
+			("Writing To '{}'.", Path::GetFileName(m_cards[slot].GetFolderName())), 5.0f);
 	}
 
 	return saveResult;
