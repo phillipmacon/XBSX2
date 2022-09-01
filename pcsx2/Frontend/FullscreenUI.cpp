@@ -3873,7 +3873,7 @@ void FullscreenUI::DrawGameListWindow()
 				std::string flag_texture(fmt::format("icons/flags/{}.png", GameList::RegionToString(selected_entry->region)));
 				ImGui::TextUnformatted("Region: ");
 				ImGui::SameLine();
-				ImGui::Image(GetCachedTextureAsync(flag_texture.c_str())->GetHandle(), LayoutScale(23.0f, 16.0f));
+				ImGui::Image(GetCachedTextureAsync(flag_texture.c_str())->GetHandle(), LayoutScale(16.0f, 16.0f));
 				ImGui::SameLine();
 				ImGui::Text(" (%s)", GameList::RegionToString(selected_entry->region));
 			}
