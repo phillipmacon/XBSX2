@@ -2421,7 +2421,7 @@ void FullscreenUI::DrawDisplaySettingsPage()
 	DrawIntRangeSetting(bsi, "Vertical Stretch", "Increases or decreases the virtual picture size vertically.", "EmuCore/GS", "StretchY", 100, 10, 300, "%d%%");
 	DrawToggleSetting(bsi, "Bilinear Upscaling", "Smooths out the image when upscaling the console to the screen.", "EmuCore/GS", "linear_present", true);
 	DrawIntRectSetting(bsi, "Crop", "Crops the image, while respecting aspect ratio.", "EmuCore/GS", "CropLeft", 0, "CropTop", 0,
-		"CropRight", 0, "CropBottom", 0, 0, 720, "%dpx");
+		"CropRight", 0, "CropBottom", 0, 0, 100, "%dpx");
 	DrawToggleSetting(bsi, "Integer Upscaling ",
 		"Adds padding to the display area to ensure that the ratio between pixels on the host to pixels in the console is an integer "
 		"number. May result in a sharper image in some 2D games.",
