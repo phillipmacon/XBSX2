@@ -46,6 +46,3 @@ https://github.com/PCSX2/pcsx2/archive/a3eeed316a0bdcb60a445fe6237b0777f40d553b.
 - The icons used on the Settings/Game Settings bar have been resized (slightly larger) and they are no longer marginally cut off on the left hand side.
 
 - The CRC code of the selected game is now displayed along side Filename, Region etc which should make confirming the CRC less inconvenient and so much more!
-
-# Known Issues
-- Some widescreen patches/cheats causing a crash when booting a game.
