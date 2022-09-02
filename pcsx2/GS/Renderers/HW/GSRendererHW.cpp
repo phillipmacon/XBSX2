@@ -3747,7 +3747,7 @@ void GSRendererHW::DrawPrims(GSTexture* rt, GSTexture* ds, GSTextureCache::Sourc
 
 	if (ate_second_pass)
 	{
-#if !defined(_UWP)
+#ifndef _UWP
 		ASSERT(!m_env.PABE.PABE);
 #endif
 		memcpy(&m_conf.alpha_second_pass.ps,        &m_conf.ps,        sizeof(m_conf.ps));
