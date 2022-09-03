@@ -3330,8 +3330,8 @@ void FullscreenUI::DrawDirectorySettingsPage()
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  BIOS", "Folders", "Bios", EmuFolders::Bios);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cache", "Folders", "Cache", EmuFolders::Cache);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cheats", "Folders", "Cheats", EmuFolders::Cheats);
-	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cheats No Interlacing", "Folders", "CheatsNI", EmuFolders::CheatsNI);
-	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cheats Widescreen", "Folders", "CheatsWS", EmuFolders::CheatsWS);
+	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cheats No Interlacing", "Folders", "Cheats_NI", EmuFolders::CheatsNI);
+	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cheats Widescreen", "Folders", "Cheats_WS", EmuFolders::CheatsWS);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Covers", "Folders", "Covers", EmuFolders::Covers);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Game Settings", "Folders", "GameSettings", EmuFolders::GameSettings);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Input Profiles", "Folders", "InputProfiles", EmuFolders::InputProfiles);
