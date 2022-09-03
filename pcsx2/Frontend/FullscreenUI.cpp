@@ -283,6 +283,7 @@ namespace FullscreenUI
 	static void DoClearGameSettings();
 	static void CopyGlobalControllerSettingsToGame();
 	static void ResetControllerSettings();
+	static void ResetHotkeySettings();
 	static void DoLoadInputProfile();
 	static void DoSaveInputProfile();
 	static void DoSaveInputProfile(const std::string& name);
@@ -2911,9 +2912,18 @@ void FullscreenUI::ResetControllerSettings()
 {
 	SettingsInterface* dsi = GetEditingSettingsInterface();
 
-	PAD::SetDefaultConfig(*dsi);
+	PAD::SetDefaultControllerConfig(*dsi);
 	SetSettingsChanged(dsi);
 	ShowToast(std::string(), "Controller settings reset to default.");
+}
+
+void FullscreenUI::ResetHotkeySettings()
+{
+	SettingsInterface* dsi = GetEditingSettingsInterface();
+
+	PAD::SetDefaultHotkeyConfig(*dsi);
+	SetSettingsChanged(dsi);
+	ShowToast(std::string(), "Hotkey settings reset to default.");
 }
 
 void FullscreenUI::DoLoadInputProfile()
@@ -3036,7 +3046,7 @@ void FullscreenUI::DrawControllerSettingsPage()
 	}
 	else
 	{
-		if (MenuButton(ICON_FA_FOLDER_MINUS "  Reset Settings", "Resets all controller inputs to default (including hotkeys)."))
+		if (MenuButton(ICON_FA_FOLDER_MINUS "  Reset Settings", "Resets all controller inputs to default."))
 			ResetControllerSettings();
 	}
 	 
@@ -3278,6 +3288,9 @@ void FullscreenUI::DrawHotkeySettingsPage()
 	SettingsInterface* bsi = GetEditingSettingsInterface();
 
 	BeginMenuButtons();
+	MenuHeading("Configuration");
+	if (MenuButton(ICON_FA_FOLDER_MINUS "  Reset Settings", "Resets all hotkeys to default."))
+		ResetHotkeySettings();
 
 	InputManager::GetHotkeyList();
 

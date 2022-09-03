@@ -293,9 +293,9 @@ void NoGUIHost::SetDefaultConfig()
 	}
 
 	EmuFolders::Save(si);
-	PAD::SetDefaultConfig(si);
+	PAD::SetDefaultControllerConfig(si);
 
-	g_nogui_window->SetDefaultConfig(si);
+	g_nogui_window->SetDefaultControllerConfig(si);
 }
 
 SettingsInterface* NoGUIHost::GetBaseSettingsInterface()

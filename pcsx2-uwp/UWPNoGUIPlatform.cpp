@@ -233,7 +233,7 @@ void UWPNoGUIPlatform::ReportError(const std::string_view& title, const std::str
 	popup.ShowAsync();
 }
 
-void UWPNoGUIPlatform::SetDefaultConfig(SettingsInterface& si)
+void UWPNoGUIPlatform::SetDefaultControllerConfig(SettingsInterface& si)
 {
 	const std::string games_dir(Path::Combine(EmuFolders::DataRoot, "games"));
 	if (!FileSystem::DirectoryExists(games_dir.c_str()))
