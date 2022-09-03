@@ -1042,8 +1042,8 @@ std::vector<std::pair<std::string, std::string>> InputManager::EnumerateDevices(
 {
 	std::vector<std::pair<std::string, std::string>> ret;
 
-	ret.emplace_back("Keyboard", "Keyboard");
-	ret.emplace_back("Mouse", "Mouse");
+	// ret.emplace_back("Keyboard", "Keyboard");
+	// ret.emplace_back("Mouse", "Mouse");
 
 	for (u32 i = FIRST_EXTERNAL_INPUT_SOURCE; i < LAST_EXTERNAL_INPUT_SOURCE; i++)
 	{

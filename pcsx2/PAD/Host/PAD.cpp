@@ -297,9 +297,9 @@ void PAD::SetDefaultConfig(SettingsInterface& si)
 	si.ClearSection("Pad");
 
 	// PCSX2 Controller Settings - Global Settings
-	si.SetBoolValue("InputSources", "SDL", true);
+	si.SetBoolValue("InputSources", "SDL", false);
 	si.SetBoolValue("InputSources", "SDLControllerEnhancedMode", false);
-	si.SetBoolValue("InputSources", "XInput", false);
+	si.SetBoolValue("InputSources", "XInput", true);
 	si.SetBoolValue("InputSources", "RawInput", false);
 	si.SetBoolValue("Pad", "MultitapPort1", false);
 	si.SetBoolValue("Pad", "MultitapPort2", false);
@@ -323,12 +323,12 @@ void PAD::SetDefaultConfig(SettingsInterface& si)
 
 	// PCSX2 Controller Settings - Controller 1 / Controller 2 / ...
 	// Use the automapper to set this up.
-	MapController(si, 0, InputManager::GetGenericBindingMapping("Keyboard"));
+	MapController(si, 0, InputManager::GetGenericBindingMapping("XInput-0"));
 
 	// PCSX2 Controller Settings - Hotkeys
 
 	// PCSX2 Controller Settings - Hotkeys - General
-	// si.SetStringValue("Hotkeys", "ToggleFullscreen", "Keyboard/Alt & Keyboard/Return");
+	si.SetStringValue("Hotkeys", "OpenPauseMenu", "XInput-0/Back & XInput-0/Start");
 
 	// PCSX2 Controller Settings - Hotkeys - Graphics
 	// si.SetStringValue("Hotkeys", "CycleAspectRatio", "Keyboard/F6");

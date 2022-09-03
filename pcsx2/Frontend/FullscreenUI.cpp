@@ -2912,6 +2912,7 @@ void FullscreenUI::ResetControllerSettings()
 	SettingsInterface* dsi = GetEditingSettingsInterface();
 
 	PAD::SetDefaultConfig(*dsi);
+	SetSettingsChanged(dsi);
 	ShowToast(std::string(), "Controller settings reset to default.");
 }
 
@@ -3035,14 +3036,14 @@ void FullscreenUI::DrawControllerSettingsPage()
 	}
 	else
 	{
-		if (MenuButton(ICON_FA_FOLDER_MINUS "  Reset Settings", "Resets all configuration to defaults (including bindings)."))
+		if (MenuButton(ICON_FA_FOLDER_MINUS "  Reset Settings", "Resets all controller inputs to default (including hotkeys)."))
 			ResetControllerSettings();
 	}
-
-	if (MenuButton(ICON_FA_FOLDER_OPEN "  Load Profile", "Replaces these settings with a previously saved input profile."))
-		DoLoadInputProfile();
-	if (MenuButton(ICON_FA_SAVE "  Save Profile", "Stores the current settings to an input profile."))
-		DoSaveInputProfile();
+	 
+	 //  if (MenuButton(ICON_FA_FOLDER_OPEN "  Load Profile", "Replaces these settings with a previously saved input profile."))
+	 //  	DoLoadInputProfile();
+	 //  if (MenuButton(ICON_FA_SAVE "  Save Profile", "Stores the current settings to an input profile."))
+	 //  	DoSaveInputProfile();
 
 #ifndef _UWP
 
