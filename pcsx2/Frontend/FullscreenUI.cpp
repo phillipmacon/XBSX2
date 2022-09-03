@@ -1783,7 +1783,7 @@ void FullscreenUI::DrawSettingsWindow()
 			ICON_FA_HDD, ICON_FA_DESKTOP, ICON_FA_MAGIC, ICON_FA_HEADPHONES, ICON_FA_SD_CARD, ICON_FA_GAMEPAD, ICON_FA_KEYBOARD, /*ICON_FA_TROPHY,*/ ICON_FA_FOLDER,
 			ICON_FA_COGS};
 		static constexpr const char* per_game_icons[] = {
-			ICON_FA_LIST, ICON_FA_SLIDERS_H, ICON_FA_HDD, ICON_FA_DESKTOP, ICON_FA_MAGIC, ICON_FA_HEADPHONES, ICON_FA_SD_CARD, ICON_FA_GAMEPAD, ICON_FA_BAN};
+			ICON_FA_LIST, ICON_FA_SLIDERS_H, ICON_FA_HDD, ICON_FA_DESKTOP, ICON_FA_MAGIC, ICON_FA_HEADPHONES, ICON_FA_SD_CARD, ICON_FA_GAMEPAD, ICON_FA_COG};
 		static constexpr SettingsPage global_pages[] = {SettingsPage::Interface, SettingsPage::GameList,
 			SettingsPage::Emulation, SettingsPage::System, SettingsPage::Display, SettingsPage::Enhancements, SettingsPage::Audio, SettingsPage::MemoryCard,
 			SettingsPage::Controller, SettingsPage::Hotkey, /*SettingsPage::Achievements,*/ SettingsPage::Directory, SettingsPage::Advanced};
@@ -2723,11 +2723,9 @@ void FullscreenUI::DrawMemoryCardSettingsPage()
 	SettingsInterface* bsi = GetEditingSettingsInterface();
 
 	MenuHeading("Settings and Operations");
-	//  if (bsi, MenuButton(ICON_FA_PLUS "  Create Memory Card", "Creates a new memory card file or folder."))
-	//  	ImGui::OpenPopup("Create Memory Card");
-	//  DrawCreateMemoryCardWindow();
-
-
+	// if (bsi, MenuButton(ICON_FA_PLUS "  Create Memory Card", "Creates a new memory card file or folder."))
+	// 	ImGui::OpenPopup("Create Memory Card");
+	// DrawCreateMemoryCardWindow();
 
 	DrawToggleSetting(bsi, ICON_FA_SEARCH "  Folder Memory Card Filter",
 		"Simulates a larger memory card by filtering saves only to the current game.", "EmuCore", "McdFolderAutoManage", true);
@@ -3330,15 +3328,15 @@ void FullscreenUI::DrawDirectorySettingsPage()
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  BIOS", "Folders", "Bios", EmuFolders::Bios);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cache", "Folders", "Cache", EmuFolders::Cache);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cheats", "Folders", "Cheats", EmuFolders::Cheats);
-	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cheats No Interlacing", "Folders", "Cheats_NI", EmuFolders::CheatsNI);
-	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cheats Widescreen", "Folders", "Cheats_WS", EmuFolders::CheatsWS);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Covers", "Folders", "Covers", EmuFolders::Covers);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Game Settings", "Folders", "GameSettings", EmuFolders::GameSettings);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Input Profiles", "Folders", "InputProfiles", EmuFolders::InputProfiles);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Logs", "Folders", "Logs", EmuFolders::Logs);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Memory Card", "Folders", "MemoryCards", EmuFolders::MemoryCards);
+	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  No-Interlacing Patches", "Folders", "Cheats_NI", EmuFolders::CheatsNI);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Save States", "Folders", "Savestates", EmuFolders::Savestates);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Textures", "Folders", "Textures", EmuFolders::Textures);
+	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Widescreen Patches", "Folders", "Cheats_WS", EmuFolders::CheatsWS);
 
 	EndMenuButtons();
 }
@@ -3357,8 +3355,8 @@ void FullscreenUI::DrawAdvancedSettingsPage()
 		"EmuCore/CPU/Recompiler", "EnableEE", true);
 
 	DrawToggleSetting(bsi, "Enable EE Cache", "Enables simulation of the EE's cache. Slow.", "EmuCore/CPU/Recompiler", "EnableEECache", false);
-	DrawToggleSetting(bsi, "Enable INTC Spin Detection", "TODO.", "EmuCore/Speedhacks", "IntcStat", true);
-	DrawToggleSetting(bsi, "Enable Wait Loop Detection", "TODO.", "EmuCore/Speedhacks", "WaitLoop", true);
+	DrawToggleSetting(bsi, "Enable INTC Spin Detection", "Huge speedup for some games, with almost no compatibilty side effects.", "EmuCore/Speedhacks", "IntcStat", true);
+	DrawToggleSetting(bsi, "Enable Wait Loop Detection", "Moderate speedup for some games, with no known side effects.", "EmuCore/Speedhacks", "WaitLoop", true);
 
 
 
@@ -3366,7 +3364,7 @@ void FullscreenUI::DrawAdvancedSettingsPage()
 		"EmuCore/CPU/Recompiler", "EnableVU0", true);
 	DrawToggleSetting(bsi, "Enable VU1 Recompiler", "New Vector Unit recompiler with much improved compatibility. Recommended.",
 		"EmuCore/CPU/Recompiler", "EnableVU1", true);
-	DrawToggleSetting(bsi, "Enable VU Flag Optimization", "TODO.", "EmuCore/Speedhacks", "vuFlagHack", true);
+	DrawToggleSetting(bsi, "Enable VU Flag Optimization", "Good speedup and high compatibility, may cause graphical errors.", "EmuCore/Speedhacks", "vuFlagHack", true);
 
 
 
