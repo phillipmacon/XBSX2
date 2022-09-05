@@ -3840,7 +3840,7 @@ void FullscreenUI::PopulateGameListEntryList()
 
 	// TODO: Custom sort types
 	std::sort(s_game_list_sorted_entries.begin(), s_game_list_sorted_entries.end(),
-		[](const GameList::Entry* lhs, const GameList::Entry* rhs) { return lhs->title < rhs->title; });
+		[](const GameList::Entry* lhs, const GameList::Entry* rhs) { return lhs < rhs; });
 }
 
 void FullscreenUI::DrawGameListWindow()
@@ -3951,9 +3951,6 @@ void FullscreenUI::DrawGameListWindow()
 								OpenLoadStateSelectorForGame(entry_path);
 								break;
 							case 3: // Fast Boot
-
-
-
 								DoStartPath(entry_path, std::nullopt, true);
 								break;
 							case 4: // Slow Boot
