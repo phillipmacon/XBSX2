@@ -3329,11 +3329,10 @@ void FullscreenUI::DrawDirectorySettingsPage()
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cache", "Folders", "Cache", EmuFolders::Cache);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cheats", "Folders", "Cheats", EmuFolders::Cheats);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Covers", "Folders", "Covers", EmuFolders::Covers);
+	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Deinterlacing Patches", "Folders", "Cheats_NI", EmuFolders::CheatsNI);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Game Settings", "Folders", "GameSettings", EmuFolders::GameSettings);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Input Profiles", "Folders", "InputProfiles", EmuFolders::InputProfiles);
-	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Logs", "Folders", "Logs", EmuFolders::Logs);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Memory Card", "Folders", "MemoryCards", EmuFolders::MemoryCards);
-	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  No-Interlacing Patches", "Folders", "Cheats_NI", EmuFolders::CheatsNI);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Save States", "Folders", "Savestates", EmuFolders::Savestates);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Textures", "Folders", "Textures", EmuFolders::Textures);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Widescreen Patches", "Folders", "Cheats_WS", EmuFolders::CheatsWS);
