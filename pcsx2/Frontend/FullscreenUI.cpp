@@ -3329,13 +3329,13 @@ void FullscreenUI::DrawDirectorySettingsPage()
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cache", "Folders", "Cache", EmuFolders::Cache);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cheats", "Folders", "Cheats", EmuFolders::Cheats);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Covers", "Folders", "Covers", EmuFolders::Covers);
-	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Deinterlacing Patches", "Folders", "Cheats_NI", EmuFolders::CheatsNI);
+	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Deinterlacing Patches", "Folders", "CheatsNI", EmuFolders::CheatsNI);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Game Settings", "Folders", "GameSettings", EmuFolders::GameSettings);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Input Profiles", "Folders", "InputProfiles", EmuFolders::InputProfiles);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Memory Card", "Folders", "MemoryCards", EmuFolders::MemoryCards);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Save States", "Folders", "Savestates", EmuFolders::Savestates);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Textures", "Folders", "Textures", EmuFolders::Textures);
-	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Widescreen Patches", "Folders", "Cheats_WS", EmuFolders::CheatsWS);
+	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Widescreen Patches", "Folders", "CheatsWS", EmuFolders::CheatsWS);
 
 	EndMenuButtons();
 }
@@ -3840,7 +3840,7 @@ void FullscreenUI::PopulateGameListEntryList()
 
 	// TODO: Custom sort types
 	std::sort(s_game_list_sorted_entries.begin(), s_game_list_sorted_entries.end(),
-		[](const GameList::Entry* lhs, const GameList::Entry* rhs) { return lhs < rhs; });
+		[](const GameList::Entry* lhs, const GameList::Entry* rhs) { return lhs->title < rhs->title; });
 }
 
 void FullscreenUI::DrawGameListWindow()
