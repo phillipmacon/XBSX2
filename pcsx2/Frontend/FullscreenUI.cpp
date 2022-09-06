@@ -3332,6 +3332,7 @@ void FullscreenUI::DrawDirectorySettingsPage()
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Deinterlacing Patches", "Folders", "CheatsNI", EmuFolders::CheatsNI);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Game Settings", "Folders", "GameSettings", EmuFolders::GameSettings);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Input Profiles", "Folders", "InputProfiles", EmuFolders::InputProfiles);
+	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Logs", "Folders", "Logs", EmuFolders::Logs);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Memory Card", "Folders", "MemoryCards", EmuFolders::MemoryCards);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Save States", "Folders", "Savestates", EmuFolders::Savestates);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Textures", "Folders", "Textures", EmuFolders::Textures);
@@ -3384,9 +3385,7 @@ void FullscreenUI::DrawAdvancedSettingsPage()
 
 	MenuHeading("Logging");
 
-
-	DrawToggleSetting(bsi, "File Logging", "Writes log messages to emulog.txt.", "Logging", "EnableFileLogging", false);
-	DrawToggleSetting(bsi, "Verbose Logging", "Writes dev log messages to log sinks.", "Logging", "EnableVerbose", false, !IsDevBuild);
+	DrawToggleSetting(bsi, "File Logging", "Writes log messages to emulog.txt. [Requires a restart]", "Logging", "EnableFileLogging", false);
 	DrawToggleSetting(bsi, "Log Timestamps", "Writes timestamps alongside log messages.", "Logging", "EnableTimestamps", true);
 	DrawToggleSetting(bsi, "EE Console", "Writes debug messages from the game's EE code to the console.", "Logging", "EnableEEConsole", true);
 	DrawToggleSetting(bsi, "IOP Console", "Writes debug messages from the game's IOP code to the console.", "Logging", "EnableIOPConsole", true);
