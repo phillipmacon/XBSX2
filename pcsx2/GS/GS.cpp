@@ -1526,7 +1526,6 @@ void GSApp::Init()
 	m_default_configuration["linux_replay"]                               = "1";
 #endif
 	m_default_configuration["aa1"]                                        = "1";
-	m_default_configuration["accurate_date"]                              = "1";
 	m_default_configuration["accurate_blending_unit"]                     = "1";
 	m_default_configuration["AspectRatio"]                                = "1";
 	m_default_configuration["autoflush_sw"]                               = "1";

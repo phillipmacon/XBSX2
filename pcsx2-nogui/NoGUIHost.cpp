@@ -258,7 +258,7 @@ bool NoGUIHost::InitializeConfig()
 	if (!SetCriticalFolders())
 		return false;
 
-	const std::string path(Path::Combine(EmuFolders::Settings, "PCSX2.ini"));
+	const std::string path(Path::Combine(EmuFolders::Settings, "XBSX2.ini"));
 	s_base_settings_interface = std::make_unique<INISettingsInterface>(std::move(path));
 	Host::Internal::SetBaseSettingsLayer(s_base_settings_interface.get());
 
@@ -266,6 +266,7 @@ bool NoGUIHost::InitializeConfig()
 	if (!s_base_settings_interface->Load() || !s_base_settings_interface->GetUIntValue("UI", "SettingsVersion", &settings_version) ||
 		settings_version != SETTINGS_VERSION)
 	{
+		g_nogui_window->ReportError("Settings Reset", "Settings do not exist or are the incorrect version, resetting to defaults.");
 		SetDefaultConfig();
 		s_base_settings_interface->Save();
 	}

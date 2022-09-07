@@ -542,7 +542,6 @@ void Pcsx2Config::GSOptions::ReloadIniSettings()
 	GSSettingBool(OsdShowGSStats);
 	GSSettingBool(OsdShowIndicators);
 
-	GSSettingBoolEx(AccurateDATE, "accurate_date");
 	GSSettingBoolEx(GPUPaletteConversion, "paltex");
 	GSSettingBoolEx(AutoFlushSW, "autoflush_sw");
 	GSSettingBoolEx(PreloadFrameWithGSData, "preload_frame_with_gs_data");

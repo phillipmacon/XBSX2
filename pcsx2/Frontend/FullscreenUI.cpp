@@ -2507,8 +2507,6 @@ void FullscreenUI::DrawEnhancementsSettingsPage()
 			std::size(s_preloading_options));
 		DrawIntListSetting(bsi, "Hardware Download Mode", "Changes synchronization behavior for GS downloads.", "EmuCore/GS", "HWDownloadMode",
 			static_cast<int>(GSHardwareDownloadMode::Enabled), s_hw_download, std::size(s_hw_download));
-		DrawToggleSetting(bsi, "Accurate Destination Alpha Test", "Implement a more accurate algorithm to compute GS destination alpha testing.",
-			"EmuCore/GS", "accurate_date", true);
 		DrawToggleSetting(bsi, "Conservative Buffer Allocation",
 			"Uses a smaller framebuffer where possible to reduce VRAM bandwidth and usage. May need to be disabled to prevent FMV "
 			"flicker.",
