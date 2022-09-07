@@ -215,7 +215,7 @@ namespace FullscreenUI
 	static void DestroyResources();
 
 	static std::shared_ptr<HostDisplayTexture> s_app_icon_texture;
-	static std::array<std::shared_ptr<HostDisplayTexture>, static_cast<u32>(GameDatabaseSchema::\:Perfect)>
+	static std::array<std::shared_ptr<HostDisplayTexture>, static_cast<u32>(GameDatabaseSchema::Compatibility::Perfect)>
 		s_game_compatibility_textures;
 	static std::shared_ptr<HostDisplayTexture> s_fallback_disc_texture;
 	static std::shared_ptr<HostDisplayTexture> s_fallback_exe_texture;
