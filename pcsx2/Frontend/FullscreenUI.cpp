@@ -2165,8 +2165,8 @@ void FullscreenUI::DrawEmulationSettingsPage()
 
 	DrawToggleSetting(bsi, "Enable Cheats", "Enables loading cheats from pnach files.", "EmuCore", "EnableCheats", false);
 	DrawToggleSetting(bsi, "Enable Widescreen Patches", "Enables loading widescreen patches from pnach files.", "EmuCore", "EnableWideScreenPatches", false);
-	DrawToggleSetting(bsi, "Enable No-Interlacing Patches", "Enables loading no-interlacing patches from pnach files.", "EmuCore",
-		"EnableNoInterlacingPatches", false);
+	DrawToggleSetting(bsi, "Enable Deinterlacing Patches", "Enables loading deinterlacing patches from pnach files.", "EmuCore",
+		"EnableDeinterlacingPatches", false);
 	DrawToggleSetting(bsi, "Enable Per-Game Settings", "Enables loading ini overlays from gamesettings, or custom settings per-game.", "EmuCore",
 		"EnablePerGameSettings", true);
 	DrawToggleSetting(bsi, "Enable Host Filesystem", "Enables access to files from the host: namespace in the virtual machine.", "EmuCore", "HostFs", false);
@@ -3327,14 +3327,14 @@ void FullscreenUI::DrawDirectorySettingsPage()
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cache", "Folders", "Cache", EmuFolders::Cache);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Cheats", "Folders", "Cheats", EmuFolders::Cheats);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Covers", "Folders", "Covers", EmuFolders::Covers);
-	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Deinterlacing Patches", "Folders", "CheatsNI", EmuFolders::CheatsNI);
+	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Deinterlacing Patches", "Folders", "DeinterlacingPatches", EmuFolders::DeinterlacingPatches);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Game Settings", "Folders", "GameSettings", EmuFolders::GameSettings);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Input Profiles", "Folders", "InputProfiles", EmuFolders::InputProfiles);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Logs", "Folders", "Logs", EmuFolders::Logs);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Memory Card", "Folders", "MemoryCards", EmuFolders::MemoryCards);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Save States", "Folders", "Savestates", EmuFolders::Savestates);
 	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Textures", "Folders", "Textures", EmuFolders::Textures);
-	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Widescreen Patches", "Folders", "CheatsWS", EmuFolders::CheatsWS);
+	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN "  Widescreen Patches", "Folders", "WidescreenPatches", EmuFolders::WidescreenPatches);
 
 	EndMenuButtons();
 }

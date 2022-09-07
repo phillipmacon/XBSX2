@@ -43,8 +43,8 @@ namespace EmuFolders
 	std::string Langs;
 	std::string Logs;
 	std::string Cheats;
-	std::string CheatsWS;
-	std::string CheatsNI;
+	std::string WidescreenPatches;
+	std::string DeinterlacingPatches;
 	std::string Resources;
 	std::string Cache;
 	std::string Covers;
@@ -323,7 +323,6 @@ Pcsx2Config::GSOptions::GSOptions()
 	OsdShowIndicators = true;
 
 	HWDownloadMode = GSHardwareDownloadMode::Enabled;
-	AccurateDATE = true;
 	GPUPaletteConversion = true;
 	AutoFlushSW = true;
 	PreloadFrameWithGSData = false;
@@ -1058,7 +1057,7 @@ void Pcsx2Config::LoadSave(SettingsWrapper& wrap)
 	SettingsWrapBitBool(EnableCheats);
 	SettingsWrapBitBool(EnablePINE);
 	SettingsWrapBitBool(EnableWideScreenPatches);
-	SettingsWrapBitBool(EnableNoInterlacingPatches);
+	SettingsWrapBitBool(EnableDeinterlacingPatches);
 	SettingsWrapBitBool(EnableRecordingTools);
 #ifdef PCSX2_CORE
 	SettingsWrapBitBool(EnableGameFixes);
@@ -1211,7 +1210,7 @@ void Pcsx2Config::CopyConfig(const Pcsx2Config& cfg)
 	EnableCheats = cfg.EnableCheats;
 	EnablePINE = cfg.EnablePINE;
 	EnableWideScreenPatches = cfg.EnableWideScreenPatches;
-	EnableNoInterlacingPatches = cfg.EnableNoInterlacingPatches;
+	EnableDeinterlacingPatches = cfg.EnableDeinterlacingPatches;
 	EnableRecordingTools = cfg.EnableRecordingTools;
 	UseBOOT2Injection = cfg.UseBOOT2Injection;
 	PatchBios = cfg.PatchBios;
@@ -1239,8 +1238,8 @@ void EmuFolders::SetDefaults()
 	MemoryCards = Path::Combine(DataRoot, "memcards");
 	Logs = Path::Combine(DataRoot, "logs");
 	Cheats = Path::Combine(DataRoot, "cheats");
-	CheatsWS = Path::Combine(DataRoot, "cheats_ws");
-	CheatsNI = Path::Combine(DataRoot, "cheats_ni");
+	WidescreenPatches = Path::Combine(DataRoot, "widescreenpatches");
+	DeinterlacingPatches = Path::Combine(DataRoot, "deinterlacingpatches");
 	Covers = Path::Combine(DataRoot, "covers");
 	GameSettings = Path::Combine(DataRoot, "gamesettings");
 	Cache = Path::Combine(DataRoot, "cache");
@@ -1264,8 +1263,8 @@ void EmuFolders::LoadConfig(SettingsInterface& si)
 	MemoryCards = LoadPathFromSettings(si, DataRoot, "MemoryCards", "memcards");
 	Logs = LoadPathFromSettings(si, DataRoot, "Logs", "logs");
 	Cheats = LoadPathFromSettings(si, DataRoot, "Cheats", "cheats");
-	CheatsWS = LoadPathFromSettings(si, DataRoot, "CheatsWS", "cheats_ws");
-	CheatsNI = LoadPathFromSettings(si, DataRoot, "CheatsNI", "cheats_ni");
+	WidescreenPatches = LoadPathFromSettings(si, DataRoot, "WidescreenPatches", "widescreenpatches");
+	DeinterlacingPatches = LoadPathFromSettings(si, DataRoot, "DeinterlacingPatches", "deinterlacingpatches");
 	Covers = LoadPathFromSettings(si, DataRoot, "Covers", "covers");
 	GameSettings = LoadPathFromSettings(si, DataRoot, "GameSettings", "gamesettings");
 	Cache = LoadPathFromSettings(si, DataRoot, "Cache", "cache");
@@ -1278,8 +1277,8 @@ void EmuFolders::LoadConfig(SettingsInterface& si)
 	Console.WriteLn("MemoryCards Directory: %s", MemoryCards.c_str());
 	Console.WriteLn("Logs Directory: %s", Logs.c_str());
 	Console.WriteLn("Cheats Directory: %s", Cheats.c_str());
-	Console.WriteLn("CheatsWS Directory: %s", CheatsWS.c_str());
-	Console.WriteLn("CheatsNI Directory: %s", CheatsNI.c_str());
+	Console.WriteLn("WidescreenPatches Directory: %s", WidescreenPatches.c_str());
+	Console.WriteLn("DeinterlacingPatches Directory: %s", DeinterlacingPatches.c_str());
 	Console.WriteLn("Covers Directory: %s", Covers.c_str());
 	Console.WriteLn("Game Settings Directory: %s", GameSettings.c_str());
 	Console.WriteLn("Cache Directory: %s", Cache.c_str());
@@ -1296,8 +1295,8 @@ void EmuFolders::Save(SettingsInterface& si)
 	si.SetStringValue("Folders", "MemoryCards", Path::MakeRelative(MemoryCards, DataRoot).c_str());
 	si.SetStringValue("Folders", "Logs", Path::MakeRelative(Logs, DataRoot).c_str());
 	si.SetStringValue("Folders", "Cheats", Path::MakeRelative(Cheats, DataRoot).c_str());
-	si.SetStringValue("Folders", "CheatsWS", Path::MakeRelative(CheatsWS, DataRoot).c_str());
-	si.SetStringValue("Folders", "CheatsNI", Path::MakeRelative(CheatsNI, DataRoot).c_str());
+	si.SetStringValue("Folders", "WidescreenPatches", Path::MakeRelative(WidescreenPatches, DataRoot).c_str());
+	si.SetStringValue("Folders", "DeinterlacingPatches", Path::MakeRelative(DeinterlacingPatches, DataRoot).c_str());
 	si.SetStringValue("Folders", "Cache", Path::MakeRelative(Cache, DataRoot).c_str());
 	si.SetStringValue("Folders", "Textures", Path::MakeRelative(Textures, DataRoot).c_str());
 	si.SetStringValue("Folders", "InputProfiles", Path::MakeRelative(InputProfiles, DataRoot).c_str());
@@ -1312,8 +1311,8 @@ bool EmuFolders::EnsureFoldersExist()
 	result = FileSystem::CreateDirectoryPath(MemoryCards.c_str(), false) && result;
 	result = FileSystem::CreateDirectoryPath(Logs.c_str(), false) && result;
 	result = FileSystem::CreateDirectoryPath(Cheats.c_str(), false) && result;
-	result = FileSystem::CreateDirectoryPath(CheatsWS.c_str(), false) && result;
-	result = FileSystem::CreateDirectoryPath(CheatsNI.c_str(), false) && result;
+	result = FileSystem::CreateDirectoryPath(WidescreenPatches.c_str(), false) && result;
+	result = FileSystem::CreateDirectoryPath(DeinterlacingPatches.c_str(), false) && result;
 	result = FileSystem::CreateDirectoryPath(Covers.c_str(), false) && result;
 	result = FileSystem::CreateDirectoryPath(GameSettings.c_str(), false) && result;
 	result = FileSystem::CreateDirectoryPath(Cache.c_str(), false) && result;

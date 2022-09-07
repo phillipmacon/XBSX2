@@ -328,7 +328,7 @@ void VMManager::LoadSettings()
 	EmuConfig.GS.MaskUserHacks();
 	EmuConfig.GS.MaskUpscalingHacks();
 
-	// Disable interlacing if we have no-interlacing patches active.
+	// Disable interlacing if we have deinterlacing patches active.
 	if (s_active_no_interlacing_patches > 0 && EmuConfig.GS.InterlaceMode == GSInterlaceMode::Automatic)
 		EmuConfig.GS.InterlaceMode = GSInterlaceMode::Off;
 
@@ -540,9 +540,9 @@ void VMManager::LoadPatches(const std::string& serial, u32 crc, bool show_messag
 	// wide screen patches
 	if (EmuConfig.EnableWideScreenPatches && crc != 0)
 	{
-		if (s_active_widescreen_patches = LoadPatchesFromDir(crc_string, EmuFolders::CheatsWS, "Widescreen hacks", false))
+		if (s_active_widescreen_patches = LoadPatchesFromDir(crc_string, EmuFolders::WidescreenPatches, "Widescreen hacks", false))
 		{
-			Console.WriteLn(Color_Gray, "Found widescreen patches in the cheats_ws folder --> skipping cheats_ws.zip");
+			Console.WriteLn(Color_Gray, "Found widescreen patches in the patches folder --> skipping the zip file.");
 		}
 		else
 		{
@@ -559,7 +559,7 @@ void VMManager::LoadPatches(const std::string& serial, u32 crc, bool show_messag
 			if (!s_widescreen_cheats_data.empty())
 			{
 				s_active_widescreen_patches = LoadPatchesFromZip(crc_string, s_widescreen_cheats_data.data(), s_widescreen_cheats_data.size());
-				PatchesCon->WriteLn(Color_Green, "(Wide Screen Cheats DB) Patches Loaded: %d", s_active_widescreen_patches);
+				PatchesCon->WriteLn(Color_Green, "(Widescreen DB) Patches Loaded: %d", s_active_widescreen_patches);
 			}
 		}
 
@@ -579,12 +579,12 @@ void VMManager::LoadPatches(const std::string& serial, u32 crc, bool show_messag
 		}
 	}
 
-	// no-interlacing patches
-	if (EmuConfig.EnableNoInterlacingPatches && crc != 0)
+	// Deinterlacing patches
+	if (EmuConfig.EnableDeinterlacingPatches && crc != 0)
 	{
-		if (s_active_no_interlacing_patches = LoadPatchesFromDir(crc_string, EmuFolders::CheatsNI, "No-interlacing patches", false))
+		if (s_active_no_interlacing_patches = LoadPatchesFromDir(crc_string, EmuFolders::DeinterlacingPatches, "Deinterlacing patches", false))
 		{
-			Console.WriteLn(Color_Gray, "Found no-interlacing patches in the cheats_ni folder --> skipping cheats_ni.zip");
+			Console.WriteLn(Color_Gray, "Found deinterlacing patches in the patches folder --> skipping the zip file.");
 		}
 		else
 		{
@@ -601,13 +601,13 @@ void VMManager::LoadPatches(const std::string& serial, u32 crc, bool show_messag
 			if (!s_no_interlacing_cheats_data.empty())
 			{
 				s_active_no_interlacing_patches = LoadPatchesFromZip(crc_string, s_no_interlacing_cheats_data.data(), s_no_interlacing_cheats_data.size());
-				PatchesCon->WriteLn(Color_Green, "(No-Interlacing Cheats DB) Patches Loaded: %u", s_active_no_interlacing_patches);
+				PatchesCon->WriteLn(Color_Green, "(Deinterlacing DB) Patches Loaded: %u", s_active_no_interlacing_patches);
 			}
 		}
 
 		if (s_active_no_interlacing_patches > 0)
 		{
-			fmt::format_to(std::back_inserter(message), "{}{} no-interlacing patches", (patch_count > 0 || cheat_count > 0 || s_active_widescreen_patches > 0) ? " and " : "", s_active_no_interlacing_patches);
+			fmt::format_to(std::back_inserter(message), "{}{} deinterlacing patches", (patch_count > 0 || cheat_count > 0 || s_active_widescreen_patches > 0) ? " and " : "", s_active_no_interlacing_patches);
 
 			// Disable interlacing in GS if active.
 			if (EmuConfig.GS.InterlaceMode == GSInterlaceMode::Automatic)
@@ -631,7 +631,7 @@ void VMManager::LoadPatches(const std::string& serial, u32 crc, bool show_messag
 		}
 		else if (show_messages_when_disabled)
 		{
-			Host::AddIconOSDMessage("LoadPatches", ICON_FA_FILE_CODE, "No cheats or patches (widescreen, compatibility or others) are found / enabled.", 5.0f);
+			Host::AddIconOSDMessage("LoadPatches", ICON_FA_FILE_CODE, "No cheats or patches are found or enabled.", 5.0f);
 		}
 	}
 }
@@ -1663,7 +1663,7 @@ void VMManager::CheckForConfigChanges(const Pcsx2Config& old_config)
 
 		if (EmuConfig.EnableCheats != old_config.EnableCheats ||
 			EmuConfig.EnableWideScreenPatches != old_config.EnableWideScreenPatches ||
-			EmuConfig.EnableNoInterlacingPatches != old_config.EnableNoInterlacingPatches)
+			EmuConfig.EnableDeinterlacingPatches != old_config.EnableDeinterlacingPatches)
 		{
 			VMManager::ReloadPatches(true, true);
 		}

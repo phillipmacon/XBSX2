@@ -211,8 +211,8 @@ void Host::Internal::SetInputSettingsLayer(SettingsInterface* sif)
 void Host::Internal::UpdateEmuFolders()
 {
 	const std::string old_cheats_directory(EmuFolders::Cheats);
-	const std::string old_cheats_ws_directory(EmuFolders::CheatsWS);
-	const std::string old_cheats_ni_directory(EmuFolders::CheatsNI);
+	const std::string old_widescreenpatches_directory(EmuFolders::WidescreenPatches);
+	const std::string old_deinterlacingpatches_directory(EmuFolders::DeinterlacingPatches);
 	const std::string old_memcards_directory(EmuFolders::MemoryCards);
 	const std::string old_textures_directory(EmuFolders::Textures);
 
@@ -222,8 +222,8 @@ void Host::Internal::UpdateEmuFolders()
 	if (VMManager::HasValidVM())
 	{
 		if (EmuFolders::Cheats != old_cheats_directory ||
-			EmuFolders::CheatsWS != old_cheats_ws_directory ||
-			EmuFolders::CheatsNI != old_cheats_ni_directory)
+			EmuFolders::WidescreenPatches != old_widescreenpatches_directory ||
+			EmuFolders::DeinterlacingPatches != old_deinterlacingpatches_directory)
 		{
 			VMManager::ReloadPatches(true, true);
 		}
