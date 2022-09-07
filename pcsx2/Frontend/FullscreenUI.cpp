@@ -215,7 +215,7 @@ namespace FullscreenUI
 	static void DestroyResources();
 
 	static std::shared_ptr<HostDisplayTexture> s_app_icon_texture;
-	static std::array<std::shared_ptr<HostDisplayTexture>, static_cast<u32>(GameDatabaseSchema::Compatibility::Perfect)>
+	static std::array<std::shared_ptr<HostDisplayTexture>, static_cast<u32>(GameDatabaseSchema::\:Perfect)>
 		s_game_compatibility_textures;
 	static std::shared_ptr<HostDisplayTexture> s_fallback_disc_texture;
 	static std::shared_ptr<HostDisplayTexture> s_fallback_exe_texture;
@@ -4028,7 +4028,7 @@ void FullscreenUI::DrawGameListWindow()
 				ImGui::SameLine();
 				ImGui::Image(GetCachedTextureAsync(flag_texture.c_str())->GetHandle(), LayoutScale(20.0f, 20.0f));
 				ImGui::SameLine();
-				ImGui::Text(" (%s)", GameList::RegionToString(selected_entry->region));
+				ImGui::Text(" %s", GameList::RegionToString(selected_entry->region));
 			}
 
 			// compatibility
@@ -4039,8 +4039,10 @@ void FullscreenUI::DrawGameListWindow()
 				ImGui::Image(s_game_compatibility_textures[static_cast<u32>(selected_entry->compatibility_rating) - 1]->GetHandle(),
 					LayoutScale(64.0f, 16.0f));
 				ImGui::SameLine();
+				ImGui::Text(" ");
+				ImGui::SameLine();
 			}
-			ImGui::Text(" (%s)", GameList::EntryCompatibilityRatingToString(selected_entry->compatibility_rating));
+			ImGui::Text("%s", GameList::EntryCompatibilityRatingToString(selected_entry->compatibility_rating));
 
 			// size
 			ImGui::Text("Size: %.2f MB", static_cast<float>(selected_entry->total_size) / 1048576.0f);
