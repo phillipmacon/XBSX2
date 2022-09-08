@@ -1,5 +1,5 @@
 #pragma once
-#include "Pcsx2Defs.h"
+#include "Xbsx2Defs.h"
 #include <cmath>
 
 // From https://github.com/nicolausYes/easing-functions/blob/master/src/easing.cpp

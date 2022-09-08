@@ -109,9 +109,9 @@ msgstr ""
 #: pcsx2/Elfheader.cpp:165
 msgid ""
 "If loading from an ISO image, this error may be caused by an unsupported ISO "
-"image type or a bug in PCSX2 ISO image support."
+"image type or a bug in XBSX2 isO image support."
 msgstr ""
-"ISO 이미지에서 불러올 경우, 이 오류는 아마 PCSX2 ISO 이미지 지원에 지원되지 "
+"ISO 이미지에서 불러올 경우, 이 오류는 아마 XBSX2 isO 이미지 지원에 지원되지 "
 "않는 ISO 이미지 종류 또는 버그로 인해 발생합니다."
 
 #: pcsx2/MTGS.cpp:877

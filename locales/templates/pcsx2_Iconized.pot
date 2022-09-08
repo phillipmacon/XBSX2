@@ -35,7 +35,7 @@ msgid "This recompiler was unable to reserve contiguous memory required for inte
 msgstr ""
 
 #: pcsx2/System.cpp:358
-msgid "PCSX2 is unable to allocate memory needed for the PS2 virtual machine. Close out some memory hogging background tasks and try again."
+msgid "XBSX2 is unable to allocate memory needed for the PS2 virtual machine. Close out some memory hogging background tasks and try again."
 msgstr ""
 
 #: pcsx2/gui/AppInit.cpp:163

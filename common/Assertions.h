@@ -1,21 +1,20 @@
-/*  PCSX2 - PS2 Emulator for PCs
- *  Copyright (C) 2002-2010  PCSX2 Dev Team
+/*  XBSX2 - PS2 Emulator for Xbox Consoles
  *
- *  PCSX2 is free software: you can redistribute it and/or modify it under the terms
+ *  XBSX2 is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU Lesser General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
  *
- *  PCSX2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  XBSX2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License along with PCSX2.
+ *  You should have received a copy of the GNU General Public License along with XBSX2.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
 
-#include "common/Pcsx2Defs.h"
+#include "common/Xbsx2Defs.h"
 
 #include <string>
 
@@ -75,7 +74,7 @@ extern void pxOnAssertFail(const char* file, int line, const char* func, const c
 #define pxAssumeRel(cond, msg) ((void)((!likely(cond)) && (pxOnAssertFail(__FILE__, __LINE__, __pxFUNCTION__, msg), false)))
 #define pxFailRel(msg) pxAssertRel(false, msg)
 
-#if defined(PCSX2_DEBUG)
+#if defined(XBSX2_DEBUG)
 
 #define pxAssertMsg(cond, msg) pxAssertRel(cond, msg)
 #define pxAssertDev(cond, msg) pxAssertMsg(cond, msg)
@@ -86,7 +85,7 @@ extern void pxOnAssertFail(const char* file, int line, const char* func, const c
 #define pxFail(msg) pxAssertMsg(false, msg)
 #define pxFailDev(msg) pxAssertDev(false, msg)
 
-#elif defined(PCSX2_DEVBUILD)
+#elif defined(XBSX2_DEVBUILD)
 
 // Devel builds now will give you a release-mode assertion dialog window if any of the
 // following macro's 'cond' field is false.

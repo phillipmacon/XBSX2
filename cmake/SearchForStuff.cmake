@@ -14,7 +14,7 @@ if (WIN32)
 	add_subdirectory(3rdparty/pthreads4w EXCLUDE_FROM_ALL)
 	add_subdirectory(3rdparty/soundtouch EXCLUDE_FROM_ALL)
 	add_subdirectory(3rdparty/wil EXCLUDE_FROM_ALL)
-	if (NOT PCSX2_CORE)
+	if (NOT XBSX2_CORE)
 		add_subdirectory(3rdparty/wxwidgets3.0 EXCLUDE_FROM_ALL)
 	endif()
 	add_subdirectory(3rdparty/xz EXCLUDE_FROM_ALL)
@@ -39,7 +39,7 @@ else()
 	find_package(PNG REQUIRED)
 	find_package(Vtune)
 
-	if(NOT PCSX2_CORE)
+	if(NOT XBSX2_CORE)
 		# Does not require the module (allow to compile non-wx plugins)
 		# Force the unicode build (the variable is only supported on cmake 2.8.3 and above)
 		# Warning do not put any double-quote for the argument...
@@ -193,7 +193,7 @@ endif()
 #----------------------------------------
 include(ApiValidation)
 
-if(NOT PCSX2_CORE)
+if(NOT XBSX2_CORE)
 	WX_vs_SDL()
 endif()
 

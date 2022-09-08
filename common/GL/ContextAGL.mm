@@ -1,11 +1,11 @@
-/*  PCSX2 - PS2 Emulator for PCs
+/*  XBSX2 - PS2 Emulator for Xbox Consoles
  *  Copyright (C) 2002-2021  PCSX2 Dev Team
  *
- *  PCSX2 is free software: you can redistribute it and/or modify it under the terms
+ *  XBSX2 is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU Lesser General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
  *
- *  PCSX2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  XBSX2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
@@ -210,7 +210,7 @@ namespace GL
 			return;
 		}
 
-#ifdef PCSX2_CORE
+#ifdef XBSX2_CORE
 		m_view = (__bridge NSView*)m_wi.window_handle;
 #else
 		// Drawing to wx's wxView somehow causes fighting between us and wx, resulting in massive CPU usage on the main thread and no image
@@ -230,7 +230,7 @@ namespace GL
 
 	void ContextAGL::CleanupView()
 	{
-#ifndef PCSX2_CORE
+#ifndef XBSX2_CORE
 		if (![NSThread isMainThread])
 		{
 			dispatch_sync(dispatch_get_main_queue(), [this]{ CleanupView(); });

@@ -65,9 +65,9 @@ endif()
 if(PACKAGE_MODE)
 	# set categories depending on system/distribution in pcsx2.desktop
 	if(openSUSE)
-		set(PCSX2_MENU_CATEGORIES "System;Emulator;")
+		set(XBSX2_MENU_CATEGORIES "System;Emulator;")
 	else()
-		set(PCSX2_MENU_CATEGORIES "Game;Emulator;")
+		set(XBSX2_MENU_CATEGORIES "Game;Emulator;")
 	endif()
 	configure_file("${CMAKE_SOURCE_DIR}/linux_various/PCSX2.desktop.in" "${CMAKE_BINARY_DIR}/linux_various/PCSX2.desktop" @ONLY)
 

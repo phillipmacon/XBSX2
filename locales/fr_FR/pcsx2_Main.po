@@ -113,7 +113,7 @@ msgstr ""
 #: pcsx2/Elfheader.cpp:165
 msgid ""
 "If loading from an ISO image, this error may be caused by an unsupported ISO "
-"image type or a bug in PCSX2 ISO image support."
+"image type or a bug in XBSX2 isO image support."
 msgstr ""
 "Si cette erreur se produit à la suite du montage d'une image ISO, c'est que "
 "le format semble ne pas être pris en charge par PCSX2, ou bien il s'agit "

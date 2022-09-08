@@ -10,7 +10,7 @@
 #-------------------------------------------------------------------------------
 
 # Extra preprocessor definitions that will be added to all pcsx2 builds
-set(PCSX2_DEFS "")
+set(XBSX2_DEFS "")
 
 #-------------------------------------------------------------------------------
 # Misc option
@@ -23,7 +23,7 @@ optional_system_library(ryml)
 optional_system_library(zstd)
 optional_system_library(libzip)
 optional_system_library(SDL2)
-option(LTO_PCSX2_CORE "Enable LTO/IPO/LTCG on the subset of pcsx2 that benefits most from it but not anything else")
+option(LTO_XBSX2_CORE "Enable LTO/IPO/LTCG on the subset of pcsx2 that benefits most from it but not anything else")
 
 if(WIN32)
 	set(DEFAULT_NATIVE_TOOLS ON)
@@ -147,7 +147,7 @@ endif()
 
 # Architecture bitness detection
 include(TargetArch)
-target_architecture(PCSX2_TARGET_ARCHITECTURES)
+target_architecture(XBSX2_TARGET_ARCHITECTURES)
 if(${PCSX2_TARGET_ARCHITECTURES} MATCHES "x86_64")
 	message(STATUS "Compiling a ${PCSX2_TARGET_ARCHITECTURES} build on a ${CMAKE_HOST_SYSTEM_PROCESSOR} host.")
 else()
@@ -284,8 +284,8 @@ if(USE_PGO_OPTIMIZE)
 endif()
 
 list(APPEND PCSX2_DEFS
-	"$<$<CONFIG:Debug>:PCSX2_DEVBUILD;PCSX2_DEBUG;_DEBUG>"
-	"$<$<CONFIG:Devel>:PCSX2_DEVBUILD;_DEVEL>")
+	"$<$<CONFIG:Debug>:XBSX2_DEVBUILD;XBSX2_DEBUG;_DEBUG>"
+	"$<$<CONFIG:Devel>:XBSX2_DEVBUILD;_DEVEL>")
 
 if (USE_ASAN)
 	add_compile_options(-fsanitize=address)
@@ -297,7 +297,7 @@ if(USE_CLANG AND TIMETRACE)
 	add_compile_options(-ftime-trace)
 endif()
 
-set(PCSX2_WARNINGS ${DEFAULT_WARNINGS} ${AGGRESSIVE_WARNING})
+set(XBSX2_WARNINGS ${DEFAULT_WARNINGS} ${AGGRESSIVE_WARNING})
 
 if(CMAKE_BUILD_STRIP)
 	add_link_options(-s)
@@ -305,12 +305,12 @@ endif()
 
 if(QT_BUILD OR NOGUI_BUILD)
 	# We want the core PCSX2 library.
-	set(PCSX2_CORE TRUE)
+	set(XBSX2_CORE TRUE)
 endif()
 
 # Enable special stuff for CI builds
 if("$ENV{CI}" STREQUAL "true")
-	list(APPEND PCSX2_DEFS PCSX2_CI)
+	list(APPEND PCSX2_DEFS XBSX2_CI)
 endif()
 
 #-------------------------------------------------------------------------------

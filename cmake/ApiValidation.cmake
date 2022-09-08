@@ -84,7 +84,7 @@ int main()
 }
 ")
 
-if (NOT PCSX2_CORE)
+if (NOT XBSX2_CORE)
 	function(WX_vs_SDL)
 		file(WRITE "${CMAKE_BINARY_DIR}/wx_sdl.c" "${wx_sdl_c_code}")
 		enable_language(C)

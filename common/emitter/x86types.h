@@ -1,15 +1,14 @@
-/*  PCSX2 - PS2 Emulator for PCs
- *  Copyright (C) 2002-2010  PCSX2 Dev Team
+/*  XBSX2 - PS2 Emulator for Xbox Consoles
  *
- *  PCSX2 is free software: you can redistribute it and/or modify it under the terms
+ *  XBSX2 is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU Lesser General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
  *
- *  PCSX2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  XBSX2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License along with PCSX2.
+ *  You should have received a copy of the GNU General Public License along with XBSX2.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -17,7 +16,7 @@
 
 #include "common/Threading.h"
 #include "common/Assertions.h"
-#include "common/Pcsx2Defs.h"
+#include "common/Xbsx2Defs.h"
 
 static const uint iREGCNT_XMM = 16;
 static const uint iREGCNT_GPR = 16;
@@ -87,7 +86,7 @@ namespace x86Emitter
 // when needed.  There's no point in using __emitline in these cases since the debugger
 // can't trace into single-line functions anyway.
 //
-#ifdef PCSX2_DEVBUILD
+#ifdef XBSX2_DEVBUILD
 #define __emitinline
 #else
 #define __emitinline __fi

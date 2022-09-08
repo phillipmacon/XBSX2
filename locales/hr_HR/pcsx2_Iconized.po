@@ -51,7 +51,7 @@ msgstr ""
 
 #: pcsx2/System.cpp:358
 msgid ""
-"PCSX2 is unable to allocate memory needed for the PS2 virtual machine. Close "
+"XBSX2 is unable to allocate memory needed for the PS2 virtual machine. Close "
 "out some memory hogging background tasks and try again."
 msgstr ""
 "PCSX2 nemože dodijeliti dovoljno memorije potrebne za PS2 virtualni stroj. "

@@ -42,7 +42,7 @@ msgstr ""
 
 #: pcsx2/System.cpp:358
 msgid ""
-"PCSX2 is unable to allocate memory needed for the PS2 virtual machine. Close "
+"XBSX2 is unable to allocate memory needed for the PS2 virtual machine. Close "
 "out some memory hogging background tasks and try again."
 msgstr ""
 "PCSX2 無法分配 PS2 虛擬機所需要的記憶體空間。請關閉一些使用大量記憶體的背景程"

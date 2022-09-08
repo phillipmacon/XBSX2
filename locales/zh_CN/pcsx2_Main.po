@@ -101,9 +101,9 @@ msgstr "无法加载 ELF 二进制映像。文件可能已损坏或不完整。"
 #: pcsx2/Elfheader.cpp:165
 msgid ""
 "If loading from an ISO image, this error may be caused by an unsupported ISO "
-"image type or a bug in PCSX2 ISO image support."
+"image type or a bug in XBSX2 isO image support."
 msgstr ""
-"如从一个 ISO 镜像加载，此错误可能由一个不被支持的 ISO 镜像类型或 PCSX2 ISO 镜"
+"如从一个 ISO 镜像加载，此错误可能由一个不被支持的 ISO 镜像类型或 XBSX2 isO 镜"
 "像支持的 bug 引起。"
 
 #: pcsx2/MTGS.cpp:877
@@ -3041,7 +3041,7 @@ msgstr "%s 扩展未找到。microVU 需要一个带有 SSE2 扩展的主机 CPU
 #~ msgid "Enable game fixes"
 #~ msgstr "启用游戏特殊修正"
 
-#~ msgid "ISO mounting failed: PCSX2 is unable to identify the ISO image type."
+#~ msgid "ISO mounting failed: XBSX2 is unable to identify the ISO image type."
 #~ msgstr "ISO 挂载失败: PCSX2 无法识别 ISO 镜像类型。"
 
 #~ msgid "Patches (unimplemented)"

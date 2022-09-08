@@ -1,15 +1,14 @@
-/*  PCSX2 - PS2 Emulator for PCs
- *  Copyright (C) 2002-2010  PCSX2 Dev Team
+/*  XBSX2 - PS2 Emulator for Xbox Consoles
  *
- *  PCSX2 is free software: you can redistribute it and/or modify it under the terms
+ *  XBSX2 is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU Lesser General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
  *
- *  PCSX2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  XBSX2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License along with PCSX2.
+ *  You should have received a copy of the GNU General Public License along with XBSX2.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -18,7 +17,7 @@
 #include <memory>
 #include <stdexcept>
 #include "common/Assertions.h"
-#include "common/Pcsx2Defs.h"
+#include "common/Xbsx2Defs.h"
 
 // Because wxTrap isn't available on Linux builds of wxWidgets (non-Debug, typically)
 void pxTrap();
@@ -228,7 +227,7 @@ public: \
 	// --------------------------------------------------------------------------------------
 	//  CancelAppEvent  -  Exception for canceling an event in a non-verbose fashion
 	// --------------------------------------------------------------------------------------
-	// Typically the PCSX2 interface issues popup dialogs for runtime errors.  This exception
+	// Typically the XBSX2 interface issues popup dialogs for runtime errors.  This exception
 	// instead issues a "silent" cancelation that is handled by the app gracefully (generates
 	// log, and resumes messages queue processing).
 	//
@@ -299,7 +298,7 @@ public: \
 	class HardwareDeficiency : public RuntimeError
 	{
 	public:
-		DEFINE_RUNTIME_EXCEPTION(HardwareDeficiency, RuntimeError, "Your machine's hardware is incapable of running PCSX2.  Sorry dood.");
+		DEFINE_RUNTIME_EXCEPTION(HardwareDeficiency, RuntimeError, "Your machine's hardware is incapable of running XBSX2.  Sorry dood.");
 	};
 
 	// ---------------------------------------------------------------------------------------

@@ -110,7 +110,7 @@ msgstr "Kan ej ladda ELF-binären. Filen kan vara förstörd eller ofullständig
 #: pcsx2/Elfheader.cpp:165
 msgid ""
 "If loading from an ISO image, this error may be caused by an unsupported ISO "
-"image type or a bug in PCSX2 ISO image support."
+"image type or a bug in XBSX2 isO image support."
 msgstr ""
 "Om försök att ladda genom ISO-avbild har gjorts kan detta fel ha orsakats av "
 "en ostödjandes ISO-typ eller av ett fel i PCSX2's ISO-stöd."
@@ -3357,7 +3357,7 @@ msgstr ""
 #~ msgid "Enable game fixes"
 #~ msgstr "Möjliggör spelfixar"
 
-#~ msgid "ISO mounting failed: PCSX2 is unable to identify the ISO image type."
+#~ msgid "ISO mounting failed: XBSX2 is unable to identify the ISO image type."
 #~ msgstr "ISO-användning misslyckades: PCSX2 kan inte identifiera ISO-typen."
 
 #~ msgid "mVU Min/Max Hack"

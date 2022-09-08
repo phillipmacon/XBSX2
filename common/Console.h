@@ -1,21 +1,20 @@
-/*  PCSX2 - PS2 Emulator for PCs
- *  Copyright (C) 2002-2010  PCSX2 Dev Team
+/*  XBSX2 - PS2 Emulator for Xbox Consoles
  *
- *  PCSX2 is free software: you can redistribute it and/or modify it under the terms
+ *  XBSX2 is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU Lesser General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
  *
- *  PCSX2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  XBSX2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License along with PCSX2.
+ *  You should have received a copy of the GNU General Public License along with XBSX2.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
 
-#include "Pcsx2Defs.h"
+#include "Xbsx2Defs.h"
 
 #include <string>
 
@@ -61,7 +60,7 @@ static const ConsoleColors DefaultConsoleColor = Color_Default;
 //  IConsoleWriter -- For printing messages to the console.
 // ----------------------------------------------------------------------------------------
 // General ConsoleWrite Threading Guideline:
-//   PCSX2 is a threaded environment and multiple threads can write to the console asynchronously.
+//   XBSX2 is a threaded environment and multiple threads can write to the console asynchronously.
 //   Individual calls to ConsoleWriter APIs will be written in atomic fashion, however "partial"
 //   logs may end up interrupted by logs on other threads.  This is usually not a problem for
 //   WriteLn, but may be undesirable for typical uses of Write.  In cases where you want to
@@ -230,13 +229,13 @@ extern NullConsoleWriter NullCon;
 extern IConsoleWriter DevConWriter;
 extern bool DevConWriterEnabled;
 
-#ifdef PCSX2_DEVBUILD
+#ifdef XBSX2_DEVBUILD
 #define DevCon DevConWriter
 #else
 #define DevCon DevConWriterEnabled&& DevConWriter
 #endif
 
-#ifdef PCSX2_DEBUG
+#ifdef XBSX2_DEBUG
 extern IConsoleWriter DbgConWriter;
 #define DbgCon DbgConWriter
 #else

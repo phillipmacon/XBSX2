@@ -1,0 +1,32 @@
+/*  XBSX2 - PS2 Emulator for Xbox Consoles
+*
+*  XBSX2 is free software: you can redistribute it and/or modify it under the terms
+*  of the GNU Lesser General Public License as published by the Free Software Found-
+*  ation, either version 3 of the License, or (at your option) any later version.
+*
+*  XBSX2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+*  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+*  PURPOSE.  See the GNU General Public License for more details.
+*
+*  You should have received a copy of the GNU General Public License along with XBSX2.
+*  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "PrecompiledHeader.h"
+
+#ifdef _WIN32
+#include "common/RedtapeWindows.h"
+
+//This ensures that the nVidia graphics card is used for XBSX2 on an Optimus-enabled system.
+//302 or higher driver required.
+extern "C" {
+	_declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+}
+
+//This is the equivalent for an AMD system.
+//13.35 or newer driver required.
+extern "C" {
+	_declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+
+#endif

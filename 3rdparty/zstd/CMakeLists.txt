@@ -1,6 +1,6 @@
 enable_language(C ASM)
 
-add_library(pcsx2-zstd
+add_library(xbsx2-zstd
 	zstd/lib/common/debug.c
 	zstd/lib/common/entropy_common.c
 	zstd/lib/common/error_private.c
@@ -28,10 +28,10 @@ add_library(pcsx2-zstd
 	zstd/lib/decompress/zstd_decompress.c
 )
 
-if(NOT MSVC AND ${PCSX2_TARGET_ARCHITECTURES} MATCHES "x86_64")
-	target_sources(pcsx2-zstd PRIVATE zstd/lib/decompress/huf_decompress_amd64.S)
+if(NOT MSVC AND ${XBSX2_TARGET_ARCHITECTURES} MATCHES "x86_64")
+	target_sources(xbsx2-zstd PRIVATE zstd/lib/decompress/huf_decompress_amd64.S)
 endif()
 
-target_include_directories(pcsx2-zstd PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/zstd/lib")
+target_include_directories(xbsx2-zstd PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/zstd/lib")
 
-add_library(Zstd::Zstd ALIAS pcsx2-zstd)
+add_library(Zstd::Zstd ALIAS xbsx2-zstd)

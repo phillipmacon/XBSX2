@@ -97,7 +97,7 @@ msgstr "無法載入 ELF 二進位映像。檔案可能損壞或不完整。"
 #: pcsx2/Elfheader.cpp:165
 msgid ""
 "If loading from an ISO image, this error may be caused by an unsupported ISO "
-"image type or a bug in PCSX2 ISO image support."
+"image type or a bug in XBSX2 isO image support."
 msgstr ""
 "如果是從 ISO 映像檔讀取檔案，那麼這個錯誤可能由未支援的 ISO 映像檔類型，或者"
 "由 PCSX2 光碟映像檔支援程式錯誤所引起。"
@@ -3047,7 +3047,7 @@ msgstr "未找到 %s 指令集。microVU 需要支援 SSE2 指令集的 CPU。"
 #~ msgid "Change &Language"
 #~ msgstr "變更介面語言"
 
-#~ msgid "ISO mounting failed: PCSX2 is unable to identify the ISO image type."
+#~ msgid "ISO mounting failed: XBSX2 is unable to identify the ISO image type."
 #~ msgstr "掛載光碟映像檔失敗：PCSX2 無法確認光碟映像檔的類型。"
 
 #~ msgid "Select memory card for Port %u / Slot %u"
