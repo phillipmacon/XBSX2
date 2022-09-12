@@ -322,7 +322,7 @@ Xbsx2Config::GSOptions::GSOptions()
 	OsdShowIndicators = true;
 
 	HWDownloadMode = GSHardwareDownloadMode::Enabled;
-	GPUPaletteConversion = true;
+	GPUPaletteConversion = false;
 	AutoFlushSW = true;
 	PreloadFrameWithGSData = false;
 	WrapGSMem = false;
