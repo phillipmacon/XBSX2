@@ -148,6 +148,9 @@ protected:
 	VsyncMode m_vsync_mode = VsyncMode::Off;
 };
 
+/// Returns a pointer to the current host display abstraction. Assumes AcquireHostDisplay() has been caled.
+extern std::unique_ptr<HostDisplay> g_host_display;
+
 namespace Host
 {
 	/// Creates the host display. This may create a new window. The API used depends on the current configuration.
@@ -155,9 +158,6 @@ namespace Host
 
 	/// Destroys the host display. This may close the display window.
 	void ReleaseHostDisplay();
-
-	/// Returns a pointer to the current host display abstraction. Assumes AcquireHostDisplay() has been caled.
-	HostDisplay* GetHostDisplay();
 
 	/// Returns false if the window was completely occluded. If frame_skip is set, the frame won't be
 	/// displayed, but the GPU command queue will still be flushed.

@@ -507,7 +507,7 @@ struct Xbsx2Config
 		bool SynchronousMTGS{false};
 		bool FrameLimitEnable{true};
 
-		VsyncMode VsyncEnable{VsyncMode::On};
+		VsyncMode VsyncEnable{VsyncMode::Off};
 
 		double LimitScalar{1.0};
 		double FramerateNTSC{59.94};

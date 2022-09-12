@@ -107,7 +107,6 @@ namespace NoGUIHost
 // Local variable declarations
 //////////////////////////////////////////////////////////////////////////
 static std::unique_ptr<INISettingsInterface> s_base_settings_interface;
-static std::unique_ptr<HostDisplay> s_host_display;
 static Threading::KernelSemaphore s_host_display_created;
 alignas(16) static SysMtgsThread s_mtgs_thread;
 static std::atomic_bool s_running{false};
@@ -278,21 +277,16 @@ bool NoGUIHost::InitializeConfig()
 
 void NoGUIHost::SetDefaultConfig()
 {
-	EmuConfig = Xbsx2Config();
 	EmuFolders::SetDefaults();
 	EmuFolders::EnsureFoldersExist();
-	VMManager::SetHardwareDependentDefaultSettings(EmuConfig);
-
+	
 	SettingsInterface& si = *s_base_settings_interface.get();
 	si.SetUIntValue("UI", "SettingsVersion", SETTINGS_VERSION);
-
-	{
-		SettingsSaveWrapper wrapper(si);
-		EmuConfig.LoadSave(wrapper);
-	}
+	VMManager::SetDefaultSettings(si);
 
 	EmuFolders::Save(si);
 	PAD::SetDefaultControllerConfig(si);
+	PAD::SetDefaultHotkeyConfig(si);
 
 	g_nogui_window->SetDefaultControllerConfig(si);
 }
@@ -753,11 +747,6 @@ void Host::OnInputDeviceDisconnected(const std::string_view& identifier)
 		fmt::format("{} Connected.", identifier), ICON_FA_GAMEPAD, fmt::format("{} Disconnected.", identifier), 5.0f);
 }
 
-HostDisplay* Host::GetHostDisplay()
-{
-	return s_host_display.get();
-}
-
 HostDisplay* Host::AcquireHostDisplay(HostDisplay::RenderAPI api)
 {
 	g_nogui_window->ExecuteInMessageLoop([api]() {
@@ -766,20 +755,20 @@ HostDisplay* Host::AcquireHostDisplay(HostDisplay::RenderAPI api)
 			const std::optional<WindowInfo> wi(g_nogui_window->GetPlatformWindowInfo());
 			if (wi.has_value())
 			{
-				s_host_display = HostDisplay::CreateDisplayForAPI(api);
-				if (s_host_display)
+				g_host_display = HostDisplay::CreateDisplayForAPI(api);
+				if (g_host_display)
 				{
-					if (!s_host_display->CreateRenderDevice(wi.value(), Host::GetStringSettingValue("EmuCore/GS", "Adapter", ""),
+					if (!g_host_display->CreateRenderDevice(wi.value(), Host::GetStringSettingValue("EmuCore/GS", "Adapter", ""),
 							EmuConfig.GetEffectiveVsyncMode(), Host::GetBoolSettingValue("EmuCore/GS", "ThreadedPresentation", false),
 							Host::GetBoolSettingValue("EmuCore/GS", "UseDebugDevice", false)))
 					{
-						s_host_display.reset();
+						g_host_display.reset();
 					}
 				}
 			}
 
-			if (s_host_display)
-				s_host_display->DoneRenderContextCurrent();
+			if (g_host_display)
+				g_host_display->DoneRenderContextCurrent();
 			else
 				g_nogui_window->DestroyPlatformWindow();
 		}
@@ -789,13 +778,13 @@ HostDisplay* Host::AcquireHostDisplay(HostDisplay::RenderAPI api)
 
 	s_host_display_created.Wait();
 
-	if (!s_host_display)
+	if (!g_host_display)
 	{
 		g_nogui_window->ReportError("Error", "Failed to create host display.");
 		return nullptr;
 	}
 
-	if (!s_host_display->MakeRenderContextCurrent() || !s_host_display->InitializeRenderDevice(EmuFolders::Cache, false) ||
+	if (!g_host_display->MakeRenderContextCurrent() || !g_host_display->InitializeRenderDevice(EmuFolders::Cache, false) ||
 		!ImGuiManager::Initialize())
 	{
 		g_nogui_window->ReportError("Error", "Failed to initialize render device.");
@@ -803,8 +792,8 @@ HostDisplay* Host::AcquireHostDisplay(HostDisplay::RenderAPI api)
 		return nullptr;
 	}
 
-	Console.WriteLn(Color_StrongGreen, "%s Graphics Driver Info:", HostDisplay::RenderAPIToString(s_host_display->GetRenderAPI()));
-	Console.Indent().WriteLn(s_host_display->GetDriverInfo());
+	Console.WriteLn(Color_StrongGreen, "%s Graphics Driver Info:", HostDisplay::RenderAPIToString(g_host_display->GetRenderAPI()));
+	Console.Indent().WriteLn(g_host_display->GetDriverInfo());
 
 	if (!FullscreenUI::Initialize())
 	{
@@ -813,24 +802,24 @@ HostDisplay* Host::AcquireHostDisplay(HostDisplay::RenderAPI api)
 		return nullptr;
 	}
 
-	return s_host_display.get();
+	return g_host_display.get();
 }
 
 void Host::ReleaseHostDisplay()
 {
-	if (!s_host_display)
+	if (!g_host_display)
 		return;
 
 	ImGuiManager::Shutdown();
 
-	s_host_display.reset();
+	g_host_display.reset();
 
 	g_nogui_window->ExecuteInMessageLoop([]() { g_nogui_window->DestroyPlatformWindow(); });
 }
 
 bool Host::BeginPresentFrame(bool frame_skip)
 {
-	if (s_host_display->BeginPresent(frame_skip))
+	if (g_host_display->BeginPresent(frame_skip))
 		return true;
 
 	// don't render imgui
@@ -845,13 +834,13 @@ void Host::EndPresentFrame()
 
 	FullscreenUI::Render();
 	ImGuiManager::RenderOSD();
-	s_host_display->EndPresent();
+	g_host_display->EndPresent();
 	ImGuiManager::NewFrame();
 }
 
 void Host::ResizeHostDisplay(u32 new_window_width, u32 new_window_height, float new_window_scale)
 {
-	s_host_display->ResizeRenderWindow(new_window_width, new_window_height, new_window_scale);
+	g_host_display->ResizeRenderWindow(new_window_width, new_window_height, new_window_scale);
 	ImGuiManager::WindowResized();
 }
 

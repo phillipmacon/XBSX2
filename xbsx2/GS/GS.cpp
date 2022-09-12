@@ -157,8 +157,8 @@ void GSclose()
 		g_gs_device.reset();
 	}
 
-	if (HostDisplay* display = Host::GetHostDisplay(); display)
-		display->SetGPUTimingEnabled(false);
+	if (g_host_display)
+		g_host_display->SetGPUTimingEnabled(false);
 
 	Host::ReleaseHostDisplay();
 }
@@ -211,12 +211,9 @@ static HostDisplay::RenderAPI GetAPIForRenderer(GSRendererType renderer)
 
 static bool DoGSOpen(GSRendererType renderer, u8* basemem)
 {
-	HostDisplay* display = Host::GetHostDisplay();
-	pxAssert(display);
+	s_render_api = g_host_display->GetRenderAPI();
 
-	s_render_api = Host::GetHostDisplay()->GetRenderAPI();
-
-	switch (display->GetRenderAPI())
+	switch (g_host_display->GetRenderAPI())
 	{
 #ifdef _WIN32
 		case HostDisplay::RenderAPI::D3D11:
@@ -245,13 +242,13 @@ static bool DoGSOpen(GSRendererType renderer, u8* basemem)
 #endif
 
 		default:
-			Console.Error("Unknown render API %u", static_cast<unsigned>(display->GetRenderAPI()));
+			Console.Error("Unknown render API %u", static_cast<unsigned>(g_host_display->GetRenderAPI()));
 			return false;
 	}
 
 	try
 	{
-		if (!g_gs_device->Create(display))
+		if (!g_gs_device->Create())
 		{
 			g_gs_device->Destroy();
 			g_gs_device.reset();
@@ -284,11 +281,11 @@ static bool DoGSOpen(GSRendererType renderer, u8* basemem)
 #ifdef XBSX2_CORE
 	// Don't override the fullscreen UI's vsync choice.
 	if (!FullscreenUI::IsInitialized())
-		display->SetVSync(EmuConfig.GetEffectiveVsyncMode());
+		g_host_display->SetVSync(EmuConfig.GetEffectiveVsyncMode());
 #else
 	display->SetVSync(EmuConfig.GetEffectiveVsyncMode());
 #endif
-	GSConfig.OsdShowGPU = EmuConfig.GS.OsdShowGPU && display->SetGPUTimingEnabled(true);
+	GSConfig.OsdShowGPU = EmuConfig.GS.OsdShowGPU && g_host_display->SetGPUTimingEnabled(true);
 
 	g_gs_renderer->SetRegsMem(basemem);
 	g_perfmon.Reset();
@@ -764,20 +761,18 @@ void GSUpdateConfig(const Xbsx2Config::GSOptions& new_config)
 	if (!g_gs_renderer)
 		return;
 
-	HostDisplay* display = Host::GetHostDisplay();
-
 	// Handle OSD scale changes by pushing a window resize through.
 	if (new_config.OsdScale != old_config.OsdScale)
 	{
 		g_gs_device->ResetAPIState();
-		Host::ResizeHostDisplay(display->GetWindowWidth(), display->GetWindowHeight(), display->GetWindowScale());
+		Host::ResizeHostDisplay(g_host_display->GetWindowWidth(), g_host_display->GetWindowHeight(), g_host_display->GetWindowScale());
 		g_gs_device->RestoreAPIState();
 	}
 
 	// Options which need a full teardown/recreate.
 	if (!GSConfig.RestartOptionsAreEqual(old_config))
 	{
-		HostDisplay::RenderAPI existing_api = Host::GetHostDisplay()->GetRenderAPI();
+		HostDisplay::RenderAPI existing_api = g_host_display->GetRenderAPI();
 		if (existing_api == HostDisplay::RenderAPI::OpenGLES)
 			existing_api = HostDisplay::RenderAPI::OpenGL;
 
@@ -867,11 +862,9 @@ void GSUpdateConfig(const Xbsx2Config::GSOptions& new_config)
 
 	if (GSConfig.OsdShowGPU != old_config.OsdShowGPU)
 	{
-		if (HostDisplay* display = Host::GetHostDisplay(); display)
-		{
-			if (!display->SetGPUTimingEnabled(GSConfig.OsdShowGPU))
-				GSConfig.OsdShowGPU = false;
-		}
+		if (!g_host_display->SetGPUTimingEnabled(GSConfig.OsdShowGPU))
+			GSConfig.OsdShowGPU = false;
+		
 	}
 }
 
@@ -883,7 +876,7 @@ void GSSwitchRenderer(GSRendererType new_renderer)
 	if (!g_gs_renderer || GSConfig.Renderer == new_renderer)
 		return;
 
-	HostDisplay::RenderAPI existing_api = Host::GetHostDisplay()->GetRenderAPI();
+	HostDisplay::RenderAPI existing_api = g_host_display->GetRenderAPI();
 	if (existing_api == HostDisplay::RenderAPI::OpenGLES)
 		existing_api = HostDisplay::RenderAPI::OpenGL;
 
