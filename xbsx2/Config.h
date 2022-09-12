@@ -218,7 +218,8 @@ ImplementEnumOperators(SpeedhackId);
 
 //------------ DEFAULT sseMXCSR VALUES ---------------
 #define DEFAULT_sseMXCSR 0xffc0 //FPU rounding > DaZ, FtZ, "chop"
-#define DEFAULT_sseVUMXCSR 0xffc0 //VU  rounding > DaZ, FtZ, "chop"
+#define DEFAULT_sseVUMXCSR 0xffc0 //VU  rounding > DaZ, FtZ, "chop"static SSE_MXCSR GetCurrent();
+#define SYSTEM_sseMXCSR 0x1f80
 
 // --------------------------------------------------------------------------------------
 //  TraceFiltersEE
@@ -434,6 +435,9 @@ struct Xbsx2Config
 
 		static const char* GetRendererName(GSRendererType type);
 
+		static constexpr float DEFAULT_FRAME_RATE_NTSC = 59.94f;
+		static constexpr float DEFAULT_FRAME_RATE_PAL = 50.00f;
+
 		union
 		{
 			u64 bitset;
@@ -509,24 +513,24 @@ struct Xbsx2Config
 
 		VsyncMode VsyncEnable{VsyncMode::Off};
 
-		double LimitScalar{1.0};
-		double FramerateNTSC{59.94};
-		double FrameratePAL{50.00};
+		float LimitScalar{1.0f};
+		float FramerateNTSC{DEFAULT_FRAME_RATE_NTSC};
+		float FrameratePAL{DEFAULT_FRAME_RATE_PAL};
 
 		AspectRatioType AspectRatio{AspectRatioType::RAuto4_3_3_2};
 		FMVAspectRatioSwitchType FMVAspectRatioSwitch{FMVAspectRatioSwitchType::Off};
 		GSInterlaceMode InterlaceMode{GSInterlaceMode::Automatic};
 
-		double Zoom{100.0};
-		double StretchY{100.0};
+		float Zoom{100.0f};
+		float StretchY{100.0f};
 #ifndef XBSX2_CORE
-		double OffsetX{0.0};
-		double OffsetY{0.0};
+		float OffsetX{0.0f};
+		float OffsetY{0.0f};
 #else
 		int Crop[4]{};
 #endif
 
-		double OsdScale{100.0};
+		float OsdScale{100.0f};
 
 		GSRendererType Renderer{GSRendererType::Auto};
 		uint UpscaleMultiplier{1};
@@ -629,14 +633,14 @@ struct Xbsx2Config
 		s32 Latency{100};
 		s32 SpeakerConfiguration{0};
 
-		double VolumeAdjustC{ 0.0f };
-		double VolumeAdjustFL{ 0.0f };
-		double VolumeAdjustFR{ 0.0f };
-		double VolumeAdjustBL{ 0.0f };
-		double VolumeAdjustBR{ 0.0f };
-		double VolumeAdjustSL{ 0.0f };
-		double VolumeAdjustSR{ 0.0f };
-		double VolumeAdjustLFE{ 0.0f };
+		float VolumeAdjustC{ 0.0f };
+		float VolumeAdjustFL{ 0.0f };
+		float VolumeAdjustFR{ 0.0f };
+		float VolumeAdjustBL{ 0.0f };
+		float VolumeAdjustBR{ 0.0f };
+		float VolumeAdjustSL{ 0.0f };
+		float VolumeAdjustSR{ 0.0f };
+		float VolumeAdjustLFE{ 0.0f };
 
 		std::string OutputModule;
 
@@ -895,9 +899,9 @@ struct Xbsx2Config
 	// ------------------------------------------------------------------------
 	struct FramerateOptions
 	{
-		double NominalScalar{1.0};
-		double TurboScalar{2.0};
-		double SlomoScalar{0.5};
+		float NominalScalar{1.0f};
+		float TurboScalar{2.0f};
+		float SlomoScalar{0.5f};
 
 		void LoadSave(SettingsWrapper& wrap);
 		void SanityCheck();
@@ -971,7 +975,9 @@ struct Xbsx2Config
 		MultitapPort1_Enabled : 1,
 
 		ConsoleToStdio : 1,
-		HostFs : 1;
+		HostFs : 1,
+
+		WarnAboutUnsafeSettings : 1;
 
 	// uses automatic ntfs compression when creating new memory cards (Win32 only)
 #ifdef _WIN32

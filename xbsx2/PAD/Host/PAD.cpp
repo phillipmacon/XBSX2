@@ -295,10 +295,15 @@ void PAD::SetDefaultControllerConfig(SettingsInterface& si)
 	si.ClearSection("Pad");
 
 	// XBSX2 Controller Settings - Global Settings
-	si.SetBoolValue("InputSources", "SDL", false);
+	for (u32 i = 0; i < static_cast<u32>(InputSourceType::Count); i++)
+	{
+		si.SetBoolValue("InputSources",
+			InputManager::InputSourceToString(static_cast<InputSourceType>(i)),
+			InputManager::GetInputSourceDefaultEnabled(static_cast<InputSourceType>(i)));
+	}
+#ifdef SDL_BUILD
 	si.SetBoolValue("InputSources", "SDLControllerEnhancedMode", false);
-	si.SetBoolValue("InputSources", "XInput", true);
-	si.SetBoolValue("InputSources", "RawInput", false);
+#endif
 	si.SetBoolValue("Pad", "MultitapPort1", false);
 	si.SetBoolValue("Pad", "MultitapPort2", false);
 	si.SetFloatValue("Pad", "PointerXScale", 8.0f);
@@ -512,6 +517,20 @@ void PAD::CopyConfiguration(SettingsInterface* dest_si, const SettingsInterface&
 	{
 		dest_si->CopyBoolValue(src_si, "Pad", "MultitapPort1");
 		dest_si->CopyBoolValue(src_si, "Pad", "MultitapPort2");
+		dest_si->CopyBoolValue(src_si, "Pad", "MultitapPort1");
+		dest_si->CopyBoolValue(src_si, "Pad", "MultitapPort2");
+		dest_si->CopyFloatValue(src_si, "Pad", "PointerXScale");
+		dest_si->CopyFloatValue(src_si, "Pad", "PointerYScale");
+		dest_si->CopyBoolValue(src_si, "Pad", "PointerXInvert");
+		dest_si->CopyBoolValue(src_si, "Pad", "PointerYInvert");
+		for (u32 i = 0; i < static_cast<u32>(InputSourceType::Count); i++)
+		{
+			dest_si->CopyBoolValue(src_si, "InputSources",
+				InputManager::InputSourceToString(static_cast<InputSourceType>(i)));
+		}
+#ifdef SDL_BUILD
+		dest_si->CopyBoolValue(src_si, "InputSources", "SDLControllerEnhancedMode");
+#endif
 	}
 
 	for (u32 port = 0; port < NUM_CONTROLLER_PORTS; port++)

@@ -82,6 +82,7 @@ namespace VMManager
 	static void CheckForSPU2ConfigChanges(const Xbsx2Config& old_config);
 	static void CheckForDEV9ConfigChanges(const Xbsx2Config& old_config);
 	static void CheckForMemoryCardConfigChanges(const Xbsx2Config& old_config);
+	static void WarnAboutUnsafeSettings();
 
 	static bool AutoDetectSource(const std::string& filename);
 	static bool ApplyBootParameters(VMBootParameters params, std::string* state_to_load);
@@ -347,7 +348,12 @@ void VMManager::LoadSettings()
 		EmuConfig.Speedhacks.vuThread = false;
 
 	if (HasValidVM())
+	{
+		if (EmuConfig.WarnAboutUnsafeSettings)
+			WarnAboutUnsafeSettings();
+
 		ApplyGameFixes();
+	}
 }
 
 void VMManager::ApplyGameFixes()
@@ -1716,6 +1722,90 @@ void VMManager::SetDefaultSettings(SettingsInterface& si)
 	SetHardwareDependentDefaultSettings(si);
 }
 
+void VMManager::WarnAboutUnsafeSettings()
+{
+	std::string messages;
+
+	if (EmuConfig.Speedhacks.fastCDVD)
+		messages += ICON_FA_COMPACT_DISC "  Fast CDVD is enabled, this may break games.\n";
+	if (EmuConfig.Speedhacks.EECycleRate != 0 || EmuConfig.Speedhacks.EECycleSkip != 0)
+		messages += ICON_FA_TACHOMETER_ALT "  Cycle rate/skip is not at default, this may crash or make games run too slow.\n";
+	if (EmuConfig.SPU2.SynchMode != Xbsx2Config::SPU2Options::SynchronizationMode::TimeStretch)
+		messages += ICON_FA_VOLUME_MUTE "  Audio is not using time stretch synchronization, this may break FMVs.\n";
+	if (EmuConfig.GS.HWMipmap != HWMipmapLevel::Automatic)
+		messages += ICON_FA_IMAGES "  Mipmapping is not set to automatic. This may break rendering in some games.\n";
+	if (EmuConfig.GS.TextureFiltering != BiFiltering::PS2)
+		messages += ICON_FA_FILTER "  Texture filtering is not set to Bilinear (PS2). This will break rendering in some games.\n";
+	if (EmuConfig.GS.UserHacks_TriFilter != TriFiltering::Automatic)
+		messages += ICON_FA_PAGER "  Trilinear filtering is not set to automatic. This may break rendering in some games.\n";
+	if (EmuConfig.GS.AccurateBlendingUnit <= AccBlendLevel::Minimum)
+		messages += ICON_FA_BLENDER "  Blending is below basic, this may break effects in some games.\n";
+	if (EmuConfig.GS.CRCHack != CRCHackLevel::Automatic)
+		messages += ICON_FA_FIRST_AID "  CRC Fix Level is not set to default, this may break effects in some games.\n";
+	if (EmuConfig.Cpu.sseMXCSR.GetRoundMode() != SSEround_Chop || EmuConfig.Cpu.sseVUMXCSR.GetRoundMode() != SSEround_Chop)
+		messages += ICON_FA_MICROCHIP "  EE FPU Round Mode is not set to default, this may break some games.\n";
+	if (!EmuConfig.Cpu.Recompiler.fpuOverflow || EmuConfig.Cpu.Recompiler.fpuExtraOverflow || EmuConfig.Cpu.Recompiler.fpuFullMode)
+		messages += ICON_FA_MICROCHIP "  EE FPU Clamp Mode is not set to default, this may break some games.\n";
+	if (EmuConfig.Cpu.sseVUMXCSR.GetRoundMode() != SSEround_Chop)
+		messages += ICON_FA_MICROCHIP "  VU Round Mode is not set to default, this may break some games.\n";
+	if (!EmuConfig.Cpu.Recompiler.vuOverflow || EmuConfig.Cpu.Recompiler.vuExtraOverflow || EmuConfig.Cpu.Recompiler.vuSignOverflow)
+		messages += ICON_FA_MICROCHIP "  VU Clamp Mode is not set to default, this may break some games.\n";
+	if (!EmuConfig.EnableGameFixes)
+		messages += ICON_FA_GAMEPAD "  Game Fixes are not enabled. Compatibility with some games may be affected.\n";
+	if (!EmuConfig.EnablePatches)
+		messages += ICON_FA_GAMEPAD "  Compatibility Patches are not enabled. Compatibility with some games may be affected.\n";
+	if (EmuConfig.GS.FramerateNTSC != Xbsx2Config::GSOptions::DEFAULT_FRAME_RATE_NTSC)
+		messages += ICON_FA_TV "  Frame rate for NTSC is not default. This may break some games.\n";
+	if (EmuConfig.GS.FrameratePAL != Xbsx2Config::GSOptions::DEFAULT_FRAME_RATE_PAL)
+		messages += ICON_FA_TV "  Frame rate for PAL is not default. This may break some games.\n";
+
+	if (!messages.empty())
+	{
+		if (messages.back() == '\n')
+			messages.pop_back();
+		Host::AddKeyedOSDMessage("unsafe_settings_warning", std::move(messages), 10.0f);
+	}
+	else
+	{
+		Host::RemoveKeyedOSDMessage("unsafe_settings_warning");
+	}
+
+	messages.clear();
+	if (!EmuConfig.Cpu.Recompiler.EnableEE)
+		messages += ICON_FA_EXCLAMATION_CIRCLE "  EE Recompiler is not enabled, this will significantly reduce performance.\n";
+	if (!EmuConfig.Cpu.Recompiler.EnableVU0)
+		messages += ICON_FA_EXCLAMATION_CIRCLE "  VU0 Recompiler is not enabled, this will significantly reduce performance.\n";
+	if (!EmuConfig.Cpu.Recompiler.EnableVU1)
+		messages += ICON_FA_EXCLAMATION_CIRCLE "  VU1 Recompiler is not enabled, this will significantly reduce performance.\n";
+	if (!EmuConfig.Cpu.Recompiler.EnableIOP)
+		messages += ICON_FA_EXCLAMATION_CIRCLE "  IOP Recompiler is not enabled, this will significantly reduce performance.\n";
+	if (EmuConfig.Cpu.Recompiler.EnableEECache)
+		messages += ICON_FA_EXCLAMATION_CIRCLE "  EE Cache is enabled, this will significantly reduce performance.\n";
+	if (!EmuConfig.Speedhacks.WaitLoop)
+		messages += ICON_FA_EXCLAMATION_CIRCLE "  EE Wait Loop Detection is not enabled, this may reduce performance.\n";
+	if (!EmuConfig.Speedhacks.IntcStat)
+		messages += ICON_FA_EXCLAMATION_CIRCLE "  INTC Spin Detection is not enabled, this may reduce performance.\n";
+	if (!EmuConfig.Speedhacks.vu1Instant)
+		messages += ICON_FA_EXCLAMATION_CIRCLE "  Instant VU1 is disabled, this may reduce performance.\n";
+	if (!EmuConfig.Speedhacks.vuFlagHack)
+		messages += ICON_FA_EXCLAMATION_CIRCLE "  mVU Flag Hack is not enabled, this may reduce performance.\n";
+	if (EmuConfig.GS.GPUPaletteConversion)
+		messages += ICON_FA_EXCLAMATION_CIRCLE "  GPU Palette Conversion is enabled, this may reduce performance.\n";
+	if (EmuConfig.GS.TexturePreloading != TexturePreloadingLevel::Full)
+		messages += ICON_FA_EXCLAMATION_CIRCLE "  Texture Preloading is not Full, this may reduce performance.\n";
+
+	if (!messages.empty())
+	{
+		if (messages.back() == '\n')
+			messages.pop_back();
+		Host::AddKeyedOSDMessage("performance_settings_warning", std::move(messages), 10.0f);
+	}
+	else
+	{
+		Host::RemoveKeyedOSDMessage("performance_settings_warning");
+	}
+}
+
 static void HotkeyAdjustTargetSpeed(double delta)
 {
 	EmuConfig.Framerate.NominalScalar = EmuConfig.GS.LimitScalar + delta;
@@ -1790,11 +1880,11 @@ static void HotkeySaveStateSlot(s32 slot)
 
 BEGIN_HOTKEY_LIST(g_vm_manager_hotkeys)
 DEFINE_HOTKEY("OpenPauseMenu", "1. User Interface", "Open Pause Menu", [](s32 pressed) {
-	if (!pressed)
+	if (!pressed && VMManager::HasValidVM())
 		FullscreenUI::OpenPauseMenu();
 })
 DEFINE_HOTKEY("ToggleFrameLimit", "2. Emulator", "Toggle Frame Limit", [](s32 pressed) {
-	if (!pressed)
+	if (!pressed && VMManager::HasValidVM())
 	{
 		VMManager::SetLimiterMode((EmuConfig.LimiterMode != LimiterModeType::Unlimited) ?
                                       LimiterModeType::Unlimited :
@@ -1802,7 +1892,7 @@ DEFINE_HOTKEY("ToggleFrameLimit", "2. Emulator", "Toggle Frame Limit", [](s32 pr
 	}
 })
 DEFINE_HOTKEY("ToggleTurbo", "2. Emulator", "Toggle Turbo", [](s32 pressed) {
-	if (!pressed)
+	if (!pressed && VMManager::HasValidVM())
 	{
 		VMManager::SetLimiterMode((EmuConfig.LimiterMode != LimiterModeType::Turbo) ?
 									  LimiterModeType::Turbo :
@@ -1810,6 +1900,8 @@ DEFINE_HOTKEY("ToggleTurbo", "2. Emulator", "Toggle Turbo", [](s32 pressed) {
 	}
 })
 DEFINE_HOTKEY("HoldTurbo", "2. Emulator", "Turbo (Hold)", [](s32 pressed) {
+	if (!VMManager::HasValidVM())
+		return;
 	if (pressed > 0 && !s_limiter_mode_prior_to_hold_interaction.has_value())
 	{
 		s_limiter_mode_prior_to_hold_interaction = VMManager::GetLimiterMode();
@@ -1824,7 +1916,7 @@ DEFINE_HOTKEY("HoldTurbo", "2. Emulator", "Turbo (Hold)", [](s32 pressed) {
 	}
 })
 DEFINE_HOTKEY("ToggleSlowMotion", "2. Emulator", "Toggle Slow Motion", [](s32 pressed) {
-	if (!pressed)
+	if (!pressed && VMManager::HasValidVM())
 	{
 		VMManager::SetLimiterMode((EmuConfig.LimiterMode != LimiterModeType::Slomo) ?
                                       LimiterModeType::Slomo :
@@ -1832,11 +1924,11 @@ DEFINE_HOTKEY("ToggleSlowMotion", "2. Emulator", "Toggle Slow Motion", [](s32 pr
 	}
 })
 //  DEFINE_HOTKEY("IncreaseSpeed", "System", "Increase Target Speed", [](s32 pressed) {
-//  	if (!pressed)
+//  	if (!pressed&& VMManager::HasValidVM())
 //  		HotkeyAdjustTargetSpeed(0.1);
 //  })
 //  DEFINE_HOTKEY("DecreaseSpeed", "System", "Decrease Target Speed", [](s32 pressed) {
-//  	if (!pressed)
+//  	if (!pressed&& VMManager::HasValidVM())
 //  		HotkeyAdjustTargetSpeed(-0.1);
 //  })
 //  DEFINE_HOTKEY("ShutdownVM", "System", "Shut Down Virtual Machine", [](s32 pressed) {
@@ -1848,24 +1940,24 @@ DEFINE_HOTKEY("ToggleSlowMotion", "2. Emulator", "Toggle Slow Motion", [](s32 pr
 //  		VMManager::Reset();
 //  })
 //  DEFINE_HOTKEY("FrameAdvance", "System", "Frame Advance", [](s32 pressed) {
-//  	if (!pressed)
+//  	if (!pressed&& VMManager::HasValidVM())
 //  		VMManager::FrameAdvance(1);
 //  })
 
 //  DEFINE_HOTKEY("PreviousSaveStateSlot", "Save States", "Select Previous Save Slot", [](s32 pressed) {
-//  	if (!pressed)
+//  	if (!pressed&& VMManager::HasValidVM())
 //  		HotkeyCycleSaveSlot(-1);
 //  })
 //  DEFINE_HOTKEY("NextSaveStateSlot", "Save States", "Select Next Save Slot", [](s32 pressed) {
-//  	if (!pressed)
+//  	if (!pressed&& VMManager::HasValidVM())
 //  		HotkeyCycleSaveSlot(1);
 //  })
 DEFINE_HOTKEY("SaveStateToSlot", "4. Save States", "Save State To Selected Slot", [](s32 pressed) {
-	if (!pressed)
+	if (!pressed && VMManager::HasValidVM())
 		VMManager::SaveStateToSlot(s_current_save_slot);
 })
 DEFINE_HOTKEY("LoadStateFromSlot", "5. Load States", "Load State From Selected Slot", [](s32 pressed) {
-	if (!pressed)
+	if (!pressed && VMManager::HasValidVM())
 		HotkeyLoadStateSlot(s_current_save_slot);
 })
 
