@@ -150,7 +150,7 @@ GSSource : public CBaseFilter, private CCritSec, public IGSSource
 
 		HRESULT GSSourceOutputPin::DecideBufferSize(IMemAllocator* pAlloc, ALLOCATOR_PROPERTIES* pProperties)
 		{
-			ASSERT(pAlloc && pProperties);
+			pxAssert(pAlloc && pProperties);
 
 			HRESULT hr;
 
@@ -169,7 +169,7 @@ GSSource : public CBaseFilter, private CCritSec, public IGSSource
 				return E_FAIL;
 			}
 
-			ASSERT(Actual.cBuffers == pProperties->cBuffers);
+			pxAssert(Actual.cBuffers == pProperties->cBuffers);
 
 			return S_OK;
 		}
@@ -413,7 +413,7 @@ bool GSCapture::BeginCapture(float fps, GSVector2i recommendedResolution, float 
 	printf("Recommended resolution: %d x %d, DAR for muxing: %.4f\n", recommendedResolution.x, recommendedResolution.y, aspect);
 	std::lock_guard<std::recursive_mutex> lock(m_lock);
 
-	ASSERT(fps != 0);
+	pxAssert(fps != 0);
 
 	EndCapture();
 
@@ -560,7 +560,7 @@ bool GSCapture::DeliverFrame(const void* bits, int pitch, bool rgba)
 
 	if (bits == NULL || pitch == 0)
 	{
-		ASSERT(0);
+		pxAssert(0);
 
 		return false;
 	}

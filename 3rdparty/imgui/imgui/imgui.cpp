@@ -10569,13 +10569,13 @@ static float ImGui::NavUpdatePageUpPageDown()
         return 0.0f;
 
     // Controller Bumper Support
-	const bool L1_held = IsKeyDown(ImGuiKey_GamepadL1) && !IsActiveIdUsingKey(ImGuiKey_GamepadL1);
-	const bool R1_held = IsKeyDown(ImGuiKey_GamepadR1) && !IsActiveIdUsingKey(ImGuiKey_GamepadR1);
+	// const bool L1_held = IsKeyDown(ImGuiKey_GamepadL1) && !IsActiveIdUsingKey(ImGuiKey_GamepadL1);
+	// const bool R1_held = IsKeyDown(ImGuiKey_GamepadR1) && !IsActiveIdUsingKey(ImGuiKey_GamepadR1);
     const bool page_up_held = IsKeyDown(ImGuiKey_PageUp) && !IsActiveIdUsingKey(ImGuiKey_PageUp);
     const bool page_down_held = IsKeyDown(ImGuiKey_PageDown) && !IsActiveIdUsingKey(ImGuiKey_PageDown);
     const bool home_pressed = IsKeyPressed(ImGuiKey_Home) && !IsActiveIdUsingKey(ImGuiKey_Home);
     const bool end_pressed = IsKeyPressed(ImGuiKey_End) && !IsActiveIdUsingKey(ImGuiKey_End);
-	if (L1_held == R1_held && page_up_held == page_down_held && home_pressed == end_pressed) // Proceed if either (not both) are pressed, otherwise early out
+	if (/* L1_held == R1_held && */ page_up_held == page_down_held && home_pressed == end_pressed) // Proceed if either (not both) are pressed, otherwise early out
         return 0.0f;
 
     if (g.NavLayer != ImGuiNavLayer_Main)

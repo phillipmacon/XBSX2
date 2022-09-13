@@ -13,6 +13,7 @@
  */
 
 #pragma once
+#include "common/Assertions.h"
 
 /// Table for storing swizzling of blocks within a page
 struct alignas(64) GSBlockSwizzleTable
@@ -53,7 +54,7 @@ struct alignas(128) GSPixelRowOffsetTable
 
 	int operator[](size_t x) const
 	{
-		ASSERT(x < 4096);
+		pxAssert(x < 4096);
 		return value[x];
 	}
 };

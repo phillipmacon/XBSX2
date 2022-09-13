@@ -187,8 +187,6 @@ static const int __pagesize = XBSX2_PAGESIZE;
 	#define CONSTINIT
 #endif
 
-#define ASSERT assert
-
 //////////////////////////////////////////////////////////////////////////////////////////
 // Safe deallocation macros -- checks pointer validity (non-null) when needed, and sets
 // pointer to null after deallocation.

@@ -18,6 +18,7 @@
 #include "GSVector.h"
 #include "GSBlock.h"
 #include "GSClut.h"
+#include "common/Assertions.h"
 #include <array>
 #include <unordered_map>
 
@@ -410,7 +411,7 @@ public:
 	constexpr GSOffset assertSizesMatch(const GSSwizzleInfo& swz) const
 	{
 		GSOffset o = *this;
-#define MATCH(x) ASSERT(o.x == swz.x); o.x = swz.x;
+#define MATCH(x) pxAssert(o.x == swz.x); o.x = swz.x;
 		MATCH(m_pageMask)
 		MATCH(m_blockMask)
 		MATCH(m_pixelRowMask)

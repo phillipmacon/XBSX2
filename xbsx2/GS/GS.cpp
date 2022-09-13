@@ -1039,7 +1039,7 @@ static u8* s_Next[8];
 
 void* fifo_alloc(size_t size, size_t repeat)
 {
-	ASSERT(s_fh == NULL);
+	pxAssert(s_fh == NULL);
 
 	if (repeat >= std::size(s_Next))
 	{
@@ -1086,7 +1086,7 @@ void* fifo_alloc(size_t size, size_t repeat)
 
 void fifo_free(void* ptr, size_t size, size_t repeat)
 {
-	ASSERT(s_fh != NULL);
+	pxAssert(s_fh != NULL);
 
 	if (s_fh == NULL)
 	{
@@ -1142,7 +1142,7 @@ static HANDLE s_fh = NULL;
 
 void* fifo_alloc(size_t size, size_t repeat)
 {
-	ASSERT(s_fh == NULL);
+	pxAssert(s_fh == NULL);
 
 	s_fh = CreateFileMapping(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, size, nullptr);
 	if (s_fh == NULL)
@@ -1188,7 +1188,7 @@ void* fifo_alloc(size_t size, size_t repeat)
 
 void fifo_free(void* ptr, size_t size, size_t repeat)
 {
-	ASSERT(s_fh != NULL);
+	pxAssert(s_fh != NULL);
 
 	if (s_fh == NULL)
 	{

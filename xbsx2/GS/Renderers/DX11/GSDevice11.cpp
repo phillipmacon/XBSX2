@@ -419,7 +419,7 @@ void GSDevice11::DrawIndexedPrimitive()
 
 void GSDevice11::DrawIndexedPrimitive(int offset, int count)
 {
-	ASSERT(offset + count <= (int)m_index.count);
+	pxAssert(offset + count <= (int)m_index.count);
 	g_perfmon.Put(GSPerfMon::DrawCalls, 1);
 	PSUpdateShaderState();
 	m_ctx->DrawIndexed(count, m_index.start + offset, m_vertex.start);
@@ -476,7 +476,7 @@ GSTexture* GSDevice11::CreateSurface(GSTexture::Type type, int width, int height
 		case GSTexture::Format::BC3:          dxformat = DXGI_FORMAT_BC3_UNORM;          break;
 		case GSTexture::Format::BC7:          dxformat = DXGI_FORMAT_BC7_UNORM;          break;
 		case GSTexture::Format::Invalid:
-			ASSERT(0);
+			pxAssert(0);
 			dxformat = DXGI_FORMAT_UNKNOWN;
 	}
 
@@ -528,8 +528,8 @@ GSTexture* GSDevice11::CreateSurface(GSTexture::Type type, int width, int height
 
 bool GSDevice11::DownloadTexture(GSTexture* src, const GSVector4i& rect, GSTexture::GSMap& out_map)
 {
-	ASSERT(src);
-	ASSERT(!m_download_tex);
+	pxAssert(src);
+	pxAssert(!m_download_tex);
 	g_perfmon.Put(GSPerfMon::Readbacks, 1);
 
 	m_download_tex.reset(static_cast<GSTexture11*>(CreateOffscreen(rect.width(), rect.height(), src->GetFormat())));
@@ -616,7 +616,7 @@ void GSDevice11::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture*
 
 void GSDevice11::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, ID3D11PixelShader* ps, ID3D11Buffer* ps_cb, ID3D11BlendState* bs, bool linear)
 {
-	ASSERT(sTex);
+	pxAssert(sTex);
 
 	const bool draw_in_depth = dTex && dTex->IsDepthStencil();
 
@@ -697,7 +697,7 @@ void GSDevice11::StretchRect(GSTexture* sTex, const GSVector4& sRect, GSTexture*
 
 void GSDevice11::PresentRect(GSTexture* sTex, const GSVector4& sRect, GSTexture* dTex, const GSVector4& dRect, PresentShader shader, float shaderTime, bool linear)
 {
-	ASSERT(sTex);
+	pxAssert(sTex);
 
 	BeginScene();
 
@@ -980,7 +980,7 @@ void GSDevice11::IASetVertexBuffer(const void* vertex, size_t stride, size_t cou
 
 bool GSDevice11::IAMapVertexBuffer(void** vertex, size_t stride, size_t count)
 {
-	ASSERT(m_vertex.count == 0);
+	pxAssert(m_vertex.count == 0);
 
 	if (count * stride > m_vertex.limit * m_vertex.stride)
 	{
@@ -1054,7 +1054,7 @@ void GSDevice11::IASetVertexBuffer(ID3D11Buffer* vb, size_t stride)
 
 void GSDevice11::IASetIndexBuffer(const void* index, size_t count)
 {
-	ASSERT(m_index.count == 0);
+	pxAssert(m_index.count == 0);
 
 	if (count > m_index.limit)
 	{
@@ -1343,12 +1343,12 @@ static GSDevice11::OMBlendSelector convertSel(GSHWDrawConfig::ColorMaskSelector 
 /// Clears things we don't support that can be quietly disabled
 static void preprocessSel(GSDevice11::PSSelector& sel)
 {
-	ASSERT(sel.write_rg  == 0); // Not supported, shouldn't be sent
+	pxAssert(sel.write_rg == 0); // Not supported, shouldn't be sent
 }
 
 void GSDevice11::RenderHW(GSHWDrawConfig& config)
 {
-	ASSERT(!config.require_full_barrier); // We always specify no support so it shouldn't request this
+	pxAssert(!config.require_full_barrier); // We always specify no support so it shouldn't request this
 	preprocessSel(config.ps);
 
 	GSVector2i rtsize = (config.rt ? config.rt : config.ds)->GetSize();

@@ -106,7 +106,7 @@ GSTextureCache::Source* GSTextureCache::LookupDepthSource(const GIFRegTEX0& TEX0
 	{
 		if (t->m_used && t->m_dirty.empty() && GSUtil::HasSharedBits(bp, psm, t->m_TEX0.TBP0, t->m_TEX0.PSM))
 		{
-			ASSERT(GSLocalMemory::m_psm[t->m_TEX0.PSM].depth);
+			pxAssert(GSLocalMemory::m_psm[t->m_TEX0.PSM].depth);
 			if (t->m_age == 0)
 			{
 				// Perfect Match
@@ -129,7 +129,7 @@ GSTextureCache::Source* GSTextureCache::LookupDepthSource(const GIFRegTEX0& TEX0
 			// FIXME: do I need to allow m_age == 1 as a potential match (as DepthStencil) ???
 			if (!t->m_age && t->m_used && t->m_dirty.empty() && GSUtil::HasSharedBits(bp, psm, t->m_TEX0.TBP0, t->m_TEX0.PSM))
 			{
-				ASSERT(GSLocalMemory::m_psm[t->m_TEX0.PSM].depth);
+				pxAssert(GSLocalMemory::m_psm[t->m_TEX0.PSM].depth);
 				dst = t;
 				break;
 			}
@@ -190,8 +190,8 @@ GSTextureCache::Source* GSTextureCache::LookupDepthSource(const GIFRegTEX0& TEX0
 		throw GSRecoverableError();
 	}
 
-	ASSERT(src->m_texture);
-	ASSERT(src->m_texture->GetScale() == (dst ? dst->m_texture->GetScale() : GSVector2(1, 1)));
+	pxAssert(src->m_texture);
+	pxAssert(src->m_texture->GetScale() == (dst ? dst->m_texture->GetScale() : GSVector2(1, 1)));
 
 	return src;
 }
@@ -1710,7 +1710,7 @@ GSTextureCache::Source* GSTextureCache::CreateSource(const GIFRegTEX0& TEX0, con
 			if (src->m_texture)
 				src->m_texture->SetScale(scale);
 			else
-				ASSERT(0);
+				pxAssert(0);
 		}
 
 		// GH: by default (m_paltex == 0) GS converts texture to the 32 bit format
@@ -1767,10 +1767,10 @@ GSTextureCache::Source* GSTextureCache::CreateSource(const GIFRegTEX0& TEX0, con
 		}
 	}
 
-	ASSERT(src->m_texture);
-	ASSERT(src->m_target == (dst != nullptr));
-	ASSERT(src->m_from_target == (dst ? &dst->m_texture : nullptr));
-	ASSERT(src->m_texture->GetScale() == ((!dst || TEX0.PSM == PSM_PSMT8) ? GSVector2(1, 1) : dst->m_texture->GetScale()));
+	pxAssert(src->m_texture);
+	pxAssert(src->m_target == (dst != nullptr));
+	pxAssert(src->m_from_target == (dst ? &dst->m_texture : nullptr));
+	pxAssert(src->m_texture->GetScale() == ((!dst || TEX0.PSM == PSM_PSMT8) ? GSVector2(1, 1) : dst->m_texture->GetScale()));
 
 	m_src.Add(src, TEX0, g_gs_renderer->m_context->offset.tex);
 
@@ -1917,7 +1917,7 @@ GSTextureCache::HashCacheEntry* GSTextureCache::LookupHashCache(const GIFRegTEX0
 
 GSTextureCache::Target* GSTextureCache::CreateTarget(const GIFRegTEX0& TEX0, int w, int h, int type, const bool clear)
 {
-	ASSERT(type == RenderTarget || type == DepthStencil);
+	pxAssert(type == RenderTarget || type == DepthStencil);
 
 	Target* t = new Target(TEX0, !GSConfig.UserHacks_DisableDepthSupport, type);
 
@@ -2018,7 +2018,7 @@ void GSTextureCache::Read(Target* t, const GSVector4i& r)
 				break;
 
 			default:
-				ASSERT(0);
+				pxAssert(0);
 		}
 
 		g_gs_device->DownloadTextureComplete();
@@ -2930,7 +2930,7 @@ void GSTextureCache::Palette::InitializeTexture()
 
 u64 GSTextureCache::PaletteKeyHash::operator()(const PaletteKey& key) const
 {
-	ASSERT(key.pal == 16 || key.pal == 256);
+	pxAssert(key.pal == 16 || key.pal == 256);
 	return key.pal == 16 ?
 		XXH3_64bits(key.clut, sizeof(key.clut[0]) * 16) :
 		XXH3_64bits(key.clut, sizeof(key.clut[0]) * 256);
@@ -2960,7 +2960,7 @@ GSTextureCache::PaletteMap::PaletteMap()
 
 std::shared_ptr<GSTextureCache::Palette> GSTextureCache::PaletteMap::LookupPalette(u16 pal, bool need_gs_texture)
 {
-	ASSERT(pal == 16 || pal == 256);
+	pxAssert(pal == 16 || pal == 256);
 
 	// Choose which hash map search into:
 	//    pal == 16  : index 0

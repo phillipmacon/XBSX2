@@ -34,6 +34,7 @@ namespace FullscreenUI
 
 	void Shutdown();
 	void Render();
+	void InvalidateCoverCache();
 
 	// Returns true if the message has been dismissed.
 	bool DrawErrorWindow(const char* message);

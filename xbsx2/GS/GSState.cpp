@@ -586,7 +586,7 @@ int GSState::GetFramebufferWidth()
 
 bool GSState::IsEnabled(int i)
 {
-	ASSERT(i >= 0 && i < 2);
+	pxAssert(i >= 0 && i < 2);
 
 	const auto& DISP = m_regs->DISP[i].DISPLAY;
 
@@ -839,7 +839,7 @@ void GSState::GIFPackedRegHandlerNOP(const GIFPackedReg* RESTRICT r)
 template <u32 prim, bool auto_flush, bool index_swap>
 void GSState::GIFPackedRegHandlerSTQRGBAXYZF2(const GIFPackedReg* RESTRICT r, u32 size)
 {
-	ASSERT(size > 0 && size % 3 == 0);
+	pxAssert(size > 0 && size % 3 == 0);
 
 	CheckFlushes();
 
@@ -873,7 +873,7 @@ void GSState::GIFPackedRegHandlerSTQRGBAXYZF2(const GIFPackedReg* RESTRICT r, u3
 template <u32 prim, bool auto_flush, bool index_swap>
 void GSState::GIFPackedRegHandlerSTQRGBAXYZ2(const GIFPackedReg* RESTRICT r, u32 size)
 {
-	ASSERT(size > 0 && size % 3 == 0);
+	pxAssert(size > 0 && size % 3 == 0);
 
 	CheckFlushes();
 
@@ -929,7 +929,7 @@ __forceinline void GSState::ApplyPRIM(u32 prim)
 
 	UpdateVertexKick();
 
-	ASSERT(m_index.tail == 0 || !g_gs_device->Features().provoking_vertex_last || m_index.buff[m_index.tail - 1] + 1 == m_vertex.next);
+	pxAssert(m_index.tail == 0 || !g_gs_device->Features().provoking_vertex_last || m_index.buff[m_index.tail - 1] + 1 == m_vertex.next);
 
 	if (m_index.tail == 0)
 		m_vertex.next = 0;
@@ -1818,7 +1818,7 @@ void GSState::FlushPrim()
 			switch (PRIM->PRIM)
 			{
 				case GS_POINTLIST:
-					ASSERT(0);
+					pxAssert(0);
 					break;
 				case GS_LINELIST:
 				case GS_LINESTRIP:
@@ -1846,7 +1846,7 @@ void GSState::FlushPrim()
 					__assume(0);
 			}
 
-			ASSERT((int)unused < GSUtil::GetVertexCount(PRIM->PRIM));
+			pxAssert((int)unused < GSUtil::GetVertexCount(PRIM->PRIM));
 		}
 
 		// If the PSM format of Z is invalid, but it is masked (no write) and ZTST is set to ALWAYS pass (no test, just allow)
@@ -2813,10 +2813,10 @@ GSState::PRIM_OVERLAP GSState::PrimitiveOverlap()
 
 			// Be sure to get vertex in good order, otherwise .r* function doesn't
 			// work as expected.
-			ASSERT(sprite.x <= sprite.z);
-			ASSERT(sprite.y <= sprite.w);
-			ASSERT(all.x <= all.z);
-			ASSERT(all.y <= all.w);
+			pxAssert(sprite.x <= sprite.z);
+			pxAssert(sprite.y <= sprite.w);
+			pxAssert(all.x <= all.z);
+			pxAssert(all.y <= all.w);
 
 			if (all.rintersect(sprite).rempty())
 			{
@@ -3101,7 +3101,7 @@ __forceinline void GSState::VertexKick(u32 skip)
 			break;
 	}
 
-	ASSERT(m_vertex.tail < m_vertex.maxcount + 3);
+	pxAssert(m_vertex.tail < m_vertex.maxcount + 3);
 
 	if (auto_flush && m_index.tail > 0 && ((m_vertex.tail + 1) - m_vertex.head) >= n)
 	{
@@ -3919,16 +3919,7 @@ bool GSState::GSTransferBuffer::Update(int tw, int th, int bpp, int& len)
 	const int remaining = total - end;
 
 	if (len > remaining)
-	{
-		if (len > packet_size)
-		{
-#if defined(XBSX2_DEVBUILD) || defined(_DEBUG)
-			Console.Warning("GS transfer buffer overflow len %d remaining %d, tex_size %d tw %d th %d bpp %d", len, remaining, tex_size, tw, th, bpp);
-#endif
-		}
-
 		len = remaining;
-	}
 
 	return len > 0;
 }

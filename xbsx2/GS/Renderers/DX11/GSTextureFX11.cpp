@@ -218,7 +218,7 @@ void GSDevice11::SetupPS(const PSSelector& sel, const GSHWDrawConfig::PSConstant
 	{
 		if (sel.pal_fmt || sel.wms >= 3 || sel.wmt >= 3)
 		{
-			ASSERT(ssel.biln == 0);
+			pxAssert(ssel.biln == 0);
 		}
 
 		auto i = std::as_const(m_ps_ss).find(ssel.key);

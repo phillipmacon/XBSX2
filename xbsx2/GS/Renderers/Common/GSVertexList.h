@@ -45,7 +45,7 @@ public:
 
 	__forceinline Vertex& AddTail()
 	{
-		ASSERT(m_count < 3);
+		pxAssert(m_count < 3);
 
 		return *m_v[m_count++];
 	}

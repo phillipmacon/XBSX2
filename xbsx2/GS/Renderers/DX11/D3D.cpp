@@ -50,7 +50,7 @@ namespace D3D
 
 	wil::com_ptr_nothrow<IDXGIAdapter1> GetAdapterFromIndex(IDXGIFactory2* factory, int index)
 	{
-		ASSERT(factory);
+		pxAssert(factory);
 
 		wil::com_ptr_nothrow<IDXGIAdapter1> adapter;
 		if (index < 0 || factory->EnumAdapters1(index, adapter.put()) == DXGI_ERROR_NOT_FOUND)
@@ -73,7 +73,7 @@ namespace D3D
 		auto factory = CreateFactory(false);
 		auto adapter = GetAdapterFromIndex(factory.get(), 0);
 
-		ASSERT(adapter);
+		pxAssert(adapter);
 
 		DXGI_ADAPTER_DESC1 desc = {};
 		if (FAILED(adapter->GetDesc1(&desc)))
@@ -103,7 +103,7 @@ namespace D3D
 		auto factory = CreateFactory(false);
 		auto adapter = GetAdapterFromIndex(factory.get(), 0);
 
-		ASSERT(adapter);
+		pxAssert(adapter);
 
 		D3D_FEATURE_LEVEL feature_level;
 

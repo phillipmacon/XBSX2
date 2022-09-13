@@ -30,20 +30,25 @@
 #include "fmt/core.h"
 #include "HostDisplay.h"
 #include "imgui_internal.h"
-#include "misc/cpp/imgui_stdlib.h"								  
+#include "misc/cpp/imgui_stdlib.h"							
+#include <array>
 #include <cmath>
 #include <deque>
 #include <mutex>
+#include <variant>
 
 namespace ImGuiFullscreen
 {
+	using MessageDialogCallbackVariant = std::variant<InfoMessageDialogCallback, ConfirmMessageDialogCallback>;
+
 	static std::optional<Common::RGBA8Image> LoadTextureImage(const char* path);
 	static std::shared_ptr<HostDisplayTexture> UploadTexture(const char* path, const Common::RGBA8Image& image);
 	static void TextureLoaderThread();
 
 	static void DrawFileSelector();
 	static void DrawChoiceDialog();
-	// static void DrawInputDialog();						   
+	// static void DrawInputDialog();
+	static void DrawMessageDialog();
 	static void DrawBackgroundProgressDialogs(ImVec2& position, float spacing);
 	static void DrawNotifications(ImVec2& position, float spacing);
 	static void DrawToast();
@@ -108,6 +113,12 @@ namespace ImGuiFullscreen
 	static std::string s_input_dialog_text;
 	static std::string s_input_dialog_ok_text;
 	static InputStringDialogCallback s_input_dialog_callback;
+
+	static bool s_message_dialog_open = false;
+	static std::string s_message_dialog_title;
+	static std::string s_message_dialog_message;
+	static std::array<std::string, 3> s_message_dialog_buttons;
+	static MessageDialogCallbackVariant s_message_dialog_callback;
 
 	struct FileSelectorItem
 	{
@@ -213,7 +224,8 @@ void ImGuiFullscreen::Shutdown()
 
 	s_notifications.clear();
 	s_background_progress_dialogs.clear();
-	CloseInputDialog();			
+	// CloseInputDialog();
+	CloseMessageDialog();
 	s_choice_dialog_open = false;
 	s_choice_dialog_checkable = false;
 	s_choice_dialog_title = {};
@@ -457,7 +469,8 @@ void ImGuiFullscreen::EndLayout()
 {
 	DrawFileSelector();
 	DrawChoiceDialog();
-	// DrawInputDialog();			   
+	// DrawInputDialog();
+	DrawMessageDialog();
 
 	const float notification_margin = LayoutScale(10.0f);
 	const float spacing = LayoutScale(10.0f);
@@ -503,7 +516,6 @@ bool ImGuiFullscreen::WantsToCloseMenu()
 		if (ImGui::IsNavInputTest(ImGuiNavInput_Cancel, ImGuiNavReadMode_Released))
 		{
 			s_close_button_state = 2;
-			   
 		}
 	}
 	return s_close_button_state > 1;
@@ -517,6 +529,7 @@ void ImGuiFullscreen::ResetCloseMenuIfNeeded()
 		s_close_button_state = 0;
 	}
 }
+
 void ImGuiFullscreen::PushPrimaryColor()
 {
 	ImGui::PushStyleColor(ImGuiCol_Text, UIPrimaryTextColor);
@@ -545,10 +558,10 @@ void ImGuiFullscreen::PopSecondaryColor()
 	ImGui::PopStyleColor(5);
 }
 
-bool ImGuiFullscreen::BeginFullscreenColumns(const char* title)
+bool ImGuiFullscreen::BeginFullscreenColumns(const char* title, float pos_y)
 {
-	ImGui::SetNextWindowPos(ImVec2(g_layout_padding_left, 0.0f));
-	ImGui::SetNextWindowSize(ImVec2(LayoutScale(LAYOUT_SCREEN_WIDTH), ImGui::GetIO().DisplaySize.y));
+	ImGui::SetNextWindowPos(ImVec2(g_layout_padding_left, pos_y));
+	ImGui::SetNextWindowSize(ImVec2(LayoutScale(LAYOUT_SCREEN_WIDTH), ImGui::GetIO().DisplaySize.y - pos_y));
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -891,6 +904,32 @@ bool ImGuiFullscreen::MenuButton(const char* title, const char* summary, bool en
 	return pressed;
 }
 
+bool ImGuiFullscreen::MenuButtonWithoutSummary(const char* title, bool enabled, float height, ImFont* font, const ImVec2& text_align)
+{
+	ImRect bb;
+	bool visible, hovered;
+	bool pressed = MenuButtonFrame(title, enabled, height, &visible, &hovered, &bb);
+	if (!visible)
+		return false;
+
+	const float midpoint = bb.Min.y + font->FontSize + LayoutScale(4.0f);
+	const ImRect title_bb(bb.Min, ImVec2(bb.Max.x, midpoint));
+	const ImRect summary_bb(ImVec2(bb.Min.x, midpoint), bb.Max);
+
+	if (!enabled)
+		ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+
+	ImGui::PushFont(font);
+	ImGui::RenderTextClipped(title_bb.Min, title_bb.Max, title, nullptr, nullptr, text_align, &title_bb);
+	ImGui::PopFont();
+
+	if (!enabled)
+		ImGui::PopStyleColor();
+
+	s_menu_button_index++;
+	return pressed;
+}
+
 bool ImGuiFullscreen::MenuImageButton(const char* title, const char* summary, ImTextureID user_texture_id, const ImVec2& image_size,
 	bool enabled, float height, const ImVec2& uv0, const ImVec2& uv1, ImFont* title_font, ImFont* summary_font)
 {
@@ -1135,10 +1174,9 @@ bool ImGuiFullscreen::ThreeWayToggleButton(
 	float t = v->has_value() ? (v->value() ? 1.0f : 0.0f) : 0.5f;
 	ImDrawList* dl = ImGui::GetWindowDrawList();
 	ImGuiContext& g = *GImGui;
-	float ANIM_SPEED = 0.08f;
 	if (g.LastActiveId == g.CurrentWindow->GetID(title))
 	{
-		static constexpr const float ANIM_SPEED = 0.8f;										  
+		static constexpr const float ANIM_SPEED = 0.08f;
 		float t_anim = ImSaturate(g.LastActiveIdTimer / ANIM_SPEED);
 		t = (v->has_value() ? (v->value() ? std::min(t_anim + 0.5f, 1.0f) : (1.0f - t_anim)) : (t_anim * 0.5f));
 	}
@@ -1205,6 +1243,7 @@ bool ImGuiFullscreen::RangeButton(const char* title, const char* summary, s32* v
 	bool changed = false;
 
 	ImGui::SetNextWindowSize(LayoutScale(500.0f, 180.0f));
+	ImGui::SetNextWindowPos(ImGui::GetIO().DisplaySize * 0.5f, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 
 	ImGui::PushFont(g_large_font);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, LayoutScale(10.0f));
@@ -1273,6 +1312,7 @@ bool ImGuiFullscreen::RangeButton(const char* title, const char* summary, float*
 	bool changed = false;
 
 	ImGui::SetNextWindowSize(LayoutScale(500.0f, 180.0f));
+	ImGui::SetNextWindowPos(ImGui::GetIO().DisplaySize * 0.5f, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 
 	ImGui::PushFont(g_large_font);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, LayoutScale(10.0f));
@@ -1507,7 +1547,7 @@ void ImGuiFullscreen::PopulateFileSelectorItems()
 		for (std::string& root_path : FileSystem::GetRootDirectoryList())
 		{
 			s_file_selector_items.emplace_back(
-				StringUtil::StdStringFromFormat(ICON_FA_FOLDER "  %s", root_path.c_str()), std::move(root_path), false);
+				StringUtil::StdStringFromFormat(ICON_FA_FOLDER " %s", root_path.c_str()), std::move(root_path), false);
 		}
 	}
 	else
@@ -1524,7 +1564,7 @@ void ImGuiFullscreen::PopulateFileSelectorItems()
 			//FIXME FileSystem::CanonicalizePath(parent_path, true);
 		}
 
-		s_file_selector_items.emplace_back(ICON_FA_FOLDER_OPEN "  <Parent Directory>", std::move(parent_path), false);
+		s_file_selector_items.emplace_back(ICON_FA_FOLDER_OPEN " <Parent Directory>", std::move(parent_path), false);
 		std::sort(results.begin(), results.end(), [](const FILESYSTEM_FIND_DATA& lhs, const FILESYSTEM_FIND_DATA& rhs) {
 			if ((lhs.Attributes & FILESYSTEM_FILE_ATTRIBUTE_DIRECTORY) != (rhs.Attributes & FILESYSTEM_FILE_ATTRIBUTE_DIRECTORY))
 				return (lhs.Attributes & FILESYSTEM_FILE_ATTRIBUTE_DIRECTORY) != 0;
@@ -1541,7 +1581,7 @@ void ImGuiFullscreen::PopulateFileSelectorItems()
 
 			if (fd.Attributes & FILESYSTEM_FILE_ATTRIBUTE_DIRECTORY)
 			{
-				std::string title(StringUtil::StdStringFromFormat(ICON_FA_FOLDER "  %s", fd.FileName.c_str()));
+				std::string title(StringUtil::StdStringFromFormat(ICON_FA_FOLDER " %s", fd.FileName.c_str()));
 				s_file_selector_items.emplace_back(std::move(title), std::move(full_path), false);
 			}
 			else
@@ -1553,7 +1593,7 @@ void ImGuiFullscreen::PopulateFileSelectorItems()
 					continue;
 				}
 
-				std::string title(StringUtil::StdStringFromFormat(ICON_FA_FILE "  %s", fd.FileName.c_str()));
+				std::string title(StringUtil::StdStringFromFormat(ICON_FA_FILE " %s", fd.FileName.c_str()));
 				s_file_selector_items.emplace_back(std::move(title), std::move(full_path), true);
 			}
 		}
@@ -1637,13 +1677,13 @@ void ImGuiFullscreen::DrawFileSelector()
 
 		if (!s_file_selector_current_directory.empty())
 		{
-			MenuButton(fmt::format(ICON_FA_FOLDER_OPEN "  {}", s_file_selector_current_directory).c_str(), nullptr, false,
+			MenuButton(fmt::format(ICON_FA_FOLDER_OPEN " {}", s_file_selector_current_directory).c_str(), nullptr, false,
 				LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
 		}
 
 		if (s_file_selector_directory && !s_file_selector_current_directory.empty())
 		{
-			if (MenuButton(ICON_FA_FOLDER_PLUS "  <Use This Directory>", nullptr, true, LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY))
+			if (MenuButton(ICON_FA_FOLDER_PLUS " <Use This Directory>", nullptr, true, LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY))
 				directory_selected = true;
 		}
 
@@ -1773,7 +1813,7 @@ void ImGuiFullscreen::DrawChoiceDialog()
 				auto& option = s_choice_dialog_options[i];
 				std::string title;
 				if (option.second)
-					title += ICON_FA_CHECK "  ";
+					title += ICON_FA_CHECK " ";
 				title += option.first;
 
 				if (ActiveButton(title.c_str(), option.second, true, LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY))
@@ -1839,25 +1879,36 @@ void ImGuiFullscreen::OpenInputStringDialog(
 //	ImGui::SetNextWindowPos(ImGui::GetIO().DisplaySize * 0.5f, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 //	ImGui::OpenPopup(s_input_dialog_title.c_str());
 //
-//	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, LayoutScale(10.0f));
-//	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, LayoutScale(20.0f, 20.0f));
 //	ImGui::PushFont(g_large_font);
+//	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, LayoutScale(10.0f));
+//	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, LayoutScale(LAYOUT_MENU_BUTTON_X_PADDING, LAYOUT_MENU_BUTTON_Y_PADDING));
+//	ImGui::PushStyleColor(ImGuiCol_Text, UIPrimaryTextColor);
+//	ImGui::PushStyleColor(ImGuiCol_TitleBg, UIPrimaryDarkColor);
+//	ImGui::PushStyleColor(ImGuiCol_TitleBgActive, UIPrimaryColor);
+//	ImGui::PushStyleColor(ImGuiCol_PopupBg, UIBackgroundColor);
 //
 //	bool is_open = true;
 //	if (ImGui::BeginPopupModal(s_input_dialog_title.c_str(), &is_open,
 //			ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))
 //	{
 //		ImGui::TextWrapped("%s", s_input_dialog_message.c_str());
-//		ImGui::NewLine();
-//
-//		if (!s_input_dialog_caption.empty())
-//			ImGui::TextUnformatted(s_input_dialog_caption.c_str());
-//		ImGui::InputText("##input", &s_input_dialog_text);
-//
-//		ImGui::NewLine();
 //
 //		BeginMenuButtons();
 //
+//		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + LayoutScale(10.0f));
+//
+//		if (!s_input_dialog_caption.empty())
+//		{
+//			const float prev = ImGui::GetCursorPosX();
+//			ImGui::TextUnformatted(s_input_dialog_caption.c_str());
+//			ImGui::SetNextItemWidth(ImGui::GetCursorPosX() - prev);
+//		}
+//		else
+//		{
+//			ImGui::SetNextItemWidth(ImGui::GetCurrentWindow()->WorkRect.GetWidth());
+//		}
+//		ImGui::InputText("##input", &s_input_dialog_text);
+//		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + LayoutScale(10.0f));
 //		const bool ok_enabled = !s_input_dialog_text.empty();
 //
 //		if (ActiveButton(s_input_dialog_ok_text.c_str(), false, ok_enabled) && ok_enabled)
@@ -1870,22 +1921,21 @@ void ImGuiFullscreen::OpenInputStringDialog(
 //			cb(std::move(text));
 //		}
 //
-//		if (ActiveButton(ICON_FA_TIMES "  Cancel", false))
+//		if (ActiveButton(ICON_FA_TIMES " Cancel", false))
 //		{
 //			CloseInputDialog();
-//
 //			ImGui::CloseCurrentPopup();
 //		}
 //
 //		EndMenuButtons();
-//
 //		ImGui::EndPopup();
 //	}
 //	if (!is_open)
 //		CloseInputDialog();
 //
-//	ImGui::PopFont();
+//	ImGui::PopStyleColor(4);
 //	ImGui::PopStyleVar(2);
+//	ImGui::PopFont();
 //}
 
 void ImGuiFullscreen::CloseInputDialog()
@@ -1901,6 +1951,121 @@ void ImGuiFullscreen::CloseInputDialog()
 	s_input_dialog_text = {};
 	s_input_dialog_callback = {};
 }
+
+bool ImGuiFullscreen::IsMessageBoxDialogOpen()
+{
+	return s_message_dialog_open;
+}
+
+void ImGuiFullscreen::OpenConfirmMessageDialog(
+	std::string title, std::string message, ConfirmMessageDialogCallback callback, std::string yes_button_text, std::string no_button_text)
+{
+	CloseMessageDialog();
+	s_message_dialog_open = true;
+	s_message_dialog_title = std::move(title);
+	s_message_dialog_message = std::move(message);
+	s_message_dialog_callback = std::move(callback);
+	s_message_dialog_buttons[0] = std::move(yes_button_text);
+	s_message_dialog_buttons[1] = std::move(no_button_text);
+}
+
+void ImGuiFullscreen::OpenInfoMessageDialog(
+	std::string title, std::string message, InfoMessageDialogCallback callback, std::string button_text)
+{
+	CloseMessageDialog();
+	s_message_dialog_open = true;
+	s_message_dialog_title = std::move(title);
+	s_message_dialog_message = std::move(message);
+	s_message_dialog_callback = std::move(callback);
+	s_message_dialog_buttons[0] = std::move(button_text);
+}
+
+void ImGuiFullscreen::OpenMessageDialog(std::string title, std::string message, MessageDialogCallback callback,
+	std::string first_button_text, std::string second_button_text, std::string third_button_text)
+{
+	CloseMessageDialog();
+	s_message_dialog_open = true;
+	s_message_dialog_title = std::move(title);
+	s_message_dialog_message = std::move(message);
+	s_message_dialog_callback = std::move(callback);
+	s_message_dialog_buttons[0] = std::move(first_button_text);
+	s_message_dialog_buttons[1] = std::move(second_button_text);
+	s_message_dialog_buttons[2] = std::move(third_button_text);
+}
+
+void ImGuiFullscreen::CloseMessageDialog()
+{
+	if (!s_message_dialog_open)
+		return;
+	s_message_dialog_open = false;
+	s_message_dialog_title = {};
+	s_message_dialog_message = {};
+	s_message_dialog_buttons = {};
+	s_message_dialog_callback = {};
+}
+
+void ImGuiFullscreen::DrawMessageDialog()
+{
+	if (!s_message_dialog_open)
+		return;
+	const char* win_id = s_message_dialog_title.empty() ? "##messagedialog" : s_message_dialog_title.c_str();
+	ImGui::SetNextWindowSize(LayoutScale(700.0f, 0.0f));
+	ImGui::SetNextWindowPos(ImGui::GetIO().DisplaySize * 0.5f, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+	ImGui::OpenPopup(win_id);
+	ImGui::PushFont(g_large_font);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, LayoutScale(20.0f, 20.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, LayoutScale(10.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, LayoutScale(LAYOUT_MENU_BUTTON_X_PADDING, LAYOUT_MENU_BUTTON_Y_PADDING));
+	ImGui::PushStyleColor(ImGuiCol_Text, UIPrimaryTextColor);
+	ImGui::PushStyleColor(ImGuiCol_TitleBg, UIPrimaryDarkColor);
+	ImGui::PushStyleColor(ImGuiCol_TitleBgActive, UIPrimaryColor);
+	ImGui::PushStyleColor(ImGuiCol_PopupBg, UIBackgroundColor);
+	bool is_open = true;
+	const u32 flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+					  (s_message_dialog_title.empty() ? ImGuiWindowFlags_NoTitleBar : 0);
+	std::optional<s32> result;
+	if (ImGui::BeginPopupModal(win_id, &is_open, flags))
+	{
+		BeginMenuButtons();
+
+		ImGui::TextWrapped("%s", s_message_dialog_message.c_str());
+		ImGui::SetCursorPosY(ImGui::GetCursorPosY() + LayoutScale(20.0f));
+
+		for (s32 button_index = 0; button_index < static_cast<s32>(s_message_dialog_buttons.size()); button_index++)
+		{
+			if (!s_message_dialog_buttons[button_index].empty() && ActiveButton(s_message_dialog_buttons[button_index].c_str(), false))
+			{
+				result = button_index;
+				ImGui::CloseCurrentPopup();
+			}
+		}
+		EndMenuButtons();
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleColor(4);
+	ImGui::PopStyleVar(3);
+	ImGui::PopFont();
+	if (!is_open || result.has_value())
+	{
+		// have to move out in case they open another dialog in the callback
+		auto cb = (std::move(s_message_dialog_callback));
+		CloseMessageDialog();
+
+		if (std::holds_alternative<InfoMessageDialogCallback>(cb))
+		{
+			const InfoMessageDialogCallback& func = std::get<InfoMessageDialogCallback>(cb);
+			if (func)
+				func();
+		}
+		else if (std::holds_alternative<ConfirmMessageDialogCallback>(cb))
+		{
+			const ConfirmMessageDialogCallback& func = std::get<ConfirmMessageDialogCallback>(cb);
+			if (func)
+				func(result.value_or(1) == 0);
+		}
+	}
+}
+
 static float s_notification_vertical_position = 0.3f;
 static float s_notification_vertical_direction = -1.0f;
 
@@ -2223,9 +2388,9 @@ void ImGuiFullscreen::DrawToast()
 	}
 }
 
-void ImGuiFullscreen::SetTheme()
+void ImGuiFullscreen::SetTheme(bool light)
 {
-	if (theme == 0)
+	if (!light)
 	{
 		// Dark
 		UIBackgroundColor = HEX_TO_IMVEC4(0x000000, 0xff);
@@ -2244,26 +2409,26 @@ void ImGuiFullscreen::SetTheme()
 		UISecondaryDarkColor = HEX_TO_IMVEC4(0x002171, 0xff);
 		UISecondaryTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
 	}
-	else if (theme == 1)
-	{
-		// Purple
-		UIBackgroundColor = HEX_TO_IMVEC4(0x160021, 0xff); // Right of Main, Left of Game List, Settings
-		UIBackgroundTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
-		UIBackgroundLineColor = HEX_TO_IMVEC4(0x160021, 0xff); // Cursor Highlight
-		UIBackgroundHighlightColor = HEX_TO_IMVEC4(0x440066, 0xff); // Cursor
-		UIPrimaryColor = HEX_TO_IMVEC4(0x1f002e, 0xff); // Settings Nav Bar
-		UIPrimaryLightColor = HEX_TO_IMVEC4(0x484848, 0xff);
-		UIPrimaryDarkColor = HEX_TO_IMVEC4(0x1f002e, 0xff); // Left of Main, Right of Game List
-		UIPrimaryTextColor = HEX_TO_IMVEC4(0x9769ff, 0xff); // Settings Nav Bar Text/Icons
-		UIDisabledColor = HEX_TO_IMVEC4(0xcccccc, 0xff); // Menu Headings Settings
-		UITextHighlightColor = HEX_TO_IMVEC4(0xffffff, 0xff);
-		UIPrimaryLineColor = HEX_TO_IMVEC4(0xffffff, 0xff);
-		UISecondaryColor = HEX_TO_IMVEC4(0x440066, 0xff); // Scanning Bar
-		UISecondaryLightColor = HEX_TO_IMVEC4(0x440066, 0xff); // Active Buttons
-		UISecondaryDarkColor = HEX_TO_IMVEC4(0x002171, 0xff);
-		UISecondaryTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
-	}
-	else if (theme == 2)
+	//  else
+	//  {
+	//  	// Purple
+	//  	UIBackgroundColor = HEX_TO_IMVEC4(0x160021, 0xff); // Right of Main, Left of Game List, Settings
+	//  	UIBackgroundTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
+	//  	UIBackgroundLineColor = HEX_TO_IMVEC4(0x160021, 0xff); // Cursor Highlight
+	//  	UIBackgroundHighlightColor = HEX_TO_IMVEC4(0x440066, 0xff); // Cursor
+	//  	UIPrimaryColor = HEX_TO_IMVEC4(0x1f002e, 0xff); // Settings Nav Bar
+	//  	UIPrimaryLightColor = HEX_TO_IMVEC4(0x484848, 0xff);
+	//  	UIPrimaryDarkColor = HEX_TO_IMVEC4(0x1f002e, 0xff); // Left of Main, Right of Game List
+	//  	UIPrimaryTextColor = HEX_TO_IMVEC4(0x9769ff, 0xff); // Settings Nav Bar Text/Icons
+	//  	UIDisabledColor = HEX_TO_IMVEC4(0xcccccc, 0xff); // Menu Headings Settings
+	//  	UITextHighlightColor = HEX_TO_IMVEC4(0xffffff, 0xff);
+	//  	UIPrimaryLineColor = HEX_TO_IMVEC4(0xffffff, 0xff);
+	//  	UISecondaryColor = HEX_TO_IMVEC4(0x440066, 0xff); // Scanning Bar
+	//  	UISecondaryLightColor = HEX_TO_IMVEC4(0x440066, 0xff); // Active Buttons
+	//  	UISecondaryDarkColor = HEX_TO_IMVEC4(0x002171, 0xff);
+	//  	UISecondaryTextColor = HEX_TO_IMVEC4(0xffffff, 0xff);
+	//  }
+	else
 	{
 		// Light
 		UIBackgroundColor = HEX_TO_IMVEC4(0xf5f5f6, 0xff);

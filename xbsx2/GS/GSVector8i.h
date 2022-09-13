@@ -978,7 +978,7 @@ public:
 	template <int i>
 	__forceinline int extract8() const
 	{
-		ASSERT(i < 32);
+		pxAssert(i < 32);
 
 		GSVector4i v = extract<i / 16>();
 
@@ -988,7 +988,7 @@ public:
 	template <int i>
 	__forceinline int extract16() const
 	{
-		ASSERT(i < 16);
+		pxAssert(i < 16);
 
 		GSVector4i v = extract<i / 8>();
 
@@ -998,7 +998,7 @@ public:
 	template <int i>
 	__forceinline int extract32() const
 	{
-		ASSERT(i < 8);
+		pxAssert(i < 8);
 
 		GSVector4i v = extract<i / 4>();
 
@@ -1011,7 +1011,7 @@ public:
 	template <int i>
 	__forceinline GSVector4i extract() const
 	{
-		ASSERT(i < 2);
+		pxAssert(i < 2);
 
 		if (i == 0)
 			return GSVector4i(_mm256_castsi256_si128(m));
@@ -1022,7 +1022,7 @@ public:
 	template <int i>
 	__forceinline GSVector8i insert(__m128i m) const
 	{
-		ASSERT(i < 2);
+		pxAssert(i < 2);
 
 		return GSVector8i(_mm256_inserti128_si256(this->m, m, i));
 	}

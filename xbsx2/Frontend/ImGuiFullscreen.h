@@ -14,6 +14,7 @@
 
 #pragma once
 #include "common/Xbsx2Defs.h"
+#include "IconsFontAwesome5.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include <functional>
@@ -39,7 +40,6 @@ namespace ImGuiFullscreen
 	static constexpr float LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY = 26.0f;
 	static constexpr float LAYOUT_MENU_BUTTON_X_PADDING = 15.0f;
 	static constexpr float LAYOUT_MENU_BUTTON_Y_PADDING = 10.0f;
-	static constexpr int theme = 0;
 
 	extern ImFont* g_standard_font;
 	extern ImFont* g_medium_font;
@@ -102,7 +102,7 @@ namespace ImGuiFullscreen
 	/// Initializes, setting up any state.
 	bool Initialize(const char* placeholder_image_path);
 
-	void SetTheme();
+	void SetTheme(bool light);
 	void SetFonts(ImFont* standard_font, ImFont* medium_font, ImFont* large_font);
 	bool UpdateLayoutScale();
 
@@ -132,7 +132,7 @@ namespace ImGuiFullscreen
 
 	void DrawWindowTitle(const char* title);
 
-	bool BeginFullscreenColumns(const char* title = nullptr);
+	bool BeginFullscreenColumns(const char* title = nullptr, float pos_y = 0.0f);
 	void EndFullscreenColumns();
 
 	bool BeginFullscreenColumnWindow(float start, float end, const char* name, const ImVec4& background = UIBackgroundColor);
@@ -155,6 +155,8 @@ namespace ImGuiFullscreen
 		ImFont* font = g_large_font);
 	bool MenuButton(const char* title, const char* summary, bool enabled = true, float height = LAYOUT_MENU_BUTTON_HEIGHT,
 		ImFont* font = g_large_font, ImFont* summary_font = g_medium_font);
+	bool MenuButtonWithoutSummary(const char* title, bool enabled = true, float height = LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY,
+		ImFont* font = g_large_font, const ImVec2& text_align = ImVec2(0.0f, 0.0f));
 	bool MenuButtonWithValue(const char* title, const char* summary, const char* value, bool enabled = true,
 		float height = LAYOUT_MENU_BUTTON_HEIGHT, ImFont* font = g_large_font, ImFont* summary_font = g_medium_font);
 	bool MenuImageButton(const char* title, const char* summary, ImTextureID user_texture_id, const ImVec2& image_size, bool enabled = true,
@@ -222,6 +224,18 @@ namespace ImGuiFullscreen
 	void OpenInputStringDialog(
 		std::string title, std::string message, std::string caption, std::string ok_button_text, InputStringDialogCallback callback);
 	void CloseInputDialog();
+
+	using ConfirmMessageDialogCallback = std::function<void(bool)>;
+	using InfoMessageDialogCallback = std::function<void()>;
+	using MessageDialogCallback = std::function<void(s32)>;
+	bool IsMessageBoxDialogOpen();
+	void OpenConfirmMessageDialog(std::string title, std::string message, ConfirmMessageDialogCallback callback,
+		std::string yes_button_text = ICON_FA_CHECK " Yes", std::string no_button_text = ICON_FA_TIMES " No");
+	void OpenInfoMessageDialog(std::string title, std::string message, InfoMessageDialogCallback callback = {},
+		std::string button_text = ICON_FA_WINDOW_CLOSE " Close");
+	void OpenMessageDialog(std::string title, std::string message, MessageDialogCallback callback, std::string first_button_text,
+		std::string second_button_text, std::string third_button_text);
+	void CloseMessageDialog();
 	
 	float GetNotificationVerticalPosition();
 	float GetNotificationVerticalDirection();

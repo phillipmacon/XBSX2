@@ -45,7 +45,7 @@ const char* shaderName(ShaderConvert value)
 		case ShaderConvert::YUV:                    return "ps_yuv";
 			// clang-format on
 		default:
-			ASSERT(0);
+			pxAssert(0);
 			return "ShaderConvertUnknownShader";
 	}
 }
@@ -63,7 +63,7 @@ const char* shaderName(PresentShader value)
 		case PresentShader::LOTTES_FILTER:     return "ps_filter_lottes";
 			// clang-format on
 		default:
-			ASSERT(0);
+			pxAssert(0);
 			return "DisplayShaderUnknownShader";
 	}
 }
@@ -283,8 +283,8 @@ GSTexture::Format GSDevice::GetDefaultTextureFormat(GSTexture::Type type)
 
 bool GSDevice::DownloadTextureConvert(GSTexture* src, const GSVector4& sRect, const GSVector2i& dSize, GSTexture::Format format, ShaderConvert ps_shader, GSTexture::GSMap& out_map, const bool linear)
 {
-	ASSERT(src);
-	ASSERT(format == GSTexture::Format::Color || format == GSTexture::Format::UInt16 || format == GSTexture::Format::UInt32);
+	pxAssert(src);
+	pxAssert(format == GSTexture::Format::Color || format == GSTexture::Format::UInt16 || format == GSTexture::Format::UInt32);
 
 	GSTexture* dst = CreateRenderTarget(dSize.x, dSize.y, format);
 	if (!dst)
@@ -446,7 +446,7 @@ bool GSDevice::ResizeTexture(GSTexture** t, GSTexture::Type type, int w, int h, 
 {
 	if (t == NULL)
 	{
-		ASSERT(0);
+		pxAssert(0);
 		return false;
 	}
 
