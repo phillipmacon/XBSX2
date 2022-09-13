@@ -187,6 +187,9 @@
     <ClCompile Include="Image.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MemorySettingsInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="TextureDecompress.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -442,6 +445,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Easing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HeterogeneousContainers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MemorySettingsInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TextureDecompress.h">

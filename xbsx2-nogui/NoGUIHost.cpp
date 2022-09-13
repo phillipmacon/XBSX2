@@ -107,7 +107,7 @@ namespace NoGUIHost
 // Local variable declarations
 //////////////////////////////////////////////////////////////////////////
 static std::unique_ptr<INISettingsInterface> s_base_settings_interface;
-static Threading::KernelSemaphore s_host_display_created;
+static Threading::KernelSemaphore s_platform_window_updated;
 alignas(16) static SysMtgsThread s_mtgs_thread;
 static std::atomic_bool s_running{false};
 static bool s_batch_mode = false;
@@ -747,7 +747,7 @@ void Host::OnInputDeviceDisconnected(const std::string_view& identifier)
 		fmt::format("{} Connected.", identifier), ICON_FA_GAMEPAD, fmt::format("{} Disconnected.", identifier), 5.0f);
 }
 
-HostDisplay* Host::AcquireHostDisplay(HostDisplay::RenderAPI api)
+bool Host::AcquireHostDisplay(HostDisplay::RenderAPI api)
 {
 	g_nogui_window->ExecuteInMessageLoop([api]() {
 		if (g_nogui_window->CreatePlatformWindow(NoGUIHost::GetWindowTitle(VMManager::GetGameName())))
@@ -773,15 +773,15 @@ HostDisplay* Host::AcquireHostDisplay(HostDisplay::RenderAPI api)
 				g_nogui_window->DestroyPlatformWindow();
 		}
 
-		s_host_display_created.Post();
+		s_platform_window_updated.Post();
 	});
 
-	s_host_display_created.Wait();
+	s_platform_window_updated.Wait();
 
 	if (!g_host_display)
 	{
 		g_nogui_window->ReportError("Error", "Failed to create host display.");
-		return nullptr;
+		return false;
 	}
 
 	if (!g_host_display->MakeRenderContextCurrent() || !g_host_display->InitializeRenderDevice(EmuFolders::Cache, false) ||
@@ -789,7 +789,7 @@ HostDisplay* Host::AcquireHostDisplay(HostDisplay::RenderAPI api)
 	{
 		g_nogui_window->ReportError("Error", "Failed to initialize render device.");
 		ReleaseHostDisplay();
-		return nullptr;
+		return false;
 	}
 
 	Console.WriteLn(Color_StrongGreen, "%s Graphics Driver Info:", HostDisplay::RenderAPIToString(g_host_display->GetRenderAPI()));
@@ -799,10 +799,10 @@ HostDisplay* Host::AcquireHostDisplay(HostDisplay::RenderAPI api)
 	{
 		g_nogui_window->ReportError("Error", "Failed to initialize fullscreen UI");
 		ReleaseHostDisplay();
-		return nullptr;
+		return false;
 	}
 
-	return g_host_display.get();
+	return true;
 }
 
 void Host::ReleaseHostDisplay()
@@ -814,7 +814,12 @@ void Host::ReleaseHostDisplay()
 
 	g_host_display.reset();
 
-	g_nogui_window->ExecuteInMessageLoop([]() { g_nogui_window->DestroyPlatformWindow(); });
+	// Need to block here, otherwise the recreation message associates with the old window.
+	g_nogui_window->ExecuteInMessageLoop([]() {
+		g_nogui_window->DestroyPlatformWindow();
+		s_platform_window_updated.Post();
+	});
+	s_platform_window_updated.Wait();
 }
 
 bool Host::BeginPresentFrame(bool frame_skip)
@@ -1114,7 +1119,7 @@ void NoGUIHost::PrintCommandLineVersion()
 {
 	Host::InitializeEarlyConsole();
 	std::fprintf(stderr, "%s\n", (GetAppNameAndVersion() + GetAppConfigSuffix()).c_str());
-	std::fprintf(stderr, "https://xbsx2.net/\n");
+	std::fprintf(stderr, "https://pcsx2.net/\n");
 	std::fprintf(stderr, "\n");
 }
 

@@ -119,7 +119,9 @@ using ImGuiFullscreen::MenuImageButton;
 using ImGuiFullscreen::NavButton;
 using ImGuiFullscreen::NavTitle;
 using ImGuiFullscreen::OpenChoiceDialog;
+using ImGuiFullscreen::OpenConfirmMessageDialog;
 using ImGuiFullscreen::OpenFileSelector;
+using ImGuiFullscreen::OpenInfoMessageDialog;
 using ImGuiFullscreen::OpenInputStringDialog;
 using ImGuiFullscreen::PopPrimaryColor;
 using ImGuiFullscreen::PushPrimaryColor;
@@ -292,6 +294,7 @@ namespace FullscreenUI
 	static void DoLoadInputProfile();
 	static void DoSaveInputProfile();
 	static void DoSaveInputProfile(const std::string& name);
+	static void DoResetSettings();
 
 	static bool DrawToggleSetting(SettingsInterface* bsi, const char* title, const char* summary, const char* section, const char* key,
 		bool default_value, bool enabled = true, bool allow_tristate = true, float height = ImGuiFullscreen::LAYOUT_MENU_BUTTON_HEIGHT,
@@ -673,7 +676,12 @@ void FullscreenUI::Render()
 	}
 
 	if (s_save_state_selector_open)
-		DrawSaveStateSelector(s_save_state_selector_loading, false);
+	{
+		if (s_save_state_selector_resuming)
+			DrawResumeStateSelector();
+		else
+			DrawSaveStateSelector(s_save_state_selector_loading, false);
+	}
 
 	if (s_about_window_open)
 		DrawAboutWindow();
@@ -1831,7 +1839,7 @@ void FullscreenUI::DrawSettingsWindow()
 			SettingsPage::Controller, SettingsPage::Hotkey, /*SettingsPage::Achievements,*/ SettingsPage::Directory, SettingsPage::Advanced};
 		static constexpr SettingsPage per_game_pages[] = {SettingsPage::Summary, SettingsPage::Emulation, SettingsPage::System,
 			SettingsPage::Display, SettingsPage::Enhancements, SettingsPage::Audio, SettingsPage::MemoryCard, SettingsPage::Controller, SettingsPage::GameFixes};
-		static constexpr const char* titles[] = {"Summary", "UI Settings",	"Emulator Settings", "System Settings", "Display Settings", "Enhancements Settings", 
+		static constexpr const char* titles[] = {"Summary", "UI Settings", "Emulator Settings", "System Settings", "Display Settings", "Enhancements Settings",
 			"Audio Settings", "Memory Card Settings", "Controller Settings", "Hotkey Settings", /*"Achievements Settings",*/ "Directory Settings", "Advanced Settings", "Game Fixes"};
 
 		const bool game_settings = IsEditingGameSettings(GetEditingSettingsInterface());
@@ -2677,7 +2685,6 @@ void FullscreenUI::DrawMemoryCardSettingsPage()
 	// 	ImGui::OpenPopup("Create Memory Card");
 	// DrawCreateMemoryCardWindow();
 
-	DrawFolderSetting(bsi, ICON_FA_FOLDER_OPEN " Memory Card Directory", "Folders", "MemoryCards", EmuFolders::MemoryCards);
 	DrawToggleSetting(bsi, ICON_FA_SEARCH " Folder Memory Card Filter",
 		"Simulates a larger memory card by filtering saves only to the current game.", "EmuCore", "McdFolderAutoManage", true);
 	DrawToggleSetting(bsi, ICON_FA_MAGIC " Auto Eject When Loading",
@@ -2951,6 +2958,17 @@ void FullscreenUI::DoSaveInputProfile()
 	});
 }
 
+//  void FullscreenUI::DoResetSettings()
+//  {
+//  	OpenConfirmMessageDialog(ICON_FA_FOLDER_MINUS " Reset Settings",
+//  		"Are you sure you want to restore the default settings? Any preferences will be lost.", [](bool result) {
+//  			if (result)
+//  			{
+//  				Host::RunOnCPUThread([]() { Host::RequestResetSettings(false, true, false, false, false); });
+//  				ShowToast(std::string(), "Settings reset to defaults.");
+//  			}
+//  		});
+//  }
 void FullscreenUI::DrawControllerSettingsPage()
 {
 	BeginMenuButtons();
@@ -2991,11 +3009,11 @@ void FullscreenUI::DrawControllerSettingsPage()
 		if (MenuButton(ICON_FA_FOLDER_MINUS " Reset Settings", "Resets all controller inputs to default."))
 			ResetControllerSettings();
 	}
-	 
-	 //  if (MenuButton(ICON_FA_FOLDER_OPEN " Load Profile", "Replaces these settings with a previously saved input profile."))
-	 //  	DoLoadInputProfile();
-	 //  if (MenuButton(ICON_FA_SAVE " Save Profile", "Stores the current settings to an input profile."))
-	 //  	DoSaveInputProfile();
+
+	//  if (MenuButton(ICON_FA_FOLDER_OPEN " Load Profile", "Replaces these settings with a previously saved input profile."))
+	//  	DoLoadInputProfile();
+	//  if (MenuButton(ICON_FA_SAVE " Save Profile", "Stores the current settings to an input profile."))
+	//  	DoSaveInputProfile();
 
 #ifndef _UWP
 
@@ -3654,7 +3672,7 @@ void FullscreenUI::CloseSaveStateSelector()
 	s_save_state_selector_resuming = false;
 	s_save_state_selector_game_path = {};
 	if (s_current_main_window != MainWindowType::GameList)
-			ReturnToMainWindow();
+		ReturnToMainWindow();
 }
 
 void FullscreenUI::DrawSaveStateSelector(bool is_loading, bool fullscreen)
@@ -4055,12 +4073,12 @@ void FullscreenUI::DrawGameList(const ImVec2& heading_size)
 			}
 		}
 
-			if (WantsToCloseMenu())
-			{
-				ResetFocusHere();
-				if (ImGui::IsWindowFocused())
-					ReturnToMainWindow();
-			}
+		if (WantsToCloseMenu())
+		{
+			ResetFocusHere();
+			if (ImGui::IsWindowFocused())
+				ReturnToMainWindow();
+		}
 
 		EndMenuButtons();
 	}
@@ -4161,7 +4179,6 @@ void FullscreenUI::DrawGameList(const ImVec2& heading_size)
 		ImGui::EndGroup();
 		ImGui::PopTextWrapPos();
 		ImGui::PopStyleVar();
-
 	}
 	EndFullscreenColumnWindow();
 

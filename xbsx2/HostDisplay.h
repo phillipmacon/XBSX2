@@ -154,7 +154,7 @@ extern std::unique_ptr<HostDisplay> g_host_display;
 namespace Host
 {
 	/// Creates the host display. This may create a new window. The API used depends on the current configuration.
-	HostDisplay* AcquireHostDisplay(HostDisplay::RenderAPI api);
+	bool AcquireHostDisplay(HostDisplay::RenderAPI api);
 
 	/// Destroys the host display. This may close the display window.
 	void ReleaseHostDisplay();

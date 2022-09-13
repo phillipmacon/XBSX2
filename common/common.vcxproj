@@ -87,6 +87,7 @@
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="MD5Digest.cpp" />
+    <ClCompile Include="MemorySettingsInterface.cpp" />
     <ClCompile Include="ProgressCallback.cpp" />
     <ClCompile Include="StackWalker.cpp">
       <ExcludedFromBuild Condition="$(Configuration.Contains(UWP))">true</ExcludedFromBuild>
@@ -181,9 +182,11 @@
     <ClInclude Include="GL\StreamBuffer.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="HashCombine.h" />
+    <ClInclude Include="HeterogeneousContainers.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="LRUCache.h" />
     <ClInclude Include="MD5Digest.h" />
+    <ClInclude Include="MemorySettingsInterface.h" />
     <ClInclude Include="ProgressCallback.h" />
     <ClInclude Include="ScopedGuard.h" />
     <ClInclude Include="StackWalker.h" />
