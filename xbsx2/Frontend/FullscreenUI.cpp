@@ -778,7 +778,7 @@ void FullscreenUI::DoStartPath(const std::string& path, std::optional<s32> state
 		if (VMManager::HasValidVM())
 			return;
 
-		if (VMManager::Initialize(std::move(params)))
+		if (VMManager::Initialize(params))
 			VMManager::SetState(VMState::Running);
 		else
 			s_current_main_window = prev_window;
@@ -805,7 +805,7 @@ void FullscreenUI::DoStartBIOS()
 			return;
 
 		VMBootParameters params;
-		if (VMManager::Initialize(std::move(params)))
+		if (VMManager::Initialize(params))
 			VMManager::SetState(VMState::Running);
 		else
 			SwitchToLanding();
@@ -3568,8 +3568,8 @@ void FullscreenUI::InitializePlaceholderSaveStateListEntry(
 	li->title = fmt::format("{0} Slot {1}##game_slot_{1}", s_current_game_title, slot);
 	li->summary = "No Save State";
 	li->path = {};
-	li->slot = slot;
 	li->timestamp = 0;
+	li->slot = slot;
 	li->preview_texture = {};
 }
 
@@ -3909,7 +3909,7 @@ void FullscreenUI::DoLoadState(std::string path)
 			VMBootParameters params;
 			params.filename = std::move(boot_path);
 			params.save_state = std::move(path);
-			if (VMManager::Initialize(std::move(params)))
+			if (VMManager::Initialize(params))
 				VMManager::SetState(VMState::Running);
 		}
 	});
@@ -4075,7 +4075,6 @@ void FullscreenUI::DrawGameList(const ImVec2& heading_size)
 
 		if (WantsToCloseMenu())
 		{
-			ResetFocusHere();
 			if (ImGui::IsWindowFocused())
 				ReturnToMainWindow();
 		}

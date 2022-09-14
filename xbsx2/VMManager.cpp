@@ -50,7 +50,7 @@
 #include "PAD/Host/PAD.h"
 #include "Sio.h"
 #include "ps2/BiosTools.h"
-#include "Recording/InputRecordingControls.h"											 
+#include "Recording/InputRecordingControls.h"
 
 #include "DebugTools/MIPSAnalyst.h"
 #include "DebugTools/SymbolMap.h"
@@ -134,7 +134,7 @@ static std::vector<u8> s_no_interlacing_cheats_data;
 static bool s_no_interlacing_cheats_loaded = false;
 static s32 s_active_widescreen_patches = 0;
 static u32 s_active_no_interlacing_patches = 0;
-static s32 s_current_save_slot = 1;
+static s32 s_current_save_slot = 0;
 static u32 s_frame_advance_count = 0;
 static u32 s_mxcsr_saved;
 static std::optional<LimiterModeType> s_limiter_mode_prior_to_hold_interaction;
@@ -374,7 +374,7 @@ std::string VMManager::GetGameSettingsPath(const std::string_view& game_serial, 
 	Path::SanitizeFileName(sanitized_serial);
 
 	return game_serial.empty() ?
-			   Path::Combine(EmuFolders::GameSettings, fmt::format("{:08X}.ini", game_crc)) :
+               Path::Combine(EmuFolders::GameSettings, fmt::format("{:08X}.ini", game_crc)) :
                Path::Combine(EmuFolders::GameSettings, fmt::format("{}_{:08X}.ini", sanitized_serial, game_crc));
 }
 
@@ -418,7 +418,7 @@ void VMManager::RequestDisplaySize(float scale /*= 0.0f*/)
 	if (scale != 0.0f)
 	{
 		// unapply the upscaling, then apply the scale
-		scale = (1.0f / static_cast<float>(GSConfig.UpscaleMultiplier)) * scale;
+		scale = (1.0f / GSConfig.UpscaleMultiplier) * scale;
 		width *= scale;
 		height *= scale;
 	}
@@ -840,9 +840,9 @@ bool VMManager::CheckBIOSAvailability()
 	// TODO: When we translate core strings, translate this.
 
 	const char* message = "XBSX2 requires a PS2 BIOS in order to run.\n\n"
-		"For legal reasons, you *must* obtain a BIOS from an actual PS2 unit that you own (borrowing doesn't count).\n\n"
-		"Once dumped, this BIOS image should be placed in the bios folder within the data directory (Tools Menu -> Open Data Directory).\n\n"
-		"Please consult the FAQs and Guides for further instructions.";
+						  "For legal reasons, you *must* obtain a BIOS from an actual PS2 unit that you own (borrowing doesn't count).\n\n"
+						  "Once dumped, this BIOS image should be placed in the bios folder within the data directory (Tools Menu -> Open Data Directory).\n\n"
+						  "Please consult the FAQs and Guides for further instructions.";
 
 	Host::ReportErrorAsync("Startup Error", message);
 	return false;
@@ -1075,7 +1075,7 @@ void VMManager::Shutdown(bool save_resume_state)
 	DoCDVDclose();
 	FWclose();
 	FileMcd_EmuClose();
-	
+
 	// If the fullscreen UI is running, do a hardware reset on the GS
 	// so that the texture cache and targets are all cleared.
 	if (s_gs_open_on_initialize)
@@ -1895,7 +1895,7 @@ DEFINE_HOTKEY("ToggleTurbo", "2. Emulator", "Toggle Turbo", [](s32 pressed) {
 	if (!pressed && VMManager::HasValidVM())
 	{
 		VMManager::SetLimiterMode((EmuConfig.LimiterMode != LimiterModeType::Turbo) ?
-									  LimiterModeType::Turbo :
+                                      LimiterModeType::Turbo :
                                       LimiterModeType::Nominal);
 	}
 })

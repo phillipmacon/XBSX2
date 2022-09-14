@@ -955,6 +955,8 @@ SCAJ-20115:
 SCAJ-20116:
   name: "Death by Degrees - Tekken - Nina Williams"
   region: "NTSC-Ch-J"
+  gsHWFixes:
+    alignSprite: 1 # Fixes FMV lines.
 SCAJ-20117:
   name: "Fu-un Bakumatsu-den"
   region: "NTSC-Unk"
@@ -3453,6 +3455,8 @@ SCES-52586:
   name: "Death by Degrees"
   region: "PAL-E-S"
   compat: 5
+  gsHWFixes:
+    alignSprite: 1 # Fixes FMV lines.
 SCES-52596:
   name: "This is Football 2005"
   region: "PAL-Unk"
@@ -3529,10 +3533,14 @@ SCES-53033:
 SCES-53053:
   name: "Death by Degrees"
   region: "PAL-F-I"
+  gsHWFixes:
+    alignSprite: 1 # Fixes FMV lines.
 SCES-53054:
   name: "Death by Degrees"
   region: "PAL-E-G"
   compat: 5
+  gsHWFixes:
+    alignSprite: 1 # Fixes FMV lines.
 SCES-53055:
   name: "Eyetoy - Antigrav"
   region: "PAL-M5"
@@ -8477,6 +8485,8 @@ SLAJ-25051:
 SLAJ-25052:
   name: "Urbz, The - Sims in the City"
   region: "NTSC-Unk"
+  gsHWFixes:
+    halfPixelOffset: 2 # Fixes upscaling lines.
 SLAJ-25053:
   name: "Burnout 3 - Takedown"
   region: "NTSC-Unk"
@@ -10529,18 +10539,38 @@ SLES-50803:
 SLES-50804:
   name: "Deus Ex"
   region: "PAL-E"
+  gsHWFixes:
+    roundSprite: 1 # Fixes lines in HUD and text boxes.
+    texturePreloading: 1 # Performs much better with partial.
+    preloadFrameData: 1 # Fixes loading screen images being cut off two thirds.
 SLES-50805:
   name: "Deus Ex"
   region: "PAL-G"
+  gsHWFixes:
+    roundSprite: 1 # Fixes lines in HUD and text boxes.
+    texturePreloading: 1 # Performs much better with partial.
+    preloadFrameData: 1 # Fixes loading screen images being cut off two thirds.
 SLES-50806:
   name: "Deus Ex"
   region: "PAL-F"
+  gsHWFixes:
+    roundSprite: 1 # Fixes lines in HUD and text boxes.
+    texturePreloading: 1 # Performs much better with partial.
+    preloadFrameData: 1 # Fixes loading screen images being cut off two thirds.
 SLES-50807:
   name: "Deus Ex"
   region: "PAL-I"
+  gsHWFixes:
+    roundSprite: 1 # Fixes lines in HUD and text boxes.
+    texturePreloading: 1 # Performs much better with partial.
+    preloadFrameData: 1 # Fixes loading screen images being cut off two thirds.
 SLES-50808:
   name: "Deus Ex"
   region: "PAL-S"
+  gsHWFixes:
+    roundSprite: 1 # Fixes lines in HUD and text boxes.
+    texturePreloading: 1 # Performs much better with partial.
+    preloadFrameData: 1 # Fixes loading screen images being cut off two thirds.
 SLES-50809:
   name: "Next Generation Tennis"
   region: "PAL-M6"
@@ -12900,6 +12930,7 @@ SLES-51917:
     textureInsideRT: 1 # Fixes the shape of shadows.
     autoFlush: 1 # Fixes water rendering.
     halfPixelOffset: 3 # Fixes bloom misalignment, needs this harsh offset for autoflush.
+    cpuFramebufferConversion: 1 # Fixes shield rendering.
 SLES-51918:
   name: "Prince of Persia - The Sands of Time"
   region: "PAL-M5"
@@ -13441,6 +13472,8 @@ SLES-52219:
 SLES-52230:
   name: "Muppets Party Cruise"
   region: "PAL-E-F"
+  speedHacks:
+    mvuFlagSpeedHack: 0 # Fixes bad graphics.
   gameFixes:
     - OPHFlagHack # Fixes some hanging throughout the game.
 SLES-52237:
@@ -14980,6 +15013,8 @@ SLES-52908:
   name: "Urbz, The - Sims in the City"
   region: "PAL-M11"
   compat: 5
+  gsHWFixes:
+    halfPixelOffset: 2 # Fixes upscaling lines.
 SLES-52909:
   name: "UEFA Champions League 2004-2005"
   region: "PAL-E-G"
@@ -23220,6 +23255,9 @@ SLPM-55269:
   region: "NTSC-J"
   gameFixes:
     - SoftwareRendererFMVHack # Vertical and horizontal lines in FMV.
+SLPM-55270:
+  name: "Shinkyoku Soukai Polyphonica - After School"
+  region: "NTSC-J"
 SLPM-55271:
   name: "FIFA 10 - World Class Soccer [Ea -SY! 1980]"
   region: "NTSC-J"
@@ -23246,6 +23284,9 @@ SLPM-55283:
   region: "NTSC-J"
 SLPM-55285:
   name: "Crimson Empire"
+  region: "NTSC-J"
+SLPM-55288:
+  name: "Shin Koihime Musou - Otome Ryouran - Sangokushi Engi"
   region: "NTSC-J"
 SLPM-55292:
   name: "Grand Theft Auto - San Andreas [Rockstar Classics]"
@@ -23373,6 +23414,11 @@ SLPM-60254:
 SLPM-60256:
   name: "Dengeki D73 demo"
   region: "NTSC-J"
+SLPM-60257:
+  name: "Death by Degrees"
+  region: "NTSC-J"
+  gsHWFixes:
+    alignSprite: 1 # Fixes FMV lines.
 SLPM-60260:
   name: "D1 Professional Drift Grand Prix Series [Taikenban]"
   region: "NTSC-J"
@@ -26273,6 +26319,8 @@ SLPM-65183:
 SLPM-65184:
   name: "Document of Metal Gear Solid 2, The"
   region: "NTSC-J"
+  gameFixes:
+    - EETimingHack # Fixes corrupted or missing menu fonts.
 SLPM-65185:
   name: "Ferrari F355 Challenge"
   region: "NTSC-J"
@@ -26530,8 +26578,10 @@ SLPM-65245:
     roundSprite: 2 # Fixes font artifacts.
     mergeSprite: 1 # Fixes flame-like bleeding.
 SLPM-65246:
-  name: "Kaidou Battle"
+  name: "Kaidou Battle - Nikko, Haruna, Rokko, Hakone"
   region: "NTSC-J"
+  gsHWFixes:
+    alignSprite: 1 # Fixes vertical lines.
 SLPM-65247:
   name: "Sangokushi Senki 2"
   region: "NTSC-J"
@@ -28348,6 +28398,8 @@ SLPM-65806:
 SLPM-65807:
   name: "Urbz, The - Sims in the City"
   region: "NTSC-J"
+  gsHWFixes:
+    halfPixelOffset: 2 # Fixes upscaling lines.
 SLPM-65808:
   name: "Derby Tsuku 4 - Derby Uma o Tsukurou!"
   region: "NTSC-J"
@@ -29369,6 +29421,9 @@ SLPM-66109:
   region: "NTSC-J"
 SLPM-66110:
   name: "Fushigi no Umi no Nadia - Inherit the Blue Water [Limited Edition]"
+  region: "NTSC-J"
+SLPM-66111:
+  name: "Fushigi no Umi no Nadia - Dennou Battle - Miss Nautilus Contest"
   region: "NTSC-J"
 SLPM-66112:
   name: "Fushigi no Umi no Nadia - Inherit the Blue Water"
@@ -30841,6 +30896,8 @@ SLPM-66515:
 SLPM-66516:
   name: "Sims, The & The Urbz - Sims in the City [EA Best Hits]"
   region: "NTSC-J"
+  gsHWFixes:
+    halfPixelOffset: 2 # Fixes upscaling lines.
 SLPM-66518:
   name: "Teikoku Sensenki [Best Version]"
   region: "NTSC-J"
@@ -35842,6 +35899,8 @@ SLPS-25421:
 SLPS-25422:
   name: "Death by Degrees - Tekken - Nina Williams"
   region: "NTSC-J"
+  gsHWFixes:
+    alignSprite: 1 # Fixes FMV lines.
 SLPS-25423:
   name: "Kaitou Apricot - Complete Edition [Limited Edition]"
   region: "NTSC-J"
@@ -37546,6 +37605,9 @@ SLPS-25918:
   region: "NTSC-J"
   gsHWFixes:
     roundSprite: 1 # Fixes character sprites.
+SLPS-25919:
+  name: "Sengoku Tenka Touitsu"
+  region: "NTSC-J"
 SLPS-25927:
   name: "Tomb Raider - Underworld"
   region: "NTSC-J"
@@ -37607,6 +37669,9 @@ SLPS-25961:
     eeRoundMode: 1 # Fixes camera issue.
   gameFixes:
     - FpuNegDivHack # Fixes target loss issue.
+SLPS-25978:
+  name: "Shin Master of Monsters Final EX"
+  region: "NTSC-J"
 SLPS-25983:
   name: "King of Fighters 2002, The - Unlimited Match"
   region: "NTSC-J"
@@ -38636,6 +38701,10 @@ SLUS-20111:
   name: "Deus Ex - The Conspiracy"
   region: "NTSC-U"
   compat: 5
+  gsHWFixes:
+    roundSprite: 1 # Fixes lines in HUD and text boxes.
+    texturePreloading: 1 # Performs much better with partial.
+    preloadFrameData: 1 # Fixes loading screen images being cut off two thirds.
 SLUS-20112:
   name: "Star Trek - Shattered Universe"
   region: "NTSC-U"
@@ -40480,6 +40549,8 @@ SLUS-20543:
   name: "Document of Metal Gear Solid 2, The"
   region: "NTSC-U"
   compat: 5
+  gameFixes:
+    - EETimingHack # Fixes corrupted or missing menu fonts.
 SLUS-20544:
   name: "Malice"
   region: "NTSC-U"
@@ -40908,6 +40979,8 @@ SLUS-20635:
   name: "Muppets Party Cruise, Jim Henson's"
   region: "NTSC-U"
   compat: 5
+  speedHacks:
+    mvuFlagSpeedHack: 0 # Fixes bad graphics.
   gameFixes:
     - OPHFlagHack # Fixes some hanging throughout the game.
 SLUS-20636:
@@ -41531,6 +41604,7 @@ SLUS-20763:
     textureInsideRT: 1 # Fixes the shape of shadows.
     autoFlush: 1 # Fixes water rendering.
     halfPixelOffset: 3 # Fixes bloom misalignment, needs this harsh offset for autoflush.
+    cpuFramebufferConversion: 1 # Fixes shield rendering.
 SLUS-20764:
   name: "Bombastic"
   region: "NTSC-U"
@@ -42315,6 +42389,8 @@ SLUS-20934:
   name: "Death by Degrees"
   region: "NTSC-U"
   compat: 5
+  gsHWFixes:
+    alignSprite: 1 # Fixes FMV lines.
 SLUS-20935:
   name: "IHRA Professional Drag Racing 2005"
   region: "NTSC-U"
@@ -42997,6 +43073,8 @@ SLUS-21066:
   name: "Urbz, The - Sims in the City"
   region: "NTSC-U"
   compat: 5
+  gsHWFixes:
+    halfPixelOffset: 2 # Fixes upscaling lines.
 SLUS-21067:
   name: "Digimon Rumble Arena 2"
   region: "NTSC-U"
@@ -47562,6 +47640,7 @@ SLUS-29082:
     textureInsideRT: 1 # Fixes the shape of shadows.
     autoFlush: 1 # Fixes water rendering.
     halfPixelOffset: 3 # Fixes bloom misalignment, needs this harsh offset for autoflush.
+    cpuFramebufferConversion: 1 # Fixes shield rendering.
 SLUS-29083:
   name: "Maximo vs. The Army of Zin [Demo]"
   region: "NTSC-U"
