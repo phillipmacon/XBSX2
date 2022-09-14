@@ -147,11 +147,11 @@ bool NoGUIHost::InitializeConfig()
 {
 	if (!CommonHost::InitializeCriticalFolders())
 	{
-		g_nogui_window->ReportError("PCSX2", "One or more critical directories are missing, your installation may be incomplete.");
+		g_nogui_window->ReportError("XBSX2", "One or more critical directories are missing, your installation may be incomplete.");
 		return false;
 	}
 
-	const std::string path(Path::Combine(EmuFolders::Settings, "PCSX2.ini"));
+	const std::string path(Path::Combine(EmuFolders::Settings, "XBSX2.ini"));
 	Console.WriteLn("Loading config from %s.", path.c_str());
 
 	s_base_settings_interface = std::make_unique<INISettingsInterface>(std::move(path));
