@@ -2070,6 +2070,13 @@ void FullscreenUI::DrawInterfaceSettingsPage()
 #endif
 	DrawToggleSetting(bsi, ICON_FA_WINDOW_MAXIMIZE " Pause On Menu",
 		"Pauses the emulator when you open the quick menu, and unpauses when you close it.", "UI", "PauseOnMenu", true);
+	MenuHeading("Operations");
+	if (MenuButton(ICON_FA_FOLDER_MINUS " Reset Settings", "Resets configuration to default (excluding controller/hotkey settings).",
+			!IsEditingGameSettings(bsi)))
+	{
+		DoResetSettings();
+	}
+
 
 	EndMenuButtons();
 }
@@ -2958,17 +2965,18 @@ void FullscreenUI::DoSaveInputProfile()
 	});
 }
 
-//  void FullscreenUI::DoResetSettings()
-//  {
-//  	OpenConfirmMessageDialog(ICON_FA_FOLDER_MINUS " Reset Settings",
-//  		"Are you sure you want to restore the default settings? Any preferences will be lost.", [](bool result) {
-//  			if (result)
-//  			{
-//  				Host::RunOnCPUThread([]() { Host::RequestResetSettings(false, true, false, false, false); });
-//  				ShowToast(std::string(), "Settings reset to defaults.");
-//  			}
-//  		});
-//  }
+void FullscreenUI::DoResetSettings()
+{
+	OpenConfirmMessageDialog(ICON_FA_FOLDER_MINUS " Reset Settings",
+		"Are you sure you want to restore the default settings? Any preferences will be lost.", [](bool result) {
+			if (result)
+			{
+				Host::RunOnCPUThread([]() { Host::RequestResetSettings(false, true, false, false, false); });
+				ShowToast(std::string(), "Settings reset to defaults.");
+			}
+		});
+}
+
 void FullscreenUI::DrawControllerSettingsPage()
 {
 	BeginMenuButtons();
@@ -4618,98 +4626,6 @@ void FullscreenUI::DrawAboutWindow()
 
 	ImGui::PopStyleVar(2);
 	ImGui::PopFont();
-}
-
-bool FullscreenUI::DrawErrorWindow(const char* message)
-{
-	bool is_open = true;
-
-	ImGuiFullscreen::BeginLayout();
-
-	ImGui::SetNextWindowSize(LayoutScale(500.0f, 0.0f));
-	ImGui::SetNextWindowPos(ImGui::GetIO().DisplaySize * 0.5f, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-	ImGui::OpenPopup("ReportError");
-
-	ImGui::PushFont(g_large_font);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, LayoutScale(10.0f));
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, LayoutScale(10.0f, 10.0f));
-
-	if (ImGui::BeginPopupModal("ReportError", &is_open, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
-	{
-		ImGui::SetCursorPos(LayoutScale(LAYOUT_MENU_BUTTON_X_PADDING, LAYOUT_MENU_BUTTON_Y_PADDING));
-		ImGui::TextWrapped("%s", message);
-		ImGui::GetCurrentWindow()->DC.CursorPos.y += LayoutScale(5.0f);
-
-		BeginMenuButtons();
-
-		if (ActiveButton(ICON_FA_WINDOW_CLOSE " Close", false))
-		{
-			ImGui::CloseCurrentPopup();
-			is_open = false;
-		}
-		EndMenuButtons();
-
-		ImGui::EndPopup();
-	}
-
-	ImGui::PopStyleVar(2);
-	ImGui::PopFont();
-
-	ImGuiFullscreen::EndLayout();
-	return !is_open;
-}
-
-bool FullscreenUI::DrawConfirmWindow(const char* message, bool* result)
-{
-	bool is_open = true;
-
-	ImGuiFullscreen::BeginLayout();
-
-	ImGui::SetNextWindowSize(LayoutScale(500.0f, 0.0f));
-	ImGui::SetNextWindowPos(ImGui::GetIO().DisplaySize * 0.5f, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-	ImGui::OpenPopup("ConfirmMessage");
-
-	ImGui::PushFont(g_large_font);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, LayoutScale(10.0f));
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, LayoutScale(10.0f, 10.0f));
-
-	if (ImGui::BeginPopupModal("ConfirmMessage", &is_open, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
-	{
-		ImGui::SetCursorPos(LayoutScale(LAYOUT_MENU_BUTTON_X_PADDING, LAYOUT_MENU_BUTTON_Y_PADDING));
-		ImGui::TextWrapped("%s", message);
-		ImGui::GetCurrentWindow()->DC.CursorPos.y += LayoutScale(5.0f);
-
-		BeginMenuButtons();
-
-		bool done = false;
-
-		if (ActiveButton(ICON_FA_CHECK " Yes", false))
-		{
-			*result = true;
-			done = true;
-		}
-
-		if (ActiveButton(ICON_FA_TIMES " No", false))
-		{
-			*result = false;
-			done = true;
-		}
-		if (done)
-		{
-			ImGui::CloseCurrentPopup();
-			is_open = false;
-		}
-
-		EndMenuButtons();
-
-		ImGui::EndPopup();
-	}
-
-	ImGui::PopStyleVar(2);
-	ImGui::PopFont();
-
-	ImGuiFullscreen::EndLayout();
-	return !is_open;
 }
 
 FullscreenUI::ProgressCallback::ProgressCallback(std::string name)

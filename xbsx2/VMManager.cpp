@@ -1716,7 +1716,7 @@ void VMManager::SetDefaultSettings(SettingsInterface& si)
 		temp_config.LoadSave(ssw);
 	}
 
-	// Settings not part of the Pcsx2Config struct.
+	// Settings not part of the Xbsx2Config struct.
 	si.SetBoolValue("EmuCore", "EnableFastBoot", true);
 
 	SetHardwareDependentDefaultSettings(si);

@@ -1240,21 +1240,21 @@ void Xbsx2Config::CopyConfig(const Xbsx2Config& cfg)
 	LimiterMode = cfg.LimiterMode;
 }
 
-void EmuFolders::SetDefaults()
+void EmuFolders::SetDefaults(SettingsInterface& si)
 {
-	Bios = Path::Combine(DataRoot, "bios");
-	Snapshots = Path::Combine(DataRoot, "snaps");
-	Savestates = Path::Combine(DataRoot, "sstates");
-	MemoryCards = Path::Combine(DataRoot, "memcards");
-	Logs = Path::Combine(DataRoot, "logs");
-	Cheats = Path::Combine(DataRoot, "cheats");
-	WidescreenPatches = Path::Combine(DataRoot, "widescreenpatches");
-	DeinterlacingPatches = Path::Combine(DataRoot, "deinterlacingpatches");
-	Covers = Path::Combine(DataRoot, "covers");
-	GameSettings = Path::Combine(DataRoot, "gamesettings");
-	Cache = Path::Combine(DataRoot, "cache");
-	Textures = Path::Combine(DataRoot, "textures");
-	InputProfiles = Path::Combine(DataRoot, "inputprofiles");
+	si.SetStringValue("Folders", "Bios", "bios");
+	si.SetStringValue("Folders", "Snapshots", "snaps");
+	si.SetStringValue("Folders", "Savestates", "sstates");
+	si.SetStringValue("Folders", "MemoryCards", "memcards");
+	si.SetStringValue("Folders", "Logs", "logs");
+	si.SetStringValue("Folders", "Cheats", "cheats");
+	si.SetStringValue("Folders", "WidescreenPatches", "widescreenpatches");
+	si.SetStringValue("Folders", "DeinterlacingPatches", "deinterlacingpatches");
+	si.SetStringValue("Folders", "Covers", "covers");
+	si.SetStringValue("Folders", "GameSettings", "gamesettings");
+	si.SetStringValue("Folders", "Cache", "cache");
+	si.SetStringValue("Folders", "Textures", "textures");
+	si.SetStringValue("Folders", "InputProfiles", "inputprofiles");
 }
 
 static std::string LoadPathFromSettings(SettingsInterface& si, const std::string& root, const char* name, const char* def)
@@ -1294,22 +1294,6 @@ void EmuFolders::LoadConfig(SettingsInterface& si)
 	Console.WriteLn("Cache Directory: %s", Cache.c_str());
 	Console.WriteLn("Textures Directory: %s", Textures.c_str());
 	Console.WriteLn("Input Profile Directory: %s", InputProfiles.c_str());
-}
-
-void EmuFolders::Save(SettingsInterface& si)
-{
-	// convert back to relative
-	si.SetStringValue("Folders", "Bios", Path::MakeRelative(Bios, DataRoot).c_str());
-	si.SetStringValue("Folders", "Snapshots", Path::MakeRelative(Snapshots, DataRoot).c_str());
-	si.SetStringValue("Folders", "Savestates", Path::MakeRelative(Savestates, DataRoot).c_str());
-	si.SetStringValue("Folders", "MemoryCards", Path::MakeRelative(MemoryCards, DataRoot).c_str());
-	si.SetStringValue("Folders", "Logs", Path::MakeRelative(Logs, DataRoot).c_str());
-	si.SetStringValue("Folders", "Cheats", Path::MakeRelative(Cheats, DataRoot).c_str());
-	si.SetStringValue("Folders", "WidescreenPatches", Path::MakeRelative(WidescreenPatches, DataRoot).c_str());
-	si.SetStringValue("Folders", "DeinterlacingPatches", Path::MakeRelative(DeinterlacingPatches, DataRoot).c_str());
-	si.SetStringValue("Folders", "Cache", Path::MakeRelative(Cache, DataRoot).c_str());
-	si.SetStringValue("Folders", "Textures", Path::MakeRelative(Textures, DataRoot).c_str());
-	si.SetStringValue("Folders", "InputProfiles", Path::MakeRelative(InputProfiles, DataRoot).c_str());
 }
 
 bool EmuFolders::EnsureFoldersExist()

@@ -232,6 +232,16 @@ void UWPNoGUIPlatform::ReportError(const std::string_view& title, const std::str
 	popup.ShowAsync();
 }
 
+void UWPNoGUIPlatform::BeginTextInput()
+{
+	Console.Error("UWPNoGUIPlatform::BeginTextInput() not implemented.");
+}
+
+void UWPNoGUIPlatform::EndTextInput()
+{
+	Console.Error("UWPNoGUIPlatform::EndTextInput() not implemented.");
+}
+
 void UWPNoGUIPlatform::SetDefaultControllerConfig(SettingsInterface& si)
 {
 	const std::string games_dir(Path::Combine(EmuFolders::DataRoot, "games"));

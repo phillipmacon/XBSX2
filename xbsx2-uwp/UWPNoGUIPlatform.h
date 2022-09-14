@@ -59,6 +59,9 @@ public:
 
 	void SetFullscreen(bool enabled) override;
 
+	void BeginTextInput() override;
+	void EndTextInput() override;
+
 	bool RequestRenderWindowSize(s32 new_window_width, s32 new_window_height) override;
 
 	winrt::Windows::ApplicationModel::Core::IFrameworkView CreateView();

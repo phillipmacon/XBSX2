@@ -14,6 +14,8 @@
 
 #pragma once
 
+class SettingsInterface;
+
 namespace Host
 {
 	/// Updates the Console handler based on the current configuration.
@@ -21,4 +23,7 @@ namespace Host
 
 	/// Initializes early console logging (for printing command line arguments).
 	void InitializeEarlyConsole();
+
+	/// Stores default logging settings to the specified file.
+	void SetDefaultLoggingSettings(SettingsInterface& si);
 }

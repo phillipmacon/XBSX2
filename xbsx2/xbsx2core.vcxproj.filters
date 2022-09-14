@@ -1205,7 +1205,7 @@
     <ClCompile Include="USB\USBNull.cpp">
       <Filter>System\Ps2\USB</Filter>
     </ClCompile>
-    <ClCompile Include="HostSettings.cpp">
+    <ClCompile Include="Frontend\HostSettings.cpp">
       <Filter>Host</Filter>
     </ClCompile>
     <ClCompile Include="VMManager.cpp">
@@ -1282,6 +1282,9 @@
       <Filter>Host</Filter>
     </ClCompile>
     <ClCompile Include="Frontend\FullscreenUI.cpp">
+      <Filter>Host</Filter>
+    </ClCompile>
+	<ClCompile Include="Frontend\CommonHost.cpp">
       <Filter>Host</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2137,6 +2140,9 @@
     <ClInclude Include="Frontend\FullscreenUI.h">
       <Filter>Host</Filter>
     </ClInclude>
+	<ClCompile Include="Frontend\CommonHost.h">
+      <Filter>Host</Filter>
+    </ClCompile>
     <ClInclude Include="svnrev.h" />
   </ItemGroup>
   <ItemGroup>

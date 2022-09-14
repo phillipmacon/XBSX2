@@ -90,10 +90,7 @@ namespace ImGuiFullscreen
 		return ImVec2(g_layout_padding_left + x * g_layout_scale, g_layout_padding_top + y * g_layout_scale);
 	}
 
-	static __fi ImVec4 ModAlpha(const ImVec4& v, float a)
-	{
-		return ImVec4(v.x, v.y, v.z, a);
-	}
+	static __fi ImVec4 ModAlpha(const ImVec4& v, float a) {	return ImVec4(v.x, v.y, v.z, a); }
 
 	/// Centers an image within the specified bounds, scaling up or down as needed.
 	ImRect CenterImage(const ImVec2& fit_size, const ImVec2& image_size);

@@ -56,6 +56,9 @@ public:
 	virtual bool CopyTextToClipboard(const std::string_view& text) = 0;
 #endif
 
+	virtual void BeginTextInput() = 0;
+	virtual void EndTextInput() = 0;
+
 #ifdef _WIN32
 	static std::unique_ptr<NoGUIPlatform> CreateWin32Platform();
 #endif

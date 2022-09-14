@@ -15,6 +15,7 @@
 #include "PrecompiledHeader.h"
 
 #include <chrono>
+#include <cmath>
 #include <csignal>
 #include <condition_variable>
 #include <mutex>
@@ -24,12 +25,6 @@
 #include "common/RedtapeWindows.h"
 #include <KnownFolders.h>
 #include <ShlObj.h>
-#endif
-
-#ifdef _UWP
-#include <winrt/Windows.ApplicationModel.Core.h>
-#include <winrt/Windows.Storage.h>
-#include <winrt/base.h>
 #endif
 
 #include "fmt/core.h"
@@ -44,9 +39,11 @@
 #include "common/StringUtil.h"
 
 #include "xbsx2/CDVD/CDVD.h"
+#include "xbsx2/Frontend/CommonHost.h"
 #include "xbsx2/Frontend/FullscreenUI.h"
 #include "xbsx2/Frontend/GameList.h"
 #include "xbsx2/Frontend/InputManager.h"
+#include "xbsx2/Frontend/ImGuiFullscreen.h"
 #include "xbsx2/Frontend/ImGuiManager.h"
 #include "xbsx2/Frontend/INISettingsInterface.h"
 #include "xbsx2/Frontend/LogSink.h"
@@ -85,12 +82,7 @@ namespace NoGUIHost
 	static bool ParseCommandLineOptions(int argc, char* argv[], std::shared_ptr<VMBootParameters>& autoboot);
 #endif
 	static bool InitializeConfig();
-	static bool ShouldUsePortableMode();
-	static void SetResourcesDirectory();
-	static void SetDataDirectory();
 	static void HookSignals();
-	static bool SetCriticalFolders();
-	static void SetDefaultConfig();
 	static void StartCPUThread();
 	static void StopCPUThread();
 	static void ProcessCPUThreadEvents(bool block);
@@ -100,7 +92,9 @@ namespace NoGUIHost
 	static std::unique_ptr<NoGUIPlatform> CreatePlatform();
 	static std::string GetWindowTitle(const std::string& game_title);
 	static void UpdateWindowTitle(const std::string& game_title);
-	static void GameListRefreshThreadEntryPoint(bool invalidate_cache);
+	static void CancelAsyncOp();
+	static void StartAsyncOp(std::function<void(ProgressCallback*)> callback);
+	static void AsyncOpThreadEntryPoint(std::function<void(ProgressCallback*)> callback);
 } // namespace NoGUIHost
 
 //////////////////////////////////////////////////////////////////////////
@@ -122,9 +116,9 @@ static std::condition_variable s_cpu_thread_event_posted;
 static std::deque<std::pair<std::function<void()>, bool>> s_cpu_thread_events;
 static u32 s_blocking_cpu_events_pending = 0; // TODO: Token system would work better here.
 
-static std::mutex s_game_list_refresh_lock;
-static std::thread s_game_list_refresh_thread;
-static FullscreenUI::ProgressCallback* s_game_list_refresh_progress = nullptr;
+static std::mutex s_async_op_mutex;
+static std::thread s_async_op_thread;
+static FullscreenUI::ProgressCallback* s_async_op_progress = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
 // Initialization/Shutdown
@@ -149,249 +143,58 @@ void NoGUIHost::Shutdown()
 	StopCPUThread();
 }
 
-bool NoGUIHost::SetCriticalFolders()
-{
-	EmuFolders::AppRoot = Path::Canonicalize(Path::GetDirectory(FileSystem::GetProgramPath()));
-	SetResourcesDirectory();
-	SetDataDirectory();
-
-	// allow SetDataDirectory() to change settings directory (if we want to split config later on)
-	if (EmuFolders::Settings.empty())
-		EmuFolders::Settings = Path::Combine(EmuFolders::DataRoot, "inis");
-
-	// Write crash dumps to the data directory, since that'll be accessible for certain.
-	CrashHandler::SetWriteDirectory(EmuFolders::DataRoot);
-
-	// the resources directory should exist, bail out if not
-	if (!FileSystem::DirectoryExists(EmuFolders::Resources.c_str()))
-	{
-		g_nogui_window->ReportError("Error", "Resources directory is missing, your installation is incomplete.");
-		return false;
-	}
-
-	return true;
-}
-
-bool NoGUIHost::ShouldUsePortableMode()
-{
-	// Check whether portable.ini exists in the program directory.
-	return FileSystem::FileExists(Path::Combine(EmuFolders::AppRoot, "portable.ini").c_str());
-}
-
-void NoGUIHost::SetResourcesDirectory()
-{
-#ifndef __APPLE__
-	// On Windows/Linux, these are in the binary directory.
-	EmuFolders::Resources = Path::Combine(EmuFolders::AppRoot, "resources");
-#else
-	// On macOS, this is in the bundle resources directory.
-	EmuFolders::Resources = Path::Combine(EmuFolders::AppRoot, "../Resources");
-#endif
-}
-
-void NoGUIHost::SetDataDirectory()
-{
-	if (ShouldUsePortableMode())
-	{
-		EmuFolders::DataRoot = EmuFolders::AppRoot;
-		return;
-	}
-
-#if defined(_UWP)
-	const auto local_location = winrt::Windows::Storage::ApplicationData::Current().LocalFolder();
-	EmuFolders::DataRoot = StringUtil::WideStringToUTF8String(local_location.Path());
-#elif defined(_WIN32)
-	// On Windows, use My Documents\XBSX2 to match old installs.
-	PWSTR documents_directory;
-	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &documents_directory)))
-	{
-		if (std::wcslen(documents_directory) > 0)
-			EmuFolders::DataRoot = Path::Combine(StringUtil::WideStringToUTF8String(documents_directory), "XBSX2");
-		CoTaskMemFree(documents_directory);
-	}
-#elif defined(__linux__)
-	// Check for $HOME/XBSX2 first, for legacy installs.
-	const char* home_dir = getenv("HOME");
-	std::string legacy_dir(home_dir ? Path::Combine(home_dir, "XBSX2") : std::string());
-	if (!legacy_dir.empty() && FileSystem::DirectoryExists(legacy_dir.c_str()))
-	{
-		EmuFolders::DataRoot = std::move(legacy_dir);
-	}
-	else
-	{
-		// otherwise, use $XDG_CONFIG_HOME/XBSX2.
-		const char* xdg_config_home = getenv("XDG_CONFIG_HOME");
-		if (xdg_config_home && xdg_config_home[0] == '/' && FileSystem::DirectoryExists(xdg_config_home))
-		{
-			EmuFolders::DataRoot = Path::Combine(xdg_config_home, "XBSX2");
-		}
-		else if (!legacy_dir.empty())
-		{
-			// fall back to the legacy XBSX2-in-home.
-			EmuFolders::DataRoot = std::move(legacy_dir);
-		}
-	}
-#elif defined(__APPLE__)
-	static constexpr char MAC_DATA_DIR[] = "Library/Application Support/XBSX2";
-	const char* home_dir = getenv("HOME");
-	if (home_dir)
-		EmuFolders::DataRoot = Path::Combine(home_dir, MAC_DATA_DIR);
-#endif
-
-	// make sure it exists
-	if (!EmuFolders::DataRoot.empty() && !FileSystem::DirectoryExists(EmuFolders::DataRoot.c_str()))
-	{
-		// we're in trouble if we fail to create this directory... but try to hobble on with portable
-		if (!FileSystem::CreateDirectoryPath(EmuFolders::DataRoot.c_str(), false))
-			EmuFolders::DataRoot.clear();
-	}
-
-	// couldn't determine the data directory? fallback to portable.
-	if (EmuFolders::DataRoot.empty())
-		EmuFolders::DataRoot = EmuFolders::AppRoot;
-}
-
 bool NoGUIHost::InitializeConfig()
 {
-	if (!SetCriticalFolders())
+	if (!CommonHost::InitializeCriticalFolders())
+	{
+		g_nogui_window->ReportError("PCSX2", "One or more critical directories are missing, your installation may be incomplete.");
 		return false;
+	}
 
-	const std::string path(Path::Combine(EmuFolders::Settings, "XBSX2.ini"));
+	const std::string path(Path::Combine(EmuFolders::Settings, "PCSX2.ini"));
+	Console.WriteLn("Loading config from %s.", path.c_str());
+
 	s_base_settings_interface = std::make_unique<INISettingsInterface>(std::move(path));
 	Host::Internal::SetBaseSettingsLayer(s_base_settings_interface.get());
-
-	uint settings_version;
-	if (!s_base_settings_interface->Load() || !s_base_settings_interface->GetUIntValue("UI", "SettingsVersion", &settings_version) ||
-		settings_version != SETTINGS_VERSION)
+	if (!s_base_settings_interface->Load() || !CommonHost::CheckSettingsVersion())
 	{
-		SetDefaultConfig();
+		CommonHost::SetDefaultSettings(*s_base_settings_interface, true, true, true, true, true);
 		s_base_settings_interface->Save();
 	}
 
-	// TODO: Handle reset to defaults if load fails.
-	EmuFolders::LoadConfig(*s_base_settings_interface.get());
-	EmuFolders::EnsureFoldersExist();
+	CommonHost::LoadStartupSettings();
 	Host::UpdateLogging(false);
 	return true;
 }
 
-void NoGUIHost::SetDefaultConfig()
+#ifndef _UWP
+void Host::SetDefaultUISettings(SettingsInterface& si)
 {
-	EmuFolders::SetDefaults();
-	EmuFolders::EnsureFoldersExist();
-	
-	SettingsInterface& si = *s_base_settings_interface.get();
-	si.SetUIntValue("UI", "SettingsVersion", SETTINGS_VERSION);
-	VMManager::SetDefaultSettings(si);
-
-	EmuFolders::Save(si);
-	PAD::SetDefaultControllerConfig(si);
-	PAD::SetDefaultHotkeyConfig(si);
-
-	g_nogui_window->SetDefaultControllerConfig(si);
+	g_nogui_window->SetDefaultConfig(si);
 }
+#endif
 
-SettingsInterface* NoGUIHost::GetBaseSettingsInterface()
+bool Host::RequestResetSettings(bool folders, bool core, bool controllers, bool hotkeys, bool ui)
 {
-	return s_base_settings_interface.get();
-}
-
-std::string NoGUIHost::GetBaseStringSettingValue(const char* section, const char* key, const char* default_value /*= ""*/)
-{
-	auto lock = Host::GetSettingsLock();
-	return s_base_settings_interface->GetStringValue(section, key, default_value);
-}
-
-bool NoGUIHost::GetBaseBoolSettingValue(const char* section, const char* key, bool default_value /*= false*/)
-{
-	auto lock = Host::GetSettingsLock();
-	return s_base_settings_interface->GetBoolValue(section, key, default_value);
-}
-
-int NoGUIHost::GetBaseIntSettingValue(const char* section, const char* key, int default_value /*= 0*/)
-{
-	auto lock = Host::GetSettingsLock();
-	return s_base_settings_interface->GetIntValue(section, key, default_value);
-}
-
-float NoGUIHost::GetBaseFloatSettingValue(const char* section, const char* key, float default_value /*= 0.0f*/)
-{
-	auto lock = Host::GetSettingsLock();
-	return s_base_settings_interface->GetFloatValue(section, key, default_value);
-}
-
-std::vector<std::string> NoGUIHost::GetBaseStringListSetting(const char* section, const char* key)
-{
-	auto lock = Host::GetSettingsLock();
-	return s_base_settings_interface->GetStringList(section, key);
-}
-
-void NoGUIHost::SetBaseBoolSettingValue(const char* section, const char* key, bool value)
-{
-	auto lock = Host::GetSettingsLock();
-	s_base_settings_interface->SetBoolValue(section, key, value);
-	SaveSettings();
-}
-
-void NoGUIHost::SetBaseIntSettingValue(const char* section, const char* key, int value)
-{
-	auto lock = Host::GetSettingsLock();
-	s_base_settings_interface->SetIntValue(section, key, value);
-	SaveSettings();
-}
-
-void NoGUIHost::SetBaseFloatSettingValue(const char* section, const char* key, float value)
-{
-	auto lock = Host::GetSettingsLock();
-	s_base_settings_interface->SetFloatValue(section, key, value);
-	SaveSettings();
-}
-
-void NoGUIHost::SetBaseStringSettingValue(const char* section, const char* key, const char* value)
-{
-	auto lock = Host::GetSettingsLock();
-	s_base_settings_interface->SetStringValue(section, key, value);
-	SaveSettings();
-}
-
-void NoGUIHost::SetBaseStringListSettingValue(const char* section, const char* key, const std::vector<std::string>& values)
-{
-	auto lock = Host::GetSettingsLock();
-	s_base_settings_interface->SetStringList(section, key, values);
-	SaveSettings();
-}
-
-bool NoGUIHost::AddBaseValueToStringList(const char* section, const char* key, const char* value)
-{
-	auto lock = Host::GetSettingsLock();
-	if (!s_base_settings_interface->AddToStringList(section, key, value))
+	if (folders)
 		return false;
 
-	SaveSettings();
+	RunOnCPUThread([folders, core, controllers, hotkeys, ui]() {
+		{
+			auto lock = Host::GetSettingsLock();
+			CommonHost::SetDefaultSettings(*s_base_settings_interface.get(), folders, core, controllers, hotkeys, ui);
+		}
+		Host::CommitBaseSettingChanges();
+		VMManager::ApplySettings();
+	});
+
 	return true;
 }
 
-bool NoGUIHost::RemoveBaseValueFromStringList(const char* section, const char* key, const char* value)
+void Host::CommitBaseSettingChanges()
 {
 	auto lock = Host::GetSettingsLock();
-	if (!s_base_settings_interface->RemoveFromStringList(section, key, value))
-		return false;
-
-	SaveSettings();
-	return true;
-}
-
-void NoGUIHost::RemoveBaseSettingValue(const char* section, const char* key)
-{
-	auto lock = Host::GetSettingsLock();
-	s_base_settings_interface->DeleteValue(section, key);
-	SaveSettings();
-}
-
-void NoGUIHost::SaveSettings()
-{
-	auto lock = Host::GetSettingsLock();
-	if (!s_base_settings_interface->Save())
+	if (s_base_settings_interface->IsDirty() && !s_base_settings_interface->Save())
 		Console.Error("Failed to save settings.");
 }
 
@@ -622,7 +425,7 @@ void NoGUIHost::CPUThreadEntryPoint()
 
 			CPUThreadMainLoop();
 
-			Host::CancelGameListRefresh();
+			CancelAsyncOp();
 			GetMTGS().WaitForClose();
 		}
 		else
@@ -705,14 +508,17 @@ std::optional<time_t> Host::GetResourceFileTimestamp(const char* filename)
 
 void Host::ReportErrorAsync(const std::string_view& title, const std::string_view& message)
 {
-	if (!title.empty() && !message.empty())
+	Console.Error(fmt::format("ReportErrorAsync: {}: {}", title, message));
+
+	if (FullscreenUI::IsInitialized())
 	{
-		Console.Error(
-			"ReportErrorAsync: %.*s: %.*s", static_cast<int>(title.size()), title.data(), static_cast<int>(message.size()), message.data());
-	}
-	else if (!message.empty())
-	{
-		Console.Error("ReportErrorAsync: %.*s", static_cast<int>(message.size()), message.data());
+		RunOnCPUThread([title = std::string(title), message = std::string(message)]() {
+			GetMTGS().RunOnGSThread([title = std::move(title), message = std::move(message)]() {
+				ImGuiFullscreen::OpenInfoMessageDialog(std::move(title), std::move(message));
+			});
+		});
+
+		return;
 	}
 
 	g_nogui_window->ReportError(title, message);
@@ -737,7 +543,7 @@ bool Host::ConfirmMessage(const std::string_view& title, const std::string_view&
 
 void Host::OnInputDeviceConnected(const std::string_view& identifier, const std::string_view& device_name)
 {
-	Host::AddIconOSDMessage(fmt::format("{} Connected.", identifier), ICON_FA_GAMEPAD, 
+	Host::AddIconOSDMessage(fmt::format("{} Connected.", identifier), ICON_FA_GAMEPAD,
 		fmt::format("{} Connected.", device_name, identifier), 5.0f);
 }
 
@@ -866,6 +672,16 @@ bool Host::CopyTextToClipboard(const std::string_view& text)
 }
 #endif
 
+void Host::BeginTextInput()
+{
+	g_nogui_window->BeginTextInput();
+}
+
+void Host::EndTextInput()
+{
+	g_nogui_window->EndTextInput();
+}
+
 void Host::UpdateHostDisplay()
 {
 	// not used in nogui, except if we do exclusive fullscreen
@@ -983,39 +799,48 @@ void Host::RunOnCPUThread(std::function<void()> function, bool block /* = false 
 		s_cpu_thread_event_done.wait(lock, []() { return s_blocking_cpu_events_pending == 0; });
 }
 
-void NoGUIHost::GameListRefreshThreadEntryPoint(bool invalidate_cache)
+void NoGUIHost::StartAsyncOp(std::function<void(ProgressCallback*)> callback)
 {
-	Threading::SetNameOfCurrentThread("Game List Refresh");
+	CancelAsyncOp();
+	s_async_op_thread = std::thread(AsyncOpThreadEntryPoint, std::move(callback));
+}
 
-	FullscreenUI::ProgressCallback callback("game_list_refresh");
-	std::unique_lock lock(s_game_list_refresh_lock);
-	s_game_list_refresh_progress = &callback;
+void NoGUIHost::CancelAsyncOp()
+{
+	std::unique_lock lock(s_async_op_mutex);
+	if (!s_async_op_thread.joinable())
+		return;
+
+	if (s_async_op_progress)
+		s_async_op_progress->SetCancelled();
 
 	lock.unlock();
-	GameList::Refresh(invalidate_cache, false, &callback);
+	s_async_op_thread.join();
+}
+
+void NoGUIHost::AsyncOpThreadEntryPoint(std::function<void(ProgressCallback*)> callback)
+{
+	Threading::SetNameOfCurrentThread("Async Op");
+
+	FullscreenUI::ProgressCallback fs_callback("async_op");
+	std::unique_lock lock(s_async_op_mutex);
+	s_async_op_progress = &fs_callback;
+
+	lock.unlock();
+	callback(&fs_callback);
 	lock.lock();
 
-	s_game_list_refresh_progress = nullptr;
+	s_async_op_progress = nullptr;
 }
 
 void Host::RefreshGameListAsync(bool invalidate_cache)
 {
-	CancelGameListRefresh();
-
-	s_game_list_refresh_thread = std::thread(NoGUIHost::GameListRefreshThreadEntryPoint, invalidate_cache);
+	NoGUIHost::StartAsyncOp([invalidate_cache](ProgressCallback* progress) { GameList::Refresh(invalidate_cache, false, progress); });
 }
 
 void Host::CancelGameListRefresh()
 {
-	std::unique_lock lock(s_game_list_refresh_lock);
-	if (!s_game_list_refresh_thread.joinable())
-		return;
-
-	if (s_game_list_refresh_progress)
-		s_game_list_refresh_progress->SetCancelled();
-
-	lock.unlock();
-	s_game_list_refresh_thread.join();
+	NoGUIHost::CancelAsyncOp();
 }
 
 bool Host::IsFullscreen()
