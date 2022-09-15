@@ -61,14 +61,139 @@ winrt::Windows::ApplicationModel::Core::IFrameworkView UWPNoGUIPlatform::CreateV
 
 void UWPNoGUIPlatform::Initialize(const winrt::Windows::ApplicationModel::Core::CoreApplicationView& a)
 {
+	a.Activated({this, &UWPNoGUIPlatform::OnActivated});
 	CoreApplication::UnhandledErrorDetected({this, &UWPNoGUIPlatform::OnUnhandledErrorDetected});
 	CoreApplication::Suspending({this, &UWPNoGUIPlatform::OnSuspending});
 	CoreApplication::Resuming({this, &UWPNoGUIPlatform::OnResuming});
+	CoreApplication::EnteredBackground({this, &UWPNoGUIPlatform::OnEnteredBackground});
 }
 
 void UWPNoGUIPlatform::Load(const winrt::hstring&) {}
 
 void UWPNoGUIPlatform::Uninitialize() {}
+
+std::shared_ptr<VMBootParameters>& UWPNoGUIPlatform::AutoBoot(std::shared_ptr<VMBootParameters>& autoboot)
+{
+	if (!autoboot)
+		autoboot = std::make_shared<VMBootParameters>();
+
+	return autoboot;
+}
+
+bool UWPNoGUIPlatform::ParseCommandLineOptions(int argc, char* argv[], std::shared_ptr<VMBootParameters>& autoboot)
+{
+	bool no_more_args = false;
+
+	for (int i = 1; i < argc; i++)
+	{
+		if (!no_more_args)
+		{
+#define CHECK_ARG(str) !std::strcmp(argv[i], str)
+#define CHECK_ARG_PARAM(str) (!std::strcmp(argv[i], str) && ((i + 1) < argc))
+
+			if (CHECK_ARG("-help"))
+			{
+				//PrintCommandLineHelp(argv[0]);
+				return false;
+			}
+			else if (CHECK_ARG("-version"))
+			{
+				//PrintCommandLineVersion();
+				return false;
+			}
+			else if (CHECK_ARG("-batch"))
+			{
+				NoGUIHost::SetBatchMode(true);
+				continue;
+			}
+			else if (CHECK_ARG("-fastboot"))
+			{
+				AutoBoot(autoboot)->fast_boot = true;
+				continue;
+			}
+			else if (CHECK_ARG("-slowboot"))
+			{
+				AutoBoot(autoboot)->fast_boot = false;
+				continue;
+			}
+			else if (CHECK_ARG_PARAM("-state"))
+			{
+				AutoBoot(autoboot)->state_index = std::atoi(argv[++i]);
+				continue;
+			}
+			else if (CHECK_ARG_PARAM("-statefile"))
+			{
+				AutoBoot(autoboot)->save_state = argv[++i];
+				continue;
+			}
+			else if (CHECK_ARG_PARAM("-elf"))
+			{
+				AutoBoot(autoboot)->elf_override = argv[++i];
+				continue;
+			}
+			else if (CHECK_ARG_PARAM("-disc"))
+			{
+				//AutoBoot(autoboot)->source_type = CDVD_SourceType::Disc;
+				AutoBoot(autoboot)->filename = argv[++i];
+				continue;
+			}
+			else if (CHECK_ARG("-bios"))
+			{
+				//AutoBoot(autoboot)->source_type = CDVD_SourceType::NoDisc;
+				continue;
+			}
+			else if (CHECK_ARG("-fullscreen"))
+			{
+				AutoBoot(autoboot)->fullscreen = true;
+				continue;
+			}
+			else if (CHECK_ARG("-nofullscreen"))
+			{
+				AutoBoot(autoboot)->fullscreen = false;
+				continue;
+			}
+			else if (CHECK_ARG("--"))
+			{
+				no_more_args = true;
+				continue;
+			}
+			else if (argv[i][0] == '-')
+			{
+				//Host::InitializeEarlyConsole();
+				std::fprintf(stderr, "Unknown parameter: '%s'", argv[i]);
+				return false;
+			}
+
+#undef CHECK_ARG
+#undef CHECK_ARG_PARAM
+		}
+
+		if (!AutoBoot(autoboot)->filename.empty())
+			AutoBoot(autoboot)->filename += ' ';
+
+		AutoBoot(autoboot)->filename += argv[i];
+	}
+
+	// check autoboot parameters, if we set something like fullscreen without a bios
+	// or disc, we don't want to actually start.
+	if (autoboot && !autoboot->source_type.has_value() && autoboot->filename.empty() && autoboot->elf_override.empty())
+	{
+		//Host::InitializeEarlyConsole();
+		Console.Warning("Skipping autoboot due to no boot parameters.");
+		autoboot.reset();
+	}
+
+	// if we don't have autoboot, we definitely don't want batch mode (because that'll skip
+	// scanning the game list).
+	if (NoGUIHost::InBatchMode() && !autoboot)
+	{
+		//Host::InitializeEarlyConsole();
+		Console.Warning("Disabling batch mode, because we have no autoboot.");
+		NoGUIHost::SetBatchMode(false);
+	}
+
+	return true;
+}
 
 void UWPNoGUIPlatform::Run()
 {
@@ -80,6 +205,11 @@ void UWPNoGUIPlatform::Run()
 		CoreApplication::Exit();
 		g_nogui_window.release();
 		return;
+	}
+
+	if (autoboot)
+	{
+		NoGUIHost::StartVM(std::move(autoboot));
 	}
 
 	RunMessageLoop();
@@ -109,6 +239,22 @@ void UWPNoGUIPlatform::OnUnhandledErrorDetected(const IInspectable&, const winrt
 	ReportError("Foo", "bar");*/
 }
 
+void UWPNoGUIPlatform::OnActivated(const CoreApplicationView& applicationView, const winrt::Windows::ApplicationModel::Activation::IActivatedEventArgs& args)
+{
+	//start only if not already initialized. If there is a game in progress, just return
+	if (this->m_uriSchemeParser.IsInitialized())
+	{
+		return;
+	}
+
+	//parse URI and pass as standard args
+	this->m_uriSchemeParser.ParseProtocolArgs(args);
+	ParseCommandLineOptions(this->m_uriSchemeParser.GetArgc(), this->m_uriSchemeParser.GetArgv(), autoboot);
+
+	/* Run() won't start until the CoreWindow is activated. */
+	CoreWindow::GetForCurrentThread().Activate();
+}
+
 void UWPNoGUIPlatform::OnSuspending(const IInspectable&, const winrt::Windows::ApplicationModel::SuspendingEventArgs& args)
 {
 	// TODO: This is where we would save state.
@@ -116,6 +262,15 @@ void UWPNoGUIPlatform::OnSuspending(const IInspectable&, const winrt::Windows::A
 
 void UWPNoGUIPlatform::OnResuming(const IInspectable&, const IInspectable&)
 {
+}
+
+void UWPNoGUIPlatform::OnEnteredBackground(const IInspectable&,const winrt::Windows::ApplicationModel::EnteredBackgroundEventArgs& args)
+{ 
+	//Application entered background because another app/frontend was launched on exit in QuitMessageLoop, so properly quit
+	if (m_launchOnExitShutdown == true)
+	{
+		CoreApplication::Exit();
+	}
 }
 
 void UWPNoGUIPlatform::OnClosed(const IInspectable&, const winrt::Windows::UI::Core::CoreWindowEventArgs& args)
@@ -387,7 +542,30 @@ void UWPNoGUIPlatform::ExecuteInMessageLoop(std::function<void()> func)
 
 void UWPNoGUIPlatform::QuitMessageLoop()
 {
-	m_dispatcher.RunAsync(CoreDispatcherPriority::Normal, []() { CoreApplication::Exit(); });
+	m_dispatcher.RunAsync(CoreDispatcherPriority::Normal, [this]() { 
+
+		//if this instance was started from another app/frontend and the frontend passed "launchOnExit" parameter:
+		//1. Launch the app specified in "launchOnExit", most likely the same app that started XBSX2
+		//2. Wait for LaunchUriAsync to complete
+		//3. On Windows, exit on complete. 
+		//On XBOX, when LaunchUriAsync is called, app is immediately suspended, therefore exit in App::OnEnteredBackground.
+		if (m_uriSchemeParser.GetLaunchOnExitURI().empty() == false)
+		{
+			//launch the target app
+			m_launchOnExitShutdown = true;
+			winrt::Windows::Foundation::Uri m_uri{m_uriSchemeParser.GetLaunchOnExitURI()};
+			IAsyncOperation asyncOperation = winrt::Windows::System::Launcher::LaunchUriAsync(m_uri);
+			asyncOperation.Completed(
+				[](
+					IAsyncOperation<bool> const& sender,AsyncStatus const  asyncStatus) {
+					CoreApplication::Exit();
+				});
+		}
+		else
+		{
+			CoreApplication::Exit(); 
+		}
+	});
 }
 
 void UWPNoGUIPlatform::SetFullscreen(bool enabled)

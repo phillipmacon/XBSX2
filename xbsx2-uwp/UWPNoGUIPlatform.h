@@ -20,6 +20,8 @@
 #include "common/RedtapeWindows.h"
 
 #include "NoGUIPlatform.h"
+#include "URISchemeParser.h"
+#include "VMManager.h"
 
 #include <winrt/Windows.ApplicationModel.Core.h>
 #include <winrt/Windows.Devices.Input.h>
@@ -72,8 +74,10 @@ public:
 	void SetWindow(const winrt::Windows::UI::Core::CoreWindow& window);
 
 	void OnUnhandledErrorDetected(const IInspectable&, const winrt::Windows::ApplicationModel::Core::UnhandledErrorDetectedEventArgs& args);
+	void OnActivated(const winrt::Windows::ApplicationModel::Core::CoreApplicationView&, const winrt::Windows::ApplicationModel::Activation::IActivatedEventArgs& args); 
 	void OnSuspending(const IInspectable&, const winrt::Windows::ApplicationModel::SuspendingEventArgs& args);
 	void OnResuming(const IInspectable&, const IInspectable&);
+	void OnEnteredBackground(const IInspectable& ,const winrt::Windows::ApplicationModel::EnteredBackgroundEventArgs& args);
 	void OnClosed(const IInspectable&, const winrt::Windows::UI::Core::CoreWindowEventArgs& args);
 	void OnSizeChanged(const IInspectable&, const winrt::Windows::UI::Core::WindowSizeChangedEventArgs& args);
 	void OnKeyDown(const IInspectable&, const winrt::Windows::UI::Core::KeyEventArgs& args);
@@ -92,4 +96,13 @@ private:
 	WindowInfo m_window_info = {};
 
 	bool m_last_mouse_state[3] = {};
+
+	//copied from pcsx2-nogui Main.cpp
+	std::shared_ptr<VMBootParameters> autoboot;
+	std::shared_ptr<VMBootParameters>& AutoBoot(std::shared_ptr<VMBootParameters>& autoboot);
+	bool ParseCommandLineOptions(int argc, char* argv[], std::shared_ptr<VMBootParameters>& autoboot);
+
+	//process arguments when app is activated using Uri Scheme
+	URISchemeParser m_uriSchemeParser;
+	bool m_launchOnExitShutdown;
 };
