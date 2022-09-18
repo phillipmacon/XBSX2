@@ -1,5 +1,5 @@
 /*  XBSX2 - PS2 Emulator for Xbox Consoles
-*  Copyright (C) 2002-2014  
+*  Copyright (C) 2002-2014  PCSX2 Dev Team
 *
 *  XBSX2 is free software: you can redistribute it and/or modify it under the terms
 *  of the GNU Lesser General Public License as published by the Free Software Found-
