@@ -4,6 +4,7 @@
     <ClCompile Include="PrecompiledHeader.cpp" />
     <ClCompile Include="UWPNoGUIPlatform.cpp" />
     <ClCompile Include="..\xbsx2-nogui\NoGUIHost.cpp" />
+    <ClCompile Include="URISchemeParser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PrecompiledHeader.h" />
@@ -12,6 +13,7 @@
     <ClInclude Include="svnrev.h" />
     <ClInclude Include="..\xbsx2-nogui\NoGUIHost.h" />
     <ClInclude Include="..\xbsx2-nogui\NoGUIPlatform.h" />
+    <ClInclude Include="URISchemeParser.h" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />

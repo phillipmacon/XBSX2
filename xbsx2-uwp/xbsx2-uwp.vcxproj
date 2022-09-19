@@ -184,6 +184,7 @@
     <ClCompile Include="PrecompiledHeader.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="URISchemeParser.cpp" />
     <ClCompile Include="UWPNoGUIPlatform.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -191,6 +192,7 @@
     <ClInclude Include="..\xbsx2-nogui\NoGUIPlatform.h" />
     <ClInclude Include="PrecompiledHeader.h" />
     <ClInclude Include="svnrev.h" />
+    <ClInclude Include="URISchemeParser.h" />
     <ClInclude Include="UWPKeyNames.h" />
     <ClInclude Include="UWPNoGUIPlatform.h" />
   </ItemGroup>
