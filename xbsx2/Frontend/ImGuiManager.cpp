@@ -199,10 +199,7 @@ void ImGuiManager::UpdateScale()
 
 	s_global_scale = scale;
 
-	ImGui::GetStyle() = ImGuiStyle();
-	ImGui::GetStyle().WindowMinSize = ImVec2(1.0f, 1.0f);
 	SetStyle();
-	ImGui::GetStyle().ScaleAllSizes(scale);
 
 	if (!AddImGuiFonts(HasFullscreenFonts()))
 		pxFailRel("Failed to create ImGui font text");

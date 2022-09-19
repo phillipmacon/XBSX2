@@ -43,6 +43,8 @@ namespace FullscreenUI
 		ProgressCallback(std::string name);
 		~ProgressCallback() override;
 
+		__fi const std::string& GetName() const { return m_name; }
+
 		void PushState() override;
 		void PopState() override;
 

@@ -82,6 +82,7 @@ namespace GameDatabaseSchema
 		TexturePreloading,
 		Deinterlace,
 		CPUSpriteRenderBW,
+		GPUPaletteConversion,
 		TextureBarriers,
 
 		Count
@@ -114,7 +115,7 @@ namespace GameDatabaseSchema
 		u32 applyGSHardwareFixes(Xbsx2Config::GSOptions& config) const;
 		
 		/// Returns true if the current config value for the specified hw fix id matches the value.
-		bool configMatchesHWFix(const Xbsx2Config::GSOptions& config, GSHWFixId id, int value) const;
+		static bool configMatchesHWFix(const Xbsx2Config::GSOptions& config, GSHWFixId id, int value);
 	};
 };
 

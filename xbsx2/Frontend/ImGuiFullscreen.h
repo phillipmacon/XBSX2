@@ -92,6 +92,7 @@ namespace ImGuiFullscreen
 	}
 
 	static __fi ImVec4 ModAlpha(const ImVec4& v, float a) {	return ImVec4(v.x, v.y, v.z, a); }
+	static __fi ImVec4 MulAlpha(const ImVec4& v, float a) { return ImVec4(v.x, v.y, v.z, v.w * a); }
 
 	/// Centers an image within the specified bounds, scaling up or down as needed.
 	ImRect CenterImage(const ImVec2& fit_size, const ImVec2& image_size);
@@ -130,7 +131,7 @@ namespace ImGuiFullscreen
 
 	void DrawWindowTitle(const char* title);
 
-	bool BeginFullscreenColumns(const char* title = nullptr, float pos_y = 0.0f);
+	bool BeginFullscreenColumns(const char* title = nullptr, float pos_y = 0.0f, bool expand_to_screen_width = false);
 	void EndFullscreenColumns();
 
 	bool BeginFullscreenColumnWindow(float start, float end, const char* name, const ImVec4& background = UIBackgroundColor);

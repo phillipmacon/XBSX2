@@ -371,8 +371,7 @@ void VMManager::ApplyGameFixes()
 
 std::string VMManager::GetGameSettingsPath(const std::string_view& game_serial, u32 game_crc)
 {
-	std::string sanitized_serial(game_serial);
-	Path::SanitizeFileName(sanitized_serial);
+	std::string sanitized_serial(Path::SanitizeFileName(game_serial));
 
 	return game_serial.empty() ?
                Path::Combine(EmuFolders::GameSettings, fmt::format("{:08X}.ini", game_crc)) :
@@ -497,7 +496,7 @@ bool VMManager::UpdateGameSettingsLayer()
 			}
 		}
 
-		Host::Internal::SetInputSettingsLayer(input_interface.get());
+		Host::Internal::SetInputSettingsLayer(input_interface ? input_interface.get() : Host::Internal::GetBaseSettingsLayer());
 	}
 	else
 	{
@@ -1080,9 +1079,14 @@ void VMManager::Shutdown(bool save_resume_state)
 	// If the fullscreen UI is running, do a hardware reset on the GS
 	// so that the texture cache and targets are all cleared.
 	if (s_gs_open_on_initialize)
+	{
+		GetMTGS().WaitGS(false, false, false);
 		GetMTGS().ResetGS(true);
+	}
 	else
+	{
 		GetMTGS().WaitForClose();
+	}
 	USBshutdown();
 	SPU2shutdown();
 	PADshutdown();
@@ -1695,7 +1699,11 @@ void VMManager::ApplySettings()
 		GetMTGS().WaitGS(false);
 	}
 
-	const Xbsx2Config old_config(EmuConfig);
+	// Reset to a clean Pcsx2Config. Otherwise things which are optional (e.g. gamefixes)
+	// do not use the correct default values when loading.
+	Xbsx2Config old_config(std::move(EmuConfig));
+	EmuConfig = Xbsx2Config();
+	EmuConfig.CopyRuntimeConfig(old_config);
 	LoadSettings();
 	CheckForConfigChanges(old_config);
 }

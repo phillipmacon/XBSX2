@@ -1034,6 +1034,9 @@ struct Xbsx2Config
 	// You shouldn't assign to this class, because it'll mess with the runtime variables (Current...).
 	// But you can still use this to copy config. Only needed until we drop wx.
 	void CopyConfig(const Xbsx2Config& cfg);
+
+	/// Copies runtime configuration settings (e.g. frame limiter state).
+	void CopyRuntimeConfig(Xbsx2Config& cfg);
 };
 
 extern Xbsx2Config EmuConfig;

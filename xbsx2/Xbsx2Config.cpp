@@ -1241,6 +1241,22 @@ void Xbsx2Config::CopyConfig(const Xbsx2Config& cfg)
 	LimiterMode = cfg.LimiterMode;
 }
 
+void Xbsx2Config::CopyRuntimeConfig(Xbsx2Config& cfg)
+{
+	GS.LimitScalar = cfg.GS.LimitScalar;
+	UseBOOT2Injection = cfg.UseBOOT2Injection;
+	CurrentBlockdump = std::move(cfg.CurrentBlockdump);
+	CurrentIRX = std::move(cfg.CurrentIRX);
+	CurrentGameArgs = std::move(cfg.CurrentGameArgs);
+	CurrentAspectRatio = cfg.CurrentAspectRatio;
+	LimiterMode = cfg.LimiterMode;
+
+	for (u32 i = 0; i < sizeof(Mcd) / sizeof(Mcd[0]); i++)
+	{
+		Mcd[i].Type = cfg.Mcd[i].Type;
+	}
+}
+
 void EmuFolders::SetDefaults(SettingsInterface& si)
 {
 	si.SetStringValue("Folders", "Bios", "bios");

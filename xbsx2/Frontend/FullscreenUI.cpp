@@ -117,6 +117,8 @@ using ImGuiFullscreen::MenuButtonWithValue;
 using ImGuiFullscreen::MenuHeading;
 using ImGuiFullscreen::MenuHeadingButton;
 using ImGuiFullscreen::MenuImageButton;
+using ImGuiFullscreen::ModAlpha;
+using ImGuiFullscreen::MulAlpha;
 using ImGuiFullscreen::NavButton;
 using ImGuiFullscreen::NavTitle;
 using ImGuiFullscreen::OpenChoiceDialog;
@@ -183,6 +185,10 @@ namespace FullscreenUI
 	// Utility
 	//////////////////////////////////////////////////////////////////////////
 	static std::string TimeToPrintableString(time_t t);
+	static void StartAsyncOp(std::function<void(::ProgressCallback*)> callback, std::string name);
+	static void AsyncOpThreadEntryPoint(std::function<void(::ProgressCallback*)> callback, FullscreenUI::ProgressCallback* progress);
+	static void CancelAsyncOpWithName(const std::string_view& name);
+	static void CancelAsyncOps();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Main
@@ -210,6 +216,11 @@ namespace FullscreenUI
 	static bool s_pause_menu_was_open = false;
 	static bool s_was_paused_on_quick_menu_open = false;
 	static bool s_about_window_open = false;
+
+	// async operations (e.g. cover downloads)
+	using AsyncOpEntry = std::pair<std::thread, std::unique_ptr<FullscreenUI::ProgressCallback>>;
+	static std::mutex s_async_op_mutex;
+	static std::deque<AsyncOpEntry> s_async_ops;
 
 	// local copies of the currently-running game
 	static std::string s_current_game_title;
@@ -423,6 +434,75 @@ std::string FullscreenUI::TimeToPrintableString(time_t t)
 	return std::string(buf);
 }
 
+void FullscreenUI::StartAsyncOp(std::function<void(::ProgressCallback*)> callback, std::string name)
+{
+	CancelAsyncOpWithName(name);
+
+	std::unique_lock lock(s_async_op_mutex);
+	std::unique_ptr<FullscreenUI::ProgressCallback> progress(std::make_unique<FullscreenUI::ProgressCallback>(std::move(name)));
+	std::thread thread(AsyncOpThreadEntryPoint, std::move(callback), progress.get());
+	s_async_ops.emplace_back(std::move(thread), std::move(progress));
+}
+
+void FullscreenUI::CancelAsyncOpWithName(const std::string_view& name)
+{
+	std::unique_lock lock(s_async_op_mutex);
+	for (auto iter = s_async_ops.begin(); iter != s_async_ops.end(); ++iter)
+	{
+		if (name != iter->second->GetName())
+			continue;
+
+		// move the thread out so it doesn't detach itself, then join
+		std::unique_ptr<FullscreenUI::ProgressCallback> progress(std::move(iter->second));
+		std::thread thread(std::move(iter->first));
+		progress->SetCancelled();
+		s_async_ops.erase(iter);
+		lock.unlock();
+		if (thread.joinable())
+			thread.join();
+		lock.lock();
+		break;
+	}
+}
+
+void FullscreenUI::CancelAsyncOps()
+{
+	std::unique_lock lock(s_async_op_mutex);
+	while (!s_async_ops.empty())
+	{
+		auto iter = s_async_ops.begin();
+
+		// move the thread out so it doesn't detach itself, then join
+		std::unique_ptr<FullscreenUI::ProgressCallback> progress(std::move(iter->second));
+		std::thread thread(std::move(iter->first));
+		progress->SetCancelled();
+		s_async_ops.erase(iter);
+		lock.unlock();
+		if (thread.joinable())
+			thread.join();
+		lock.lock();
+	}
+}
+
+void FullscreenUI::AsyncOpThreadEntryPoint(std::function<void(::ProgressCallback*)> callback, FullscreenUI::ProgressCallback* progress)
+{
+	Threading::SetNameOfCurrentThread(fmt::format("{} Async Op", progress->GetName()).c_str());
+
+	callback(progress);
+
+	// if we were removed from the list, it means we got cancelled, and the main thread is blocking
+	std::unique_lock lock(s_async_op_mutex);
+	for (auto iter = s_async_ops.begin(); iter != s_async_ops.end(); ++iter)
+	{
+		if (iter->second.get() == progress)
+		{
+			iter->first.detach();
+			s_async_ops.erase(iter);
+			break;
+		}
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Main
 //////////////////////////////////////////////////////////////////////////
@@ -628,6 +708,7 @@ void FullscreenUI::OpenPauseSubMenu(PauseSubMenu submenu)
 
 void FullscreenUI::Shutdown()
 {
+	CancelAsyncOps();
 	CloseSaveStateSelector();
 	s_cover_image_map.clear();
 	s_game_list_sorted_entries = {};
@@ -947,9 +1028,9 @@ void FullscreenUI::SwitchToLanding()
 
 void FullscreenUI::DrawLandingWindow()
 {
-	BeginFullscreenColumns();
+	BeginFullscreenColumns(nullptr, 0.0f, true);
 
-	if (BeginFullscreenColumnWindow(0.0f, 570.0f, "logo", UIPrimaryDarkColor))
+	if (BeginFullscreenColumnWindow(0.0f, -710.0f, "logo", UIPrimaryDarkColor))
 	{
 		const float image_size = LayoutScale(700.0f);
 		ImGui::SetCursorPos(
@@ -963,7 +1044,7 @@ void FullscreenUI::DrawLandingWindow()
 	}
 	EndFullscreenColumnWindow();
 
-	if (BeginFullscreenColumnWindow(570.0f, LAYOUT_SCREEN_WIDTH, "menu", UIBackgroundColor))
+	if (BeginFullscreenColumnWindow(-710.0f, 0.0f, "menu", UIBackgroundColor))
 	{
 		ResetFocusHere();
 
@@ -1254,6 +1335,12 @@ void FullscreenUI::DrawIntListSetting(SettingsInterface* bsi, const char* title,
 	int default_value, const char* const* options, size_t option_count, int option_offset, bool enabled, float height, ImFont* font,
 	ImFont* summary_font)
 {
+	if (options && option_count == 0)
+	{
+		while (options[option_count] != nullptr)
+			option_count++;
+	}
+
 	const bool game_settings = IsEditingGameSettings(bsi);
 	const std::optional<int> value =
 		bsi->GetOptionalIntValue(section, key, game_settings ? std::nullopt : std::optional<int>(default_value));
@@ -3053,6 +3140,8 @@ void FullscreenUI::DrawControllerSettingsPage()
 	// we reorder things a little to make it look less silly for mtap
 	static constexpr const std::array<char, 4> mtap_slot_names = {{'A', 'B', 'C', 'D'}};
 	static constexpr const std::array<u32, PAD::NUM_CONTROLLER_PORTS> mtap_port_order = {{0, 2, 3, 4, 1, 5, 6, 7}};
+	static constexpr const std::array<const char*, PAD::NUM_CONTROLLER_PORTS> sections = {
+		{"Pad1", "Pad2", "Pad3", "Pad4", "Pad5", "Pad6", "Pad7", "Pad8"}};
 
 	// create the ports
 	for (u32 global_slot : mtap_port_order)
@@ -3067,8 +3156,8 @@ void FullscreenUI::DrawControllerSettingsPage()
                                        fmt::format(ICON_FA_PLUG " Controller Port {}", mtap_port + 1))
 				.c_str());
 
-		const std::string section(fmt::format("Pad{}", global_slot + 1));
-		const std::string type(bsi->GetStringValue(section.c_str(), "Type", PAD::GetDefaultPadType(global_slot)));
+		const char* section = sections[global_slot];
+		const std::string type(bsi->GetStringValue(section, "Type", PAD::GetDefaultPadType(global_slot)));
 		const PAD::ControllerInfo* ci = PAD::GetControllerInfo(type);
 		if (MenuButton(fmt::format(ICON_FA_GAMEPAD " Controller Type##type{}", global_slot).c_str(), ci ? ci->display_name : "Unknown"))
 		{
@@ -3086,7 +3175,7 @@ void FullscreenUI::DrawControllerSettingsPage()
 
 					auto lock = Host::GetSettingsLock();
 					SettingsInterface* bsi = GetEditingSettingsInterface(game_settings);
-					bsi->SetStringValue(section.c_str(), "Type", raw_options[index].first.c_str());
+					bsi->SetStringValue(section, "Type", raw_options[index].first.c_str());
 					SetSettingsChanged(bsi);
 					CloseChoiceDialog();
 				});
@@ -3101,7 +3190,7 @@ void FullscreenUI::DrawControllerSettingsPage()
 		for (u32 i = 0; i < ci->num_bindings; i++)
 		{
 			const PAD::ControllerBindingInfo& bi = ci->bindings[i];
-			DrawInputBindingButton(bsi, bi.type, section.c_str(), bi.name, bi.display_name, true);
+			DrawInputBindingButton(bsi, bi.type, section, bi.name, bi.display_name, true);
 		}
 
 		MenuHeading((mtap_enabled[mtap_port] ?
@@ -3111,10 +3200,10 @@ void FullscreenUI::DrawControllerSettingsPage()
 
 		for (u32 macro_index = 0; macro_index < PAD::NUM_MACRO_BUTTONS_PER_CONTROLLER; macro_index++)
 		{
-			DrawInputBindingButton(bsi, PAD::ControllerBindingType::Macro, section.c_str(), fmt::format("Macro{}", macro_index + 1).c_str(),
+			DrawInputBindingButton(bsi, PAD::ControllerBindingType::Macro, section, fmt::format("Macro{}", macro_index + 1).c_str(),
 				fmt::format("Macro {} Trigger", macro_index + 1).c_str());
 
-			std::string binds_string(bsi->GetStringValue(section.c_str(), fmt::format("Macro{}Binds", macro_index + 1).c_str()));
+			std::string binds_string(bsi->GetStringValue(section, fmt::format("Macro{}Binds", macro_index + 1).c_str()));
 			if (MenuButton(fmt::format(ICON_FA_KEYBOARD " Macro {} Buttons", macro_index + 1).c_str(),
 					binds_string.empty() ? "No Buttons Selected" : binds_string.c_str()))
 			{
@@ -3155,7 +3244,7 @@ void FullscreenUI::DrawControllerSettingsPage()
 						SettingsInterface* bsi = GetEditingSettingsInterface();
 						const std::string key(fmt::format("Macro{}Binds", macro_index + 1));
 
-						std::string binds_string(bsi->GetStringValue(section.c_str(), key.c_str()));
+						std::string binds_string(bsi->GetStringValue(section, key.c_str()));
 						std::vector<std::string_view> buttons_split(StringUtil::SplitString(binds_string, '&', true));
 						auto it = std::find(buttons_split.begin(), buttons_split.end(), to_modify);
 						if (checked)
@@ -3171,15 +3260,15 @@ void FullscreenUI::DrawControllerSettingsPage()
 
 						binds_string = StringUtil::JoinString(buttons_split.begin(), buttons_split.end(), " & ");
 						if (binds_string.empty())
-							bsi->DeleteValue(section.c_str(), key.c_str());
+							bsi->DeleteValue(section, key.c_str());
 						else
-							bsi->SetStringValue(section.c_str(), key.c_str(), binds_string.c_str());
+							bsi->SetStringValue(section, key.c_str(), binds_string.c_str());
 					});
 			}
 
 			const std::string freq_key(fmt::format("Macro{}Frequency", macro_index + 1));
 			const std::string freq_title(fmt::format(ICON_FA_LIGHTBULB " Macro {} Frequency", macro_index + 1));
-			s32 frequency = bsi->GetIntValue(section.c_str(), freq_key.c_str(), 0);
+			s32 frequency = bsi->GetIntValue(section, freq_key.c_str(), 0);
 			const std::string freq_summary((frequency == 0) ? std::string("Macro will not auto-toggle.") :
                                                               fmt::format("Macro will toggle every {} frames.", frequency));
 			if (MenuButton(freq_title.c_str(), freq_summary.c_str()))
@@ -3200,9 +3289,9 @@ void FullscreenUI::DrawControllerSettingsPage()
 				if (ImGui::SliderInt("##value", &frequency, 0, 60, "Toggle every %d frames", ImGuiSliderFlags_NoInput))
 				{
 					if (frequency == 0)
-						bsi->DeleteValue(section.c_str(), freq_key.c_str());
+						bsi->DeleteValue(section, freq_key.c_str());
 					else
-						bsi->SetIntValue(section.c_str(), freq_key.c_str(), frequency);
+						bsi->SetIntValue(section, freq_key.c_str(), frequency);
 				}
 
 				BeginMenuButtons();
@@ -3232,14 +3321,18 @@ void FullscreenUI::DrawControllerSettingsPage()
 				{
 					case PAD::ControllerSettingInfo::Type::Boolean:
 						DrawToggleSetting(
-							bsi, title.c_str(), si.description, section.c_str(), si.name, si.BooleanDefaultValue(), true, false);
+							bsi, title.c_str(), si.description, section, si.name, si.BooleanDefaultValue(), true, false);
 						break;
 					case PAD::ControllerSettingInfo::Type::Integer:
-						DrawIntRangeSetting(bsi, title.c_str(), si.description, section.c_str(), si.name, si.IntegerDefaultValue(),
+						DrawIntRangeSetting(bsi, title.c_str(), si.description, section, si.name, si.IntegerDefaultValue(),
 							si.IntegerMinValue(), si.IntegerMaxValue(), si.format, true);
 						break;
+					case PAD::ControllerSettingInfo::Type::IntegerList:
+						DrawIntListSetting(bsi, title.c_str(), si.description, section, si.name, si.IntegerDefaultValue(), si.options, 0,
+							si.IntegerMinValue(), true);
+						break;
 					case PAD::ControllerSettingInfo::Type::Float:
-						DrawFloatRangeSetting(bsi, title.c_str(), si.description, section.c_str(), si.name, si.FloatDefaultValue(),
+						DrawFloatRangeSetting(bsi, title.c_str(), si.description, section, si.name, si.FloatDefaultValue(),
 							si.FloatMinValue(), si.FloatMaxValue(), si.format, si.multiplier, true);
 						break;
 					default:
@@ -4009,7 +4102,7 @@ void FullscreenUI::DrawGameListWindow()
 
 void FullscreenUI::DrawGameList(const ImVec2& heading_size)
 {
-	if (!BeginFullscreenColumns(nullptr, heading_size.y))
+	if (!BeginFullscreenColumns(nullptr, heading_size.y, true))
 	{
 		EndFullscreenColumns();
 		return;
@@ -4017,7 +4110,7 @@ void FullscreenUI::DrawGameList(const ImVec2& heading_size)
 
 	const GameList::Entry* selected_entry = nullptr;
 
-	if (BeginFullscreenColumnWindow(0.0f, 750.0f, "game_list_entries"))
+	if (BeginFullscreenColumnWindow(0.0f, -530.0f, "game_list_entries"))
 	{
 		const ImVec2 image_size(LayoutScale(LAYOUT_MENU_BUTTON_HEIGHT * 1.00f, LAYOUT_MENU_BUTTON_HEIGHT));
 
@@ -4092,7 +4185,7 @@ void FullscreenUI::DrawGameList(const ImVec2& heading_size)
 	}
 	EndFullscreenColumnWindow();
 
-	if (BeginFullscreenColumnWindow(750.0f, LAYOUT_SCREEN_WIDTH, "game_list_info", UIPrimaryDarkColor))
+	if (BeginFullscreenColumnWindow(-530.0f, 0.0f, "game_list_info", UIPrimaryDarkColor))
 	{
 		const HostDisplayTexture* cover_texture =
 			selected_entry ? GetGameListCover(selected_entry) : GetTextureForGameListEntryType(GameList::EntryType::Count);
@@ -4113,6 +4206,7 @@ void FullscreenUI::DrawGameList(const ImVec2& heading_size)
 		float text_y = 425.0f;
 		float text_width;
 
+		PushPrimaryColor();
 		ImGui::SetCursorPos(LayoutScale(start_x, text_y));
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, field_margin_y));
 		ImGui::PushTextWrapPos(LayoutScale(480.0f));
@@ -4187,9 +4281,9 @@ void FullscreenUI::DrawGameList(const ImVec2& heading_size)
 		ImGui::EndGroup();
 		ImGui::PopTextWrapPos();
 		ImGui::PopStyleVar();
+		PopPrimaryColor();
 	}
 	EndFullscreenColumnWindow();
-
 	EndFullscreenColumns();
 }
 
