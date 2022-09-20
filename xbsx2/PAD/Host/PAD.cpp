@@ -473,6 +473,9 @@ static const PAD::ControllerSettingInfo s_dualshock2_settings[] = {
 	{PAD::ControllerSettingInfo::Type::Float, "SmallMotorScale", "Small Motor Vibration Scale",
 		"Increases or decreases the intensity of high frequency vibration sent by the game.",
 		"1.00", "0", "200", "1", "%.0f%%", nullptr, 100.0f},
+	{PAD::ControllerSettingInfo::Type::Float, "ButtonDeadzone", "Button/Trigger Deadzone",
+		"Sets the deadzone for activating buttons/triggers, i.e. the fraction of the trigger which will be ignored.",
+		"0.00", "0", "100", "1", "%.0f%%", nullptr, 100.0f},
 	/* {PAD::ControllerSettingInfo::Type::Float, "PressureModifier", "Modifier Pressure",
 		"Sets the pressure when the modifier button is held.",
 		"25", "0", "25", "1", "%.0f%%", nullptr, 100.0f}, */
