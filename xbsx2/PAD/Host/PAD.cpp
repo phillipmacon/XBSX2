@@ -466,13 +466,13 @@ static const PAD::ControllerSettingInfo s_dualshock2_settings[] = {
 	{PAD::ControllerSettingInfo::Type::Float, "AxisScale", "Analog Sensitivity",
 		"Sets the analog stick axis scaling factor. A value between 1.30 and 1.40 is recommended when using recent "
 		"controllers, e.g. DualShock 4, Xbox One Controller.",
-		"140", "0", "200", "1", "%.0f%%", nullptr, 100.0f},
+		"1.40", "0", "200", "1", "%.0f%%", nullptr, 100.0f},
 	{PAD::ControllerSettingInfo::Type::Float, "LargeMotorScale", "Large Motor Vibration Scale",
 		"Increases or decreases the intensity of low frequency vibration sent by the game.",
-		"100", "0", "200", "1", "%.0f%%", nullptr, 100.0f},
+		"1.00", "0", "200", "1", "%.0f%%", nullptr, 100.0f},
 	{PAD::ControllerSettingInfo::Type::Float, "SmallMotorScale", "Small Motor Vibration Scale",
 		"Increases or decreases the intensity of high frequency vibration sent by the game.",
-		"100", "0", "200", "1", "%.0f%%", nullptr, 100.0f},
+		"1.00", "0", "200", "1", "%.0f%%", nullptr, 100.0f},
 	/* {PAD::ControllerSettingInfo::Type::Float, "PressureModifier", "Modifier Pressure",
 		"Sets the pressure when the modifier button is held.",
 		"25", "0", "25", "1", "%.0f%%", nullptr, 100.0f}, */
