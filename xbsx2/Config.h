@@ -512,7 +512,7 @@ struct Xbsx2Config
 		bool SynchronousMTGS{false};
 		bool FrameLimitEnable{true};
 
-		VsyncMode VsyncEnable{VsyncMode::Off};
+		VsyncMode VsyncEnable{VsyncMode::On};
 
 		float LimitScalar{1.0f};
 		float FramerateNTSC{DEFAULT_FRAME_RATE_NTSC};
@@ -533,7 +533,7 @@ struct Xbsx2Config
 
 		float OsdScale{100.0f};
 
-		GSRendererType Renderer{GSRendererType::Auto};
+		GSRendererType Renderer{GSRendererType::DX12};
 		uint UpscaleMultiplier{1};
 
 		HWMipmapLevel HWMipmap{HWMipmapLevel::Automatic};

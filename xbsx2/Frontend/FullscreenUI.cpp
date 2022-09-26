@@ -3445,7 +3445,7 @@ void FullscreenUI::DrawAdvancedSettingsPage()
 	DrawToggleSetting(bsi, "Dump FMV Textures", "Allows texture dumping when FMVs are active. You should not enable this.", "EmuCore/GS", "DumpTexturesWithFMVActive", false, dumping_active);
 	DrawToggleSetting(bsi, "Load Textures", "Loads replacement textures where available and user-provided.", "EmuCore/GS", "LoadTextureReplacements", false);
 	DrawToggleSetting(bsi, "Asynchronous Texture Loading", "Loads replacement textures on a worker thread, reducing microstutter when replacements are enabled.", "EmuCore/GS", "LoadTextureReplacementsAsync", true, replacement_active);
-	DrawToggleSetting(bsi, "Precache Replacements", "Preloads all replacement textures to memory. Not necessary with asynchronous loading.", "EmuCore/GS", "PrecacheTextureReplacements", false, replacement_active);
+	//  DrawToggleSetting(bsi, "Precache Replacements", "Preloads all replacement textures to memory. Not necessary with asynchronous loading.", "EmuCore/GS", "PrecacheTextureReplacements", false, replacement_active);
 
 	MenuHeading("Logging");
 
@@ -3455,9 +3455,9 @@ void FullscreenUI::DrawAdvancedSettingsPage()
 	DrawToggleSetting(bsi, "IOP Console", "Writes debug messages from the game's IOP code to the console.", "Logging", "EnableIOPConsole", true);
 	DrawToggleSetting(bsi, "CDVD Verbose Reads", "Logs disc reads from games.", "EmuCore", "CdvdVerboseReads", false);
 
-	MenuHeading("Graphics");
+	/* MenuHeading("Graphics");
 
-	DrawToggleSetting(bsi, "Use Debug Device", "Enables API-level validation of graphics commands", "EmuCore/GS", "UseDebugDevice", false);
+	DrawToggleSetting(bsi, "Use Debug Device", "Enables API-level validation of graphics commands", "EmuCore/GS", "UseDebugDevice", false); */
 
 	EndMenuButtons();
 }
