@@ -323,6 +323,7 @@ Xbsx2Config::GSOptions::GSOptions()
 	OsdShowIndicators = true;
 
 	HWDownloadMode = GSHardwareDownloadMode::Enabled;
+	AccurateDATE = false;
 	GPUPaletteConversion = false;
 	AutoFlushSW = true;
 	PreloadFrameWithGSData = false;
@@ -541,6 +542,7 @@ void Xbsx2Config::GSOptions::ReloadIniSettings()
 	GSSettingBool(OsdShowGSStats);
 	GSSettingBool(OsdShowIndicators);
 
+	GSSettingBoolEx(AccurateDATE, "accurate_date");
 	GSSettingBoolEx(GPUPaletteConversion, "paltex");
 	GSSettingBoolEx(AutoFlushSW, "autoflush_sw");
 	GSSettingBoolEx(PreloadFrameWithGSData, "preload_frame_with_gs_data");
@@ -692,7 +694,8 @@ VsyncMode Xbsx2Config::GetEffectiveVsyncMode() const
 
 Xbsx2Config::SPU2Options::SPU2Options()
 {
-	OutputModule = "cubeb";
+	bitset = 0;
+	OutputModule = "xaudio2";
 }
 
 void Xbsx2Config::SPU2Options::LoadSave(SettingsWrapper& wrap)
@@ -717,6 +720,7 @@ void Xbsx2Config::SPU2Options::LoadSave(SettingsWrapper& wrap)
 		SettingsWrapSection("SPU2/Output");
 
 		SettingsWrapEntry(OutputModule);
+		SettingsWrapEntry(BackendName);
 		SettingsWrapEntry(Latency);
 		SynchMode = static_cast<SynchronizationMode>(wrap.EntryBitfield(CURRENT_SETTINGS_SECTION, "SynchMode", static_cast<int>(SynchMode), static_cast<int>(SynchMode)));
 		SettingsWrapEntry(SpeakerConfiguration);

@@ -210,6 +210,7 @@ GSTextureCache::Source* GSTextureCache::LookupSource(const GIFRegTEX0& TEX0, con
 
 	auto& m = m_src.m_map[TEX0.TBP0 >> 5];
 
+	const GSVector2i compare_lod(lod ? *lod : GSVector2i(0, 0));
 	for (auto i = m.begin(); i != m.end(); ++i)
 	{
 		Source* s = *i;
@@ -229,6 +230,11 @@ GSTextureCache::Source* GSTextureCache::LookupSource(const GIFRegTEX0& TEX0, con
 			// We request a 24/16 bit RGBA texture. Alpha expansion was done by
 			// the CPU.  We need to check that TEXA is identical
 			if (psm_s.pal == 0 && psm_s.fmt > 0 && s->m_TEXA.U64 != TEXA.U64)
+				continue;
+
+			// Same base mip texture, but we need to check that MXL was the same as well.
+			// When mipmapping is off, this will be 0,0 vs 0,0.
+			if (s->m_lod != compare_lod)
 				continue;
 		}
 
@@ -1336,7 +1342,7 @@ bool GSTextureCache::ShuffleMove(u32 BP, u32 BW, u32 PSM, int sx, int sy, int dx
 	config.depth = GSHWDrawConfig::DepthStencilSelector::NoDepth();
 	config.colormask = GSHWDrawConfig::ColorMaskSelector();
 	config.colormask.wrgba = (write_rg ? (1 | 2) : (4 | 8));
-	config.require_one_barrier = true;
+	config.require_one_barrier = !g_gs_device->Features().framebuffer_fetch;
 	config.require_full_barrier = false;
 	config.destination_alpha = GSHWDrawConfig::DestinationAlphaMode::Off;
 	config.datm = false;
@@ -1566,6 +1572,8 @@ GSTextureCache::Source* GSTextureCache::CreateSource(const GIFRegTEX0& TEX0, con
 {
 	const GSLocalMemory::psm_t& psm = GSLocalMemory::m_psm[TEX0.PSM];
 	Source* src = new Source(TEX0, TEXA, false);
+	if (lod)
+		src->m_lod = *lod;
 
 	int tw = 1 << TEX0.TW;
 	int th = 1 << TEX0.TH;
@@ -2289,6 +2297,7 @@ GSTextureCache::Source::Source(const GIFRegTEX0& TEX0, const GIFRegTEXA& TEXA, b
 	: m_palette_obj(nullptr)
 	, m_palette(nullptr)
 	, m_valid_rect(0, 0)
+	, m_lod(0, 0)
 	, m_target(false)
 	, m_p2t(NULL)
 	, m_from_target(NULL)

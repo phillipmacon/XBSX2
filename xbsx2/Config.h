@@ -470,6 +470,7 @@ struct Xbsx2Config
 					OsdShowIndicators : 1;
 
 				bool
+					AccurateDATE : 1,
 					GPUPaletteConversion : 1,
 					AutoFlushSW : 1,
 					PreloadFrameWithGSData : 1,
@@ -621,7 +622,6 @@ struct Xbsx2Config
 			NoSync,
 		};
 
-
 		BITFIELD32()
 		bool
 			AdvancedVolumeControl : 1;
@@ -631,7 +631,7 @@ struct Xbsx2Config
 		SynchronizationMode SynchMode = SynchronizationMode::TimeStretch;
 
 		s32 FinalVolume = 100;
-		s32 Latency{100};
+		s32 Latency{64};
 		s32 SpeakerConfiguration{0};
 
 		float VolumeAdjustC{ 0.0f };
@@ -644,6 +644,7 @@ struct Xbsx2Config
 		float VolumeAdjustLFE{ 0.0f };
 
 		std::string OutputModule;
+		std::string BackendName;
 
 		SPU2Options();
 
@@ -653,23 +654,24 @@ struct Xbsx2Config
 		{
 			return OpEqu(bitset) &&
 
-				OpEqu(Interpolation) &&
-				OpEqu(SynchMode) &&
+				   OpEqu(Interpolation) &&
+				   OpEqu(SynchMode) &&
 
-				OpEqu(FinalVolume) &&
-				OpEqu(Latency) &&
-				OpEqu(SpeakerConfiguration) &&
+				   OpEqu(FinalVolume) &&
+				   OpEqu(Latency) &&
+				   OpEqu(SpeakerConfiguration) &&
 
-				OpEqu(VolumeAdjustC) &&
-				OpEqu(VolumeAdjustFL) &&
-				OpEqu(VolumeAdjustFR) &&
-				OpEqu(VolumeAdjustBL) &&
-				OpEqu(VolumeAdjustBR) &&
-				OpEqu(VolumeAdjustSL) &&
-				OpEqu(VolumeAdjustSR) &&
-				OpEqu(VolumeAdjustLFE) &&
+				   OpEqu(VolumeAdjustC) &&
+				   OpEqu(VolumeAdjustFL) &&
+				   OpEqu(VolumeAdjustFR) &&
+				   OpEqu(VolumeAdjustBL) &&
+				   OpEqu(VolumeAdjustBR) &&
+				   OpEqu(VolumeAdjustSL) &&
+				   OpEqu(VolumeAdjustSR) &&
+				   OpEqu(VolumeAdjustLFE) &&
 
-				OpEqu(OutputModule);
+				   OpEqu(OutputModule) &&
+				   OpEqu(BackendName);
 		}
 
 		bool operator!=(const SPU2Options& right) const

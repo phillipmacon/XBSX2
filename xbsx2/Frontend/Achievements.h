@@ -1,5 +1,6 @@
 /*  XBSX2 - PS2 Emulator for Xbox Consoles
- *
+ *  Copyright (C) 2002-2022 PCSX2 Dev Team
+ * 
  *  XBSX2 is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU Lesser General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -8,17 +9,19 @@
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License along with PCSX2.
+ *  You should have received a copy of the GNU General Public License along with XBSX2.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
-#include "common/Pcsx2Defs.h"
+#include "common/Xbsx2Defs.h"
+#include "Xbsx2/Achievements.h"
 #include "Config.h"
 #include <functional>
 #include <mutex>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -65,80 +68,36 @@ namespace Achievements
 		bool is_self;
 	};
 
-	extern bool g_active;
-	extern bool g_logged_in;
-	extern bool g_challenge_mode;
-	extern u32 g_game_id;
-
 	// RAIntegration only exists for Windows, so no point checking it on other platforms.
 #ifdef ENABLE_RAINTEGRATION
 
-	extern bool g_using_raintegration;
-
-	static __fi bool IsUsingRAIntegration()
-	{
-		return g_using_raintegration;
-	}
+	bool IsUsingRAIntegration();
 
 #else
 
-	static __fi bool IsUsingRAIntegration()
-	{
-		return false;
-	}
+	static __fi bool IsUsingRAIntegration() { return false; }
 
 #endif
 
-	static __fi bool IsActive()
-	{
-		return g_active;
-	}
+	bool IsActive();
+	bool IsLoggedIn();
+	bool ChallengeModeActive();
+	bool LeaderboardsActive();
+	bool IsTestModeActive();
+	bool IsUnofficialTestModeActive();
+	bool IsRichPresenceEnabled();
+	bool HasActiveGame();
 
-	static __fi bool IsLoggedIn()
-	{
-		return g_logged_in;
-	}
-
-	static __fi bool IsChallengeModeEnabled()
-	{
-		return EmuConfig.Achievements.ChallengeMode;
-	}
-
-	static __fi bool IsChallengeModeActive()
-	{
-		return g_active && g_challenge_mode;
-	}
-
-	static __fi bool IsTestModeActive()
-	{
-		return EmuConfig.Achievements.TestMode;
-	}
-
-	static __fi bool IsUnofficialTestModeActive()
-	{
-		return EmuConfig.Achievements.UnofficialTestMode;
-	}
-
-	static __fi bool IsRichPresenceEnabled()
-	{
-		return EmuConfig.Achievements.RichPresence;
-	}
-
-	static __fi bool HasActiveGame()
-	{
-		return g_game_id != 0;
-	}
-
-	static __fi u32 GetGameID()
-	{
-		return g_game_id;
-	}
+	u32 GetGameID();
 
 	/// Acquires the achievements lock. Must be held when accessing any achievement state from another thread.
 	std::unique_lock<std::recursive_mutex> GetLock();
 
 	void Initialize();
 	void UpdateSettings(const Pcsx2Config::AchievementsOptions& old_config);
+
+	/// When using hardcore, disables settings which are not allowed.
+	void DisableDisallowedSettings(Pcsx2Config& config);
 
 	/// Called when the system is being reset. If it returns false, the reset should be aborted.
 	bool Reset();
@@ -169,8 +128,7 @@ namespace Achievements
 	bool Login(const char* username, const char* password);
 	void Logout();
 
-	bool HasActiveGame();
-	void GameChanged();
+	void GameChanged(u32 crc);
 
 	const std::string& GetGameTitle();
 	const std::string& GetGameIcon();
@@ -187,9 +145,11 @@ namespace Achievements
 	u32 GetLeaderboardCount();
 	bool IsLeaderboardTimeType(const Leaderboard& leaderboard);
 
+	const Achievement* GetAchievementByID(u32 id);
 	std::pair<u32, u32> GetAchievementProgress(const Achievement& achievement);
 	std::string GetAchievementProgressText(const Achievement& achievement);
-	const std::string& GetAchievementBadgePath(const Achievement& achievement);
+	const std::string& GetAchievementBadgePath(const Achievement& achievement, bool download_if_missing = true);
+	std::string GetAchievementBadgeURL(const Achievement& achievement);
 
 	void UnlockAchievement(u32 achievement_id, bool add_notification = true);
 	void SubmitLeaderboard(u32 leaderboard_id, int value);
@@ -201,14 +161,15 @@ namespace Achievements
 	{
 		void MainWindowChanged(void* new_handle);
 		void GameChanged();
-		std::vector<std::pair<int, const char*>> GetMenuItems();
+		std::vector<std::tuple<int, std::string, bool>> GetMenuItems();
 		void ActivateMenuItem(int item);
 	} // namespace RAIntegration
 #endif
-} // namespace RetroAchievements
+} // namespace Achievements
 
 /// Functions implemented in the frontend.
 namespace Host
 {
 	void OnAchievementsRefreshed();
+	void OnAchievementsChallengeModeChanged();
 } // namespace Host

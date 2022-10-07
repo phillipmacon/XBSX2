@@ -1095,6 +1095,8 @@ SCAJ-20138:
   region: "NTSC-Unk"
   gsHWFixes:
     preloadFrameData: 1 # Fixes black background in the pause menu.
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCAJ-20139:
   name: "Zero - Shisei no Koe" # Fatal Frame - Rei - Irezumi no Sei
   region: "NTSC-Unk"
@@ -1371,6 +1373,8 @@ SCAJ-20195:
   region: "NTSC-Ch"
   gsHWFixes:
     preloadFrameData: 1 # Fixes black background in the pause menu.
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCAJ-20196:
   name: "Wang Da Yu Ju Xiang [PlayStation 2 The Best]"
   region: "NTSC-Ch"
@@ -1531,7 +1535,8 @@ SCCS-40001:
   name: "Ape Escape 2"
   region: "NTSC-C"
   gsHWFixes:
-    mipmap: 1
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCCS-40002:
   name: "Devil May Cry 2 - Disc 1"
   region: "NTSC-C"
@@ -2171,6 +2176,13 @@ SCED-52687:
 SCED-52728:
   name: "Official PlayStation 2 Magazine Demo 49"
   region: "PAL-M5"
+SCED-52759:
+  name: "Killzone [Demo]"
+  region: "PAL-M5"
+  clampModes:
+    vuClampMode: 0 # Resolves I Reg Clamping / performance impact and yellow graphics in certain areas.
+  gsHWFixes:
+    halfPixelOffset: 2 # Fixes blurriness.
 SCED-52785:
   name: "Official PlayStation 2 Magazine Demo 50"
   region: "PAL-M5"
@@ -2183,9 +2195,13 @@ SCED-52796:
 SCED-52818:
   name: "EyeToy - Chat [Light]"
   region: "PAL-M11"
-SCED-52889:
-  name: "Killzone [Bonus Disc]"
-  region: "PAL-M5"
+SCED-52846:
+  name: "Killzone [Demo]"
+  region: "PAL-E"
+  clampModes:
+    vuClampMode: 0 # Resolves I Reg Clamping / performance impact and yellow graphics in certain areas.
+  gsHWFixes:
+    halfPixelOffset: 2 # Fixes blurriness.
 SCED-52932:
   name: "Bonus Demo 8"
   region: "PAL-M5"
@@ -2567,6 +2583,9 @@ SCED-54605:
 SCED-54642:
   name: "Official PlayStation 2 Magazine Demo 82" # German
   region: "PAL-M5"
+SCED-54682:
+  name: "UPS2 Speciale Platinum 2007"
+  region: "PAL-M5"
 SCED-54692:
   name: "Official PlayStation 2 Magazine Demo 83" # German
   region: "PAL-E-G"
@@ -2908,7 +2927,8 @@ SCES-50885:
   name: "Ape Escape 2"
   region: "PAL-E"
   gsHWFixes:
-    mipmap: 1
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCES-50887:
   name: "Alpine Racer 3"
   region: "PAL-M5"
@@ -2933,7 +2953,7 @@ SCES-50916:
   gsHWFixes:
     mipmap: 1
 SCES-50917:
-  name: "Sly Racoon"
+  name: "Sly Raccoon"
   region: "PAL-M5"
 SCES-50928:
   name: "SOCOM - U.S. Navy SEALs [Beta & Full Release]"
@@ -3010,22 +3030,26 @@ SCES-51102:
   name: "Ape Escape 2"
   region: "PAL-F"
   gsHWFixes:
-    mipmap: 1
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCES-51103:
   name: "Ape Escape 2"
   region: "PAL-I"
   gsHWFixes:
-    mipmap: 1
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCES-51104:
   name: "Ape Escape 2"
   region: "PAL-G"
   gsHWFixes:
-    mipmap: 1
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCES-51105:
   name: "Ape Escape 2"
   region: "PAL-S"
   gsHWFixes:
-    mipmap: 1
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCES-51135:
   name: "Primal"
   region: "PAL-M5"
@@ -3447,9 +3471,11 @@ SCES-52460:
     autoFlush: 1
     preloadFrameData: 1 # Fixes Sony splash at boot.
 SCES-52529:
-  name: "Sly Racoon 2 - Band of Thieves"
+  name: "Sly 2 - Band of Thieves"
   region: "PAL-M11"
   compat: 5
+  gsHWFixes:
+    halfPixelOffset: 2 # Fixes chromatic effect.
 SCES-52530:
   name: "Crisis Zone"
   region: "PAL-M5"
@@ -3608,6 +3634,13 @@ SCES-53247:
   compat: 5
   gameFixes:
     - XGKickHack # Fixes SPS.
+  patches:
+    CBBC2E7F:
+      content: |-
+        // https://forums.pcsx2.net/Thread-WRC-Rally-Evolved-run-problem?pid=617145#pid617145
+        // Fix "Branch 19e00047 in delay slot" which causes extreme slowdowns
+        // when you crash your car or interact with physics objects
+        patch=1,EE,003CC894,word,00000000
 SCES-53285:
   name: "Ratchet - Gladiator"
   region: "PAL-M5"
@@ -3705,7 +3738,7 @@ SCES-53397:
   name: "SingStar Pop - World Events Code"
   region: "PAL-Unk"
 SCES-53409:
-  name: "Sly 3"
+  name: "Sly 3 - Honour Among Thieves"
   region: "PAL-M11"
   compat: 5
   roundModes:
@@ -3756,6 +3789,8 @@ SCES-53642:
   compat: 5
   gsHWFixes:
     preloadFrameData: 1 # Fixes black background in the pause menu.
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCES-53663:
   name: "Buzz! The Music Quiz"
   region: "PAL-M3"
@@ -4747,9 +4782,11 @@ SCKA-20043:
   name: "Magna Carta"
   region: "NTSC-K"
 SCKA-20044:
-  name: "Sly Cooper 2 Band of Thieves"
+  name: "Sly 2 - Band of Thieves"
   region: "NTSC-K"
   compat: 5
+  gsHWFixes:
+    halfPixelOffset: 2 # Fixes chromatic effect.
 SCKA-20047:
   name: "Armored Core Nine Breaker"
   region: "NTSC-K"
@@ -4857,10 +4894,18 @@ SCKA-20062:
   region: "NTSC-K"
   gsHWFixes:
     preloadFrameData: 1 # Fixes black background in the pause menu.
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCKA-20063:
-  name: "Sly Cooper 3 Honor Among Thieves"
+  name: "Sly 3 - Honor Among Thieves"
   region: "NTSC-K"
   compat: 5
+  roundModes:
+    vuRoundMode: 0 # Fixes game engine issue with bombs and ladders.
+  clampModes:
+    vuClampMode: 2 # Fixes bugged camera.
+  gsHWFixes:
+    halfPixelOffset: 2 # Fixes chromatic effect.
 SCKA-20064:
   name: "SOCOM 3 - U.S. Navy SEALs"
   region: "NTSC-K"
@@ -5625,8 +5670,11 @@ SCPS-15089:
   name: "EyeToy - Play 2 [With Camera]"
   region: "NTSC-J"
 SCPS-15090:
-  name: "Sly Racoon 2"
+  name: "Kaitou Sly Cooper 2"
   region: "NTSC-J"
+  compat: 5
+  gsHWFixes:
+    halfPixelOffset: 2 # Fixes chromatic effect.
 SCPS-15091:
   name: "Wild ARMs - The 4th Detonator"
   region: "NTSC-J"
@@ -5931,7 +5979,8 @@ SCPS-19206:
   name: "Ape Escape 2 [PlayStation 2 The Best]"
   region: "NTSC-J"
   gsHWFixes:
-    mipmap: 1
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCPS-19207:
   name: "Popolocrois Story - Hajime no Bouken [PlayStation 2 The Best]"
   region: "NTSC-J"
@@ -6200,6 +6249,8 @@ SCPS-19327:
   region: "NTSC-J"
   gsHWFixes:
     preloadFrameData: 1 # Fixes black background in the pause menu.
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCPS-19328:
   name: "Ratchet & Clank 4th - GiriGiri Ginga no Giga Battle [PlayStation 2 the Best - Reprint]"
   region: "NTSC-J"
@@ -6432,7 +6483,8 @@ SCPS-55035:
   name: "Ape Escape 2"
   region: "NTSC-J"
   gsHWFixes:
-    mipmap: 1
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCPS-55038:
   name: "Pac-Man World 2"
   region: "NTSC-J"
@@ -8039,6 +8091,8 @@ SCUS-97501:
   compat: 5
   gsHWFixes:
     preloadFrameData: 1 # Fixes black background in the pause menu.
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCUS-97502:
   name: "Tourist Trophy"
   region: "NTSC-U"
@@ -8212,6 +8266,8 @@ SCUS-97548:
   region: "NTSC-U"
   gsHWFixes:
     preloadFrameData: 1 # Fixes black background in the pause menu.
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SCUS-97554:
   name: "NBA '07 featuring The Life Vol.2 [Demo]"
   region: "NTSC-U"
@@ -8528,11 +8584,12 @@ SLAJ-25053:
   name: "Burnout 3 - Takedown"
   region: "NTSC-Unk"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLAJ-25055:
   name: "Def Jam - Fight for N.Y."
   region: "NTSC-Unk"
@@ -8561,11 +8618,12 @@ SLAJ-25066:
   name: "Burnout Revenge - Battle Racing Ignited"
   region: "NTSC-Unk"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 0 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
   memcardFilters:
     - "SLAJ-25066"
     - "SLPM-66108"
@@ -8667,10 +8725,12 @@ SLAJ-25094:
   name: "Burnout Dominator"
   region: "NTSC-Unk"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
+    mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLAJ-25095:
   name: "Medal of Honor - Vanguard"
   region: "NTSC-Unk"
@@ -8812,9 +8872,13 @@ SLED-52488:
 SLED-52597:
   name: "Burnout 3 - Takedown [Demo]"
   region: "PAL-E"
+  clampModes:
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
+    mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLED-52875:
   name: "Sega Superstars [Demo]"
   region: "PAL-E"
@@ -8825,6 +8889,13 @@ SLED-52890:
     - GIFFIFOHack # Partially fixes graphical issues also needs EE cycle rate + 3.
   gsHWFixes:
     mipmap: 1
+SLED-52899:
+  name: "Killzone [Bonus Disc]"
+  region: "PAL-M5"
+  clampModes:
+    vuClampMode: 0 # Resolves I Reg Clamping / performance impact and yellow graphics in certain areas.
+  gsHWFixes:
+    halfPixelOffset: 2 # Fixes blurriness.
 SLED-52929:
   name: "Prince of Persia - Warrior Within [Demo]"
   region: "PAL-M5"
@@ -8851,11 +8922,12 @@ SLED-53512:
   region: "PAL-E"
   compat: 5
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 0 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLED-53537:
   name: "187 - Ride or Die [Demo]"
   region: "PAL-E"
@@ -14338,20 +14410,22 @@ SLES-52584:
   region: "PAL-M4"
   compat: 5
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLES-52585:
   name: "Burnout 3 - Takedown"
   region: "PAL-F-G-I"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLES-52587:
   name: "Army Men - Sarge's War"
   region: "PAL-M5"
@@ -16432,11 +16506,12 @@ SLES-53506:
   region: "PAL-M5"
   compat: 5
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 0 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
   memcardFilters:
     - "SLES-53506"
     - "SLES-53507"
@@ -16448,11 +16523,12 @@ SLES-53507:
   region: "PAL-M3"
   compat: 5
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 0 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
   memcardFilters:
     - "SLES-53506"
     - "SLES-53507"
@@ -16862,6 +16938,8 @@ SLES-53635:
 SLES-53636:
   name: "TY the Tasmanian Tiger 3 - Night of the Quinkan"
   region: "PAL-A"
+  roundModes:
+    eeRoundMode: 0 # Fixes story mission to make it completable.
 SLES-53638:
   name: "Ski Racing 2006"
   region: "PAL-M5"
@@ -19186,10 +19264,12 @@ SLES-54627:
   region: "PAL-M5"
   compat: 5
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
+    mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLES-54628:
   name: "Skate Attack [Promo]"
   region: "PAL-E"
@@ -19298,6 +19378,8 @@ SLES-54663:
   name: "Jackass - The Game"
   region: "PAL-M5"
   compat: 5
+  gsHWFixes:
+    halfPixelOffset: 1 # Fixes misaligned textures.
 SLES-54664:
   name: "Top Gun"
   region: "PAL-M11"
@@ -19345,10 +19427,12 @@ SLES-54681:
   name: "Burnout Dominator"
   region: "PAL-E"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
+    mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLES-54683:
   name: "Medal of Honor - Vanguard"
   region: "PAL-M9"
@@ -20384,6 +20468,8 @@ SLES-55080:
 SLES-55081:
   name: "Jackass - The Game"
   region: "PAL-E"
+  gsHWFixes:
+    halfPixelOffset: 1 # Fixes misaligned textures.
 SLES-55082:
   name: "Urban Constructor"
   region: "PAL-E"
@@ -20953,6 +21039,10 @@ SLES-55354:
 SLES-55355:
   name: "Guitar Hero - World Tour"
   region: "PAL-M5"
+  speedHacks:
+    InstantVU1SpeedHack: 0 # Corrects note board position.
+  roundModes:
+    vuRoundMode: 0 # Fixes graphical issues ingame.
 SLES-55356:
   name: "Bratz - Girlz Really Rock"
   region: "PAL-M3"
@@ -20993,6 +21083,8 @@ SLES-55372:
   name: "Spiderman - Web of Shadows"
   region: "PAL-M5"
   compat: 5
+  clampModes:
+    eeClampMode: 3 # Connect hits, able to summon... etc...
 SLES-55373:
   name: "King of Fighters Collection, The - The Orochi Saga"
   region: "PAL-E"
@@ -21825,6 +21917,9 @@ SLKA-15011:
 SLKA-15013:
   name: "Grand Slam 2003 Tennis" # Hard Hitter 2
   region: "NTSC-K"
+SLKA-15015:
+  name: "Ichigeki Sacchuu!! HoiHoi-San"
+  region: "NTSC-K"
 SLKA-15016:
   name: "Harry Potter - Quidditch World Cup"
   region: "NTSC-K"
@@ -21844,6 +21939,9 @@ SLKA-15021:
 SLKA-15023:
   name: "Assault Suits Valken"
   region: "NTSC-K"
+SLKA-15025:
+  name: "Space Invaders Anniversary"
+  region: "NTSC-K"
 SLKA-15028:
   name: "Simple 2000 Series Ultimate Vol. 6 - Love - Upper!"
   region: "NTSC-K"
@@ -21852,6 +21950,9 @@ SLKA-15029:
   region: "NTSC-K"
 SLKA-15030:
   name: "Simple 2000 Series Vol. 5 - The Block Kuzushi Hyper"
+  region: "NTSC-K"
+SLKA-15031:
+  name: "Princess Maker"
   region: "NTSC-K"
 SLKA-15032:
   name: "Gradius V"
@@ -21952,6 +22053,11 @@ SLKA-25038:
     alignSprite: 1 # Fixes vertical lines.
     roundSprite: 2 # Fixes font artifacts.
     mergeSprite: 1 # Fixes flame-like bleeding.
+SLKA-25039:
+  name: "Burnout 2 - Point of Impact"
+  region: "NTSC-K"
+  roundModes:
+    vuRoundMode: 1 # Bright lights in cars.
 SLKA-25041:
   name: "Armored Core 3 Silent Line"
   region: "NTSC-K"
@@ -22104,6 +22210,9 @@ SLKA-25087:
   compat: 5
   clampModes:
     vuClampMode: 2 # Missing geometry with microVU.
+SLKA-25088:
+  name: "Sangokushi Senki 2"
+  region: "NTSC-K"
 SLKA-25090:
   name: "Starsky & Hutch"
   region: "NTSC-K"
@@ -22386,10 +22495,13 @@ SLKA-25205:
 SLKA-25206:
   name: "Burnout 3 - Takedown"
   region: "NTSC-K"
+  clampModes:
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLKA-25207:
   name: "Sakura Taisen V - Episode 0 - Samurai Girl of Wild"
   region: "NTSC-K"
@@ -22413,6 +22525,7 @@ SLKA-25213:
   compat: 5
   gsHWFixes:
     preloadFrameData: 1 # Partially fixes HUD elements.
+    halfPixelOffset: 1 # Fixes misaligned blur around objects and enemies.
 SLKA-25214:
   name: "Final Fantasy X - International [PlayStation 2 - Big Hit Series]"
   region: "NTSC-K"
@@ -22452,6 +22565,9 @@ SLKA-25222:
   gsHWFixes:
     autoFlush: 1 # Fixes bloom.
     roundSprite: 1 # Fixes misalliged bloom.
+SLKA-25223:
+  name: "K.League - Winning Eleven 8 - Asia Championship"
+  region: "NTSC-K"
 SLKA-25224:
   name: "Detective Saburo Jinguji 9 - Kind of Blue"
   region: "NTSC-K"
@@ -22644,11 +22760,12 @@ SLKA-25304:
   name: "Burnout Revenge"
   region: "NTSC-K"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 0 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLKA-25307:
   name: "Dragon Ball Z Sparking"
   region: "NTSC-K"
@@ -22913,6 +23030,16 @@ SLPM-20436:
   name: "Sakigake!! Otokojuku"
   region: "NTSC-J"
   compat: 5
+SLPM-55004:
+  name: "Burnout Revenge (EASY 1980)"
+  region: "NTSC-J"
+  clampModes:
+    vuClampMode: 0 # Fixes buggy lighting in the garage.
+  gsHWFixes:
+    halfPixelOffset: 2 # Fixes depth lines.
+    autoFlush: 1 # Fixes blur.
+    mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLPM-55005:
   name: "Mana Khemia 2 - Ochita Gakuen to Renkinjutsushi Tachi"
   region: "NTSC-J"
@@ -22940,6 +23067,16 @@ SLPM-55024:
 SLPM-55033:
   name: "J. League Winning Eleven 2008 - Club Championship"
   region: "NTSC-J"
+SLPM-55036:
+  name: "Burnout Dominator (EASY 1980)"
+  region: "NTSC-J"
+  clampModes:
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
+  gsHWFixes:
+    halfPixelOffset: 2 # Fixes depth lines.
+    autoFlush: 1 # Fixes blur.
+    mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLPM-55039:
   name: "Soukoku no Kusabi - Hiiro no Kakera 3 [Limited Edition]"
   region: "NTSC-J"
@@ -23467,11 +23604,12 @@ SLPM-60246:
   name: "Burnout 3 - Takedown [Trial]"
   region: "NTSC-J"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLPM-60251:
   name: "Devil May Cry 3 [Trial Version]"
   region: "NTSC-J"
@@ -25816,6 +25954,9 @@ SLPM-64540:
   region: "NTSC-K"
   speedHacks:
     MTVUSpeedHack: 0 # Fixes bad graphics due to bad T-Bit handling.
+SLPM-64544:
+  name: "Tetsu 1 - Densha de Battle! World Grand Prix"
+  region: "NTSC-K"
 SLPM-64549:
   name: "Siksin-ui Seong"
   region: "NTSC-K"
@@ -28037,6 +28178,7 @@ SLPM-65686:
   region: "NTSC-J"
   gsHWFixes:
     preloadFrameData: 1 # Partially fixes HUD elements.
+    halfPixelOffset: 1 # Fixes misaligned blur around objects and enemies.
 SLPM-65687:
   name: "Star Wars - Battlefront"
   region: "NTSC-J"
@@ -28046,6 +28188,7 @@ SLPM-65688:
   compat: 5
   gsHWFixes:
     preloadFrameData: 1 # Partially fixes HUD elements.
+    halfPixelOffset: 1 # Fixes misaligned blur around objects and enemies.
 SLPM-65689:
   name: "Never 7 - The End of Infinity [SuperLite 2000 Series]"
   region: "NTSC-J"
@@ -28147,11 +28290,12 @@ SLPM-65719:
   name: "Burnout 3 - Takedown"
   region: "NTSC-J"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLPM-65720:
   name: "Shin Sangoku Musou 2 Mushoden [Koei the Best]"
   region: "NTSC-J"
@@ -28965,11 +29109,12 @@ SLPM-65958:
   name: "Burnout 3 - Takedown [EA Best Hits]"
   region: "NTSC-J"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLPM-65959:
   name: "Standard Daisenryaku - Ushinawareta Shouri"
   region: "NTSC-J"
@@ -29479,11 +29624,12 @@ SLPM-66108:
   name: "Burnout Revenge"
   region: "NTSC-J"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 0 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
   memcardFilters:
     - "SLAJ-25066"
     - "SLPM-66108"
@@ -31433,11 +31579,12 @@ SLPM-66652:
   name: "Burnout Revenge [EA Best Hits]"
   region: "NTSC-J"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 0 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
   memcardFilters:
     - "SLAJ-25066"
     - "SLPM-66108"
@@ -31794,10 +31941,12 @@ SLPM-66739:
   name: "Burnout Dominator"
   region: "NTSC-J"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
+    mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLPM-66740:
   name: "Sentou Kokka Kai - Legend [DX Pack]"
   region: "NTSC-J"
@@ -32505,11 +32654,12 @@ SLPM-66962:
   name: "Burnout 3 - Takedown [EA-SY! 1980]"
   region: "NTSC-J"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLPM-66963:
   name: "Medal of Honor - Frontline [EA-SY! 1980]"
   region: "NTSC-J"
@@ -38566,7 +38716,7 @@ SLUS-20043:
   region: "NTSC-U"
   compat: 5
 SLUS-20044:
-  name: "Star Wars - StarFighter"
+  name: "Star Wars - Starfighter"
   region: "NTSC-U"
   compat: 5
 SLUS-20045:
@@ -41312,7 +41462,8 @@ SLUS-20685:
   region: "NTSC-U"
   compat: 5
   gsHWFixes:
-    mipmap: 1
+    mipmap: 2 # Fixes miptrick texture effects.
+    trilinearFiltering: 1 # Fixes miptrick blending.
 SLUS-20686:
   name: "Splashdown - Rides Gone Wild"
   region: "NTSC-U"
@@ -43098,11 +43249,12 @@ SLUS-21050:
   region: "NTSC-U"
   compat: 5
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLUS-21051:
   name: "FIFA 2005"
   region: "NTSC-U"
@@ -44035,11 +44187,12 @@ SLUS-21242:
   region: "NTSC-U"
   compat: 5
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 0 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
   memcardFilters: # Reads Burnout 3 and NFL 06 saves for unlockables.
     - "SLUS-21242"
     - "SLUS-21050"
@@ -44106,6 +44259,8 @@ SLUS-21253:
   name: "Ty the Tasmanian Tiger 3"
   region: "NTSC-U"
   compat: 5
+  roundModes:
+    eeRoundMode: 0 # Fixes story mission to make it completable.
 SLUS-21254:
   name: "Zatch Bell! Mamodo Battles"
   region: "NTSC-U"
@@ -45752,10 +45907,12 @@ SLUS-21596:
   region: "NTSC-U"
   compat: 5
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
+    mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLUS-21597:
   name: "Medal of Honor - Vanguard"
   region: "NTSC-U"
@@ -45932,6 +46089,8 @@ SLUS-21627:
   name: "Jackass - The Game"
   region: "NTSC-U"
   compat: 5
+  gsHWFixes:
+    halfPixelOffset: 1 # Fixes misaligned textures.
 SLUS-21628:
   name: "Hot Wheels - Beat That!"
   region: "NTSC-U"
@@ -46631,6 +46790,10 @@ SLUS-21781:
   name: "Guitar Hero - World Tour"
   region: "NTSC-U"
   compat: 5
+  speedHacks:
+    InstantVU1SpeedHack: 0 # Corrects note board position.
+  roundModes:
+    vuRoundMode: 0 # Fixes graphical issues ingame.
 SLUS-21782:
   name: "Shin Megami Tensei - Persona 4"
   region: "NTSC-U"
@@ -47817,11 +47980,12 @@ SLUS-29113:
   name: "Burnout 3 [Demo]"
   region: "NTSC-U"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 3 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLUS-29116:
   name: "WWE SmackDown! vs. RAW [Public Beta Vol.1.0]"
   region: "NTSC-U"
@@ -47921,11 +48085,12 @@ SLUS-29153:
   name: "Burnout Revenge [Demo]"
   region: "NTSC-U"
   clampModes:
-    vuClampMode: 0 # Fixes buggy lighting on certain objects.
+    vuClampMode: 0 # Fixes buggy lighting in the garage.
   gsHWFixes:
     halfPixelOffset: 2 # Fixes depth lines.
     autoFlush: 1 # Fixes blur.
     mipmap: 2 # Fixes over sharpening.
+    trilinearFiltering: 1 # Smoothes out mipmapping.
 SLUS-29154:
   name: "NHL '06 [Demo]"
   region: "NTSC-U"

@@ -907,7 +907,7 @@ bool GSDevice12::GetSampler(D3D12::DescriptorHandle* cpu_handle, GSHWDrawConfig:
 	sd.AddressV = ss.tav ? D3D12_TEXTURE_ADDRESS_MODE_WRAP : D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
 	sd.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
 	sd.MinLOD = 0.0f;
-	sd.MaxLOD = ss.lodclamp ? 0.0f : FLT_MAX;
+	sd.MaxLOD = (ss.lodclamp || !ss.UseMipmapFiltering()) ? 0.25f : FLT_MAX;
 	sd.MaxAnisotropy = std::clamp(GSConfig.MaxAnisotropy, 1, 16);
 	sd.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
 
@@ -1041,7 +1041,7 @@ bool GSDevice12::CreateRootSignatures()
 	rsb.AddCBVParameter(0, D3D12_SHADER_VISIBILITY_ALL);
 	rsb.AddCBVParameter(1, D3D12_SHADER_VISIBILITY_PIXEL);
 	rsb.AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 2, D3D12_SHADER_VISIBILITY_PIXEL);
-	rsb.AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 0, 2, D3D12_SHADER_VISIBILITY_PIXEL);
+	rsb.AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 0, NUM_TFX_SAMPLERS, D3D12_SHADER_VISIBILITY_PIXEL);
 	rsb.AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 2, D3D12_SHADER_VISIBILITY_PIXEL);
 	if (!(m_tfx_root_signature = rsb.Create()))
 		return false;
@@ -1400,6 +1400,7 @@ bool GSDevice12::CheckStagingBufferSize(u32 required_size)
 		return false;
 	}
 
+	m_readback_staging_buffer_size = required_size;
 	return true;
 }
 
@@ -1713,8 +1714,7 @@ void GSDevice12::InitializeState()
 {
 	for (u32 i = 0; i < NUM_TOTAL_TFX_TEXTURES; i++)
 		m_tfx_textures[i] = m_null_texture.GetSRVDescriptor();
-	for (u32 i = 0; i < NUM_TFX_SAMPLERS; i++)
-		m_tfx_sampler_sel[i] = GSHWDrawConfig::SamplerSelector::Point().key;
+	m_tfx_sampler_sel = GSHWDrawConfig::SamplerSelector::Point().key;
 
 	InvalidateCachedState();
 }
@@ -1723,9 +1723,7 @@ void GSDevice12::InitializeSamplers()
 {
 	bool result = GetSampler(&m_point_sampler_cpu, GSHWDrawConfig::SamplerSelector::Point());
 	result = result && GetSampler(&m_linear_sampler_cpu, GSHWDrawConfig::SamplerSelector::Linear());
-
-	for (u32 i = 0; i < NUM_TFX_SAMPLERS; i++)
-		result = result && GetSampler(&m_tfx_samplers[i], m_tfx_sampler_sel[i]);
+	result = result && GetSampler(&m_tfx_sampler, m_tfx_sampler_sel);
 
 	if (!result)
 		pxFailRel("Failed to initialize samplers");
@@ -1867,13 +1865,14 @@ void GSDevice12::PSSetShaderResource(int i, GSTexture* sr, bool check_state)
 	m_dirty_flags |= (i < 2) ? DIRTY_FLAG_TFX_TEXTURES : DIRTY_FLAG_TFX_RT_TEXTURES;
 }
 
-void GSDevice12::PSSetSampler(u32 index, GSHWDrawConfig::SamplerSelector sel)
+
+void GSDevice12::PSSetSampler(GSHWDrawConfig::SamplerSelector sel)
 {
-	if (m_tfx_sampler_sel[index] == sel.key)
+	if (m_tfx_sampler_sel == sel.key)
 		return;
 
-	GetSampler(&m_tfx_samplers[index], sel);
-	m_tfx_sampler_sel[index] = sel.key;
+	GetSampler(&m_tfx_sampler, sel);
+	m_tfx_sampler_sel = sel.key;
 	m_dirty_flags |= DIRTY_FLAG_TFX_SAMPLERS;
 }
 
@@ -2227,7 +2226,7 @@ bool GSDevice12::ApplyTFXState(bool already_execed)
 
 	if (flags & DIRTY_FLAG_TFX_SAMPLERS)
 	{
-		if (!g_d3d12_context->GetSamplerAllocator().LookupGroup(&m_tfx_samplers_handle_gpu, m_tfx_samplers.data()))
+		if (!g_d3d12_context->GetSamplerAllocator().LookupSingle(&m_tfx_samplers_handle_gpu, m_tfx_sampler))
 		{
 			ExecuteCommandListAndRestartRenderPass("Ran out of sampler groups");
 			return ApplyTFXState(true);
@@ -2452,7 +2451,7 @@ void GSDevice12::RenderHW(GSHWDrawConfig& config)
 	if (config.tex)
 	{
 		PSSetShaderResource(0, config.tex, config.tex != config.rt);
-		PSSetSampler(0, config.sampler);
+		PSSetSampler(config.sampler);
 	}
 	if (config.pal)
 		PSSetShaderResource(1, config.pal, true);

@@ -57,6 +57,9 @@
 #include <bitset>
 #include <thread>
 
+// #ifdef ENABLE_ACHIEVEMENTS
+// #include "Frontend/Achievements.h"
+// #endif
 static constexpr s32 MAX_SAVE_STATE_SLOTS = 10;
 
 using ImGuiFullscreen::g_large_font;
@@ -145,13 +148,20 @@ namespace FullscreenUI
 		Landing,
 		GameList,
 		Settings,
-		PauseMenu
+		PauseMenu,
+		// #ifdef ENABLE_ACHIEVEMENTS
+		// 		Achievements,
+		// 		Leaderboards,
+		// #endif
 	};
 
 	enum class PauseSubMenu
 	{
 		None,
 		Exit,
+		// #ifdef ENABLE_ACHIEVEMENTS
+		// 		Achievements,
+		// #endif
 	};
 
 	enum class SettingsPage
@@ -166,7 +176,9 @@ namespace FullscreenUI
 		MemoryCard,
 		Controller,
 		Hotkey,
-		// Achievements,
+		// #ifdef ENABLE_ACHIEVEMENTS
+		// 		Achievements,
+		// #endif
 		Directory,
 		Advanced,
 		GameFixes,
@@ -185,10 +197,6 @@ namespace FullscreenUI
 	// Utility
 	//////////////////////////////////////////////////////////////////////////
 	static std::string TimeToPrintableString(time_t t);
-	static void StartAsyncOp(std::function<void(::ProgressCallback*)> callback, std::string name);
-	static void AsyncOpThreadEntryPoint(std::function<void(::ProgressCallback*)> callback, FullscreenUI::ProgressCallback* progress);
-	static void CancelAsyncOpWithName(const std::string_view& name);
-	static void CancelAsyncOps();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Main
@@ -216,11 +224,6 @@ namespace FullscreenUI
 	static bool s_pause_menu_was_open = false;
 	static bool s_was_paused_on_quick_menu_open = false;
 	static bool s_about_window_open = false;
-
-	// async operations (e.g. cover downloads)
-	using AsyncOpEntry = std::pair<std::thread, std::unique_ptr<FullscreenUI::ProgressCallback>>;
-	static std::mutex s_async_op_mutex;
-	static std::deque<AsyncOpEntry> s_async_ops;
 
 	// local copies of the currently-running game
 	static std::string s_current_game_title;
@@ -287,7 +290,10 @@ namespace FullscreenUI
 	static void DrawCreateMemoryCardWindow();
 	static void DrawControllerSettingsPage();
 	static void DrawHotkeySettingsPage();
-	//  static void DrawAchievementsSettingsPage();
+	// #ifdef ENABLE_ACHIEVEMENTS
+	// 	static void DrawAchievementsSettingsPage();
+	// 	static void DrawAchievementsLoginWindow();
+	// #endif
 	static void DrawDirectorySettingsPage();
 	static void DrawAdvancedSettingsPage();
 	static void DrawGameFixesSettingsPage();
@@ -414,6 +420,20 @@ namespace FullscreenUI
 	static std::unordered_map<std::string, std::string> s_cover_image_map;
 	static std::vector<const GameList::Entry*> s_game_list_sorted_entries;
 	static GameListPage s_game_list_page = GameListPage::Grid;
+
+	// #ifdef ENABLE_ACHIEVEMENTS
+	// 	//////////////////////////////////////////////////////////////////////////
+	// 	// Achievements
+	// 	//////////////////////////////////////////////////////////////////////////
+	// 	static void DrawAchievementsWindow();
+	// 	static void DrawAchievement(const Achievements::Achievement& cheevo);
+	// 	static void DrawLeaderboardsWindow();
+	// 	static void DrawLeaderboardListEntry(const Achievements::Leaderboard& lboard);
+	// 	static void DrawLeaderboardEntry(
+	// 		const Achievements::LeaderboardEntry& lbEntry, float rank_column_width, float name_column_width, float column_spacing);
+	//
+	// 	static std::optional<u32> s_open_leaderboard_id;
+	// #endif
 } // namespace FullscreenUI
 
 //////////////////////////////////////////////////////////////////////////
@@ -432,75 +452,6 @@ std::string FullscreenUI::TimeToPrintableString(time_t t)
 	char buf[256];
 	std::strftime(buf, sizeof(buf), "%c", &lt);
 	return std::string(buf);
-}
-
-void FullscreenUI::StartAsyncOp(std::function<void(::ProgressCallback*)> callback, std::string name)
-{
-	CancelAsyncOpWithName(name);
-
-	std::unique_lock lock(s_async_op_mutex);
-	std::unique_ptr<FullscreenUI::ProgressCallback> progress(std::make_unique<FullscreenUI::ProgressCallback>(std::move(name)));
-	std::thread thread(AsyncOpThreadEntryPoint, std::move(callback), progress.get());
-	s_async_ops.emplace_back(std::move(thread), std::move(progress));
-}
-
-void FullscreenUI::CancelAsyncOpWithName(const std::string_view& name)
-{
-	std::unique_lock lock(s_async_op_mutex);
-	for (auto iter = s_async_ops.begin(); iter != s_async_ops.end(); ++iter)
-	{
-		if (name != iter->second->GetName())
-			continue;
-
-		// move the thread out so it doesn't detach itself, then join
-		std::unique_ptr<FullscreenUI::ProgressCallback> progress(std::move(iter->second));
-		std::thread thread(std::move(iter->first));
-		progress->SetCancelled();
-		s_async_ops.erase(iter);
-		lock.unlock();
-		if (thread.joinable())
-			thread.join();
-		lock.lock();
-		break;
-	}
-}
-
-void FullscreenUI::CancelAsyncOps()
-{
-	std::unique_lock lock(s_async_op_mutex);
-	while (!s_async_ops.empty())
-	{
-		auto iter = s_async_ops.begin();
-
-		// move the thread out so it doesn't detach itself, then join
-		std::unique_ptr<FullscreenUI::ProgressCallback> progress(std::move(iter->second));
-		std::thread thread(std::move(iter->first));
-		progress->SetCancelled();
-		s_async_ops.erase(iter);
-		lock.unlock();
-		if (thread.joinable())
-			thread.join();
-		lock.lock();
-	}
-}
-
-void FullscreenUI::AsyncOpThreadEntryPoint(std::function<void(::ProgressCallback*)> callback, FullscreenUI::ProgressCallback* progress)
-{
-	Threading::SetNameOfCurrentThread(fmt::format("{} Async Op", progress->GetName()).c_str());
-
-	callback(progress);
-
-	// if we were removed from the list, it means we got cancelled, and the main thread is blocking
-	std::unique_lock lock(s_async_op_mutex);
-	for (auto iter = s_async_ops.begin(); iter != s_async_ops.end(); ++iter)
-	{
-		if (iter->second.get() == progress)
-		{
-			iter->first.detach();
-			s_async_ops.erase(iter);
-			break;
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -708,7 +659,6 @@ void FullscreenUI::OpenPauseSubMenu(PauseSubMenu submenu)
 
 void FullscreenUI::Shutdown()
 {
-	CancelAsyncOps();
 	CloseSaveStateSelector();
 	s_cover_image_map.clear();
 	s_game_list_sorted_entries = {};
@@ -753,6 +703,14 @@ void FullscreenUI::Render()
 		case MainWindowType::PauseMenu:
 			DrawPauseMenu(s_current_main_window);
 			break;
+			// #ifdef ENABLE_ACHIEVEMENTS
+			// 		case MainWindowType::Achievements:
+			// 			DrawAchievementsWindow();
+			// 			break;
+			// 		case MainWindowType::Leaderboards:
+			// 			DrawLeaderboardsWindow();
+			// 			break;
+			// #endif
 		default:
 			break;
 	}
@@ -842,7 +800,7 @@ void FullscreenUI::DestroyResources()
 
 ImGuiFullscreen::FileSelectorFilters FullscreenUI::GetDiscImageFilters()
 {
-	return {"*.bin", "*.iso", "*.cue", "*.chd", "*.cso", "*.gz", "*.elf", "*.irx", "*.m3u", "*.gs", "*.gs.xz", "*.gs.zst"};
+	return {"*.bin", "*.iso", "*.cue", "*.chd", "*.cso", "*.gz", "*.elf", "*.irx", "*.gs", "*.gs.xz", "*.gs.zst", "*.gs.dump"};
 }
 
 void FullscreenUI::DoStartPath(const std::string& path, std::optional<s32> state_index, std::optional<bool> fast_boot)
@@ -860,7 +818,7 @@ void FullscreenUI::DoStartPath(const std::string& path, std::optional<s32> state
 		if (VMManager::HasValidVM())
 			return;
 
-		if (VMManager::Initialize(params))
+		if (VMManager::Initialize(std::move(params)))
 			VMManager::SetState(VMState::Running);
 		else
 			s_current_main_window = prev_window;
@@ -887,7 +845,7 @@ void FullscreenUI::DoStartBIOS()
 			return;
 
 		VMBootParameters params;
-		if (VMManager::Initialize(params))
+		if (VMManager::Initialize(std::move(params)))
 			VMManager::SetState(VMState::Running);
 		else
 			SwitchToLanding();
@@ -941,6 +899,7 @@ void FullscreenUI::DoStartDisc()
 	});
 }
 #endif
+
 void FullscreenUI::DoToggleFrameLimit()
 {
 	Host::RunOnCPUThread([]() {
@@ -1335,12 +1294,6 @@ void FullscreenUI::DrawIntListSetting(SettingsInterface* bsi, const char* title,
 	int default_value, const char* const* options, size_t option_count, int option_offset, bool enabled, float height, ImFont* font,
 	ImFont* summary_font)
 {
-	if (options && option_count == 0)
-	{
-		while (options[option_count] != nullptr)
-			option_count++;
-	}
-
 	const bool game_settings = IsEditingGameSettings(bsi);
 	const std::optional<int> value =
 		bsi->GetOptionalIntValue(section, key, game_settings ? std::nullopt : std::optional<int>(default_value));
@@ -2038,9 +1991,11 @@ void FullscreenUI::DrawSettingsWindow()
 				DrawHotkeySettingsPage();
 				break;
 
-				/*  case SettingsPage::Achievements:
-				DrawAchievementsSettingsPage();
-				break;  */
+				// #ifdef ENABLE_ACHIEVEMENTS
+				// 			case SettingsPage::Achievements:
+				// 				DrawAchievementsSettingsPage();
+				// 				break;
+				// #endif
 
 			case SettingsPage::Directory:
 				DrawDirectorySettingsPage();
@@ -2151,11 +2106,6 @@ void FullscreenUI::DrawInterfaceSettingsPage()
 		"Shows indicators when fast forwarding, pausing, and other abnormal states are active.", "EmuCore/GS", "OsdShowIndicators", true);
 
 	MenuHeading("Behaviour");
-
-#ifdef WITH_DISCORD_PRESENCE
-	DrawToggleSetting("Enable Discord Presence", "Shows the game you are currently playing as part of your profile on Discord.", "UI",
-		"DiscordPresence", false);
-#endif
 	DrawToggleSetting(bsi, ICON_FA_WINDOW_MAXIMIZE " Pause On Menu",
 		"Pauses the emulator when you open the quick menu, and unpauses when you close it.", "UI", "PauseOnMenu", true);
 	MenuHeading("Operations");
@@ -2562,6 +2512,8 @@ void FullscreenUI::DrawEnhancementsSettingsPage()
 			std::size(s_preloading_options));
 		DrawIntListSetting(bsi, "Hardware Download Mode", "Changes synchronization behavior for GS downloads.", "EmuCore/GS", "HWDownloadMode",
 			static_cast<int>(GSHardwareDownloadMode::Enabled), s_hw_download, std::size(s_hw_download));
+		DrawToggleSetting(bsi, "Accurate Destination Alpha Test", "Implement a more accurate algorithm to compute GS destination alpha testing.",
+			"EmuCore/GS", "accurate_date", true);
 		DrawToggleSetting(bsi, "Conservative Buffer Allocation",
 			"Uses a smaller framebuffer where possible to reduce VRAM bandwidth and usage. May need to be disabled to prevent FMV "
 			"flicker.",
@@ -2739,7 +2691,7 @@ void FullscreenUI::DrawAudioSettingsPage()
 
 	MenuHeading("Runtime Settings");
 	DrawIntRangeSetting(bsi, ICON_FA_VOLUME_UP " Output Volume", "Applies a global volume modifier to all sound produced by the game.",
-		"SPU2/Mixing", "FinalVolume", 100, 0, 100, "%d%%");
+		"SPU2/Mixing", "FinalVolume", 100, 0, 200, "%d%%");
 
 	MenuHeading("Mixing Settings");
 	DrawIntListSetting(bsi, ICON_FA_MUSIC " Interpolation Mode", "Determines how ADPCM samples are interpolated to the target pitch.",
@@ -3106,10 +3058,12 @@ void FullscreenUI::DrawControllerSettingsPage()
 			ResetControllerSettings();
 	}
 
-	//  if (MenuButton(ICON_FA_FOLDER_OPEN " Load Profile", "Replaces these settings with a previously saved input profile."))
-	//  	DoLoadInputProfile();
-	//  if (MenuButton(ICON_FA_SAVE " Save Profile", "Stores the current settings to an input profile."))
-	//  	DoSaveInputProfile();
+#ifndef _UWP // Not currently working.
+	if (MenuButton(ICON_FA_FOLDER_OPEN " Load Profile", "Replaces these settings with a previously saved input profile."))
+		DoLoadInputProfile();
+	if (MenuButton(ICON_FA_SAVE " Save Profile", "Stores the current settings to an input profile."))
+		DoSaveInputProfile();
+#endif
 
 #ifndef _UWP
 
@@ -3370,7 +3324,7 @@ void FullscreenUI::DrawHotkeySettingsPage()
 
 	EndMenuButtons();
 }
-
+// #ifdef ENABLE_ACHIEVEMENTS
 //  void FullscreenUI::DrawAchievementsSettingsPage()
 //  {
 //
@@ -3379,8 +3333,8 @@ void FullscreenUI::DrawHotkeySettingsPage()
 //  		ImGuiFullscreen::LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
 //  	EndMenuButtons();
 //  }
+// #endif
 
-// Custom Directory Settings Tab
 void FullscreenUI::DrawDirectorySettingsPage()
 {
 	SettingsInterface* bsi = GetEditingSettingsInterface();
@@ -3563,6 +3517,9 @@ void FullscreenUI::DrawPauseMenu(MainWindowType type)
 		static constexpr u32 submenu_item_count[] = {
 			10, // None
 			3, // Exit
+			// #ifdef ENABLE_ACHIEVEMENTS
+			// 			3, // Achievements
+			// #endif
 		};
 
 		const bool just_focused = ResetFocusHere();
@@ -3635,19 +3592,30 @@ void FullscreenUI::DrawPauseMenu(MainWindowType type)
 				if (ActiveButton(ICON_FA_COG " Global Settings", false))
 					SwitchToSettings();
 			}
+			// #ifdef ENABLE_ACHIEVEMENTS
+			// 				if (ActiveButton(ICON_FA_TROPHY " Achievements", false,
+			// 						Achievements::HasActiveGame() && Achievements::SafeHasAchievementsOrLeaderboards()))
+			// 				{
+			// 					const auto lock = Achievements::GetLock();
+			//
+			// 					// skip second menu and go straight to cheevos if there's no lbs
+			// 					if (Achievements::GetLeaderboardCount() == 0)
+			// 						OpenAchievementsWindow();
+			// 					else
+			// 						OpenPauseSubMenu(PauseSubMenu::Achievements);
+			// 				}
+			// #endif
 			break;
 
 			case PauseSubMenu::Exit:
 			{
 				if (just_focused)
-					ImGui::SetFocusID(ImGui::GetID(ICON_FA_POWER_OFF " Exit Without Saving"), ImGui::GetCurrentWindow());
+					ImGui::SetFocusID(ImGui::GetID(ICON_FA_SIGN_OUT_ALT " Exit Without Saving"), ImGui::GetCurrentWindow());
 
 				if (ActiveButton(ICON_FA_BACKWARD " Back To Pause Menu", false))
 				{
 					OpenPauseSubMenu(PauseSubMenu::None);
 				}
-
-
 
 				if (ActiveButton(ICON_FA_SAVE " Exit And Save State", false))
 					DoShutdown(true);
@@ -3656,6 +3624,20 @@ void FullscreenUI::DrawPauseMenu(MainWindowType type)
 					DoShutdown(false);
 			}
 			break;
+//  #ifdef ENABLE_ACHIEVEMENTS
+//  			case PauseSubMenu::Achievements:
+//  			{
+//  				if (ActiveButton(ICON_FA_BACKWARD " Back To Pause Menu", false))
+//  					OpenPauseSubMenu(PauseSubMenu::None);
+//
+//  				if (ActiveButton(ICON_FA_TROPHY " Achievements", false))
+//  					OpenAchievementsWindow();
+//
+//  				if (ActiveButton(ICON_FA_STOPWATCH " Leaderboards", false))
+//  					OpenLeaderboardsWindow();
+//  			}
+//  			break;
+//  #endif
 		}
 
 		EndMenuButtons();
@@ -4011,7 +3993,7 @@ void FullscreenUI::DoLoadState(std::string path)
 			VMBootParameters params;
 			params.filename = std::move(boot_path);
 			params.save_state = std::move(path);
-			if (VMManager::Initialize(params))
+			if (VMManager::Initialize(std::move(params)))
 				VMManager::SetState(VMState::Running);
 		}
 	});
@@ -4113,6 +4095,7 @@ void FullscreenUI::DrawGameList(const ImVec2& heading_size)
 	if (BeginFullscreenColumnWindow(0.0f, -530.0f, "game_list_entries"))
 	{
 		const ImVec2 image_size(LayoutScale(LAYOUT_MENU_BUTTON_HEIGHT * 1.00f, LAYOUT_MENU_BUTTON_HEIGHT));
+		ResetFocusHere();
 
 		BeginMenuButtons();
 
@@ -4835,3 +4818,787 @@ void FullscreenUI::ProgressCallback::SetCancelled()
 	if (m_cancellable)
 		m_cancelled = true;
 }
+
+// #ifdef ENABLE_ACHIEVEMENTS
+//
+// bool FullscreenUI::OpenAchievementsWindow()
+// {
+// 	if (!VMManager::HasValidVM() || !Initialize())
+// 		return false;
+//
+// 	if (!Achievements::HasActiveGame() || Achievements::GetAchievementCount() == 0)
+// 	{
+// 		ShowToast(std::string(), "This game has no achievements.");
+// 		return false;
+// 	}
+//
+// 	if (s_current_main_window != MainWindowType::PauseMenu)
+// 		PauseForMenuOpen();
+//
+// 	s_current_main_window = MainWindowType::Achievements;
+// 	QueueResetFocus();
+// 	return true;
+// }
+//
+// void FullscreenUI::DrawAchievement(const Achievements::Achievement& cheevo)
+// {
+// 	static constexpr float alpha = 0.8f;
+// 	static constexpr float progress_height_unscaled = 20.0f;
+// 	static constexpr float progress_spacing_unscaled = 5.0f;
+//
+// 	std::string id_str(fmt::format("chv_{}", cheevo.id));
+//
+// 	const auto progress = Achievements::GetAchievementProgress(cheevo);
+// 	const bool is_measured = progress.second != 0;
+//
+// 	ImRect bb;
+// 	bool visible, hovered;
+// 	bool pressed = MenuButtonFrame(id_str.c_str(), true,
+// 		!is_measured ? LAYOUT_MENU_BUTTON_HEIGHT : LAYOUT_MENU_BUTTON_HEIGHT + progress_height_unscaled + progress_spacing_unscaled,
+// 		&visible, &hovered, &bb.Min, &bb.Max, 0, alpha);
+// 	if (!visible)
+// 		return;
+//
+// 	const ImVec2 image_size(LayoutScale(LAYOUT_MENU_BUTTON_HEIGHT, LAYOUT_MENU_BUTTON_HEIGHT));
+// 	const std::string& badge_path = Achievements::GetAchievementBadgePath(cheevo);
+// 	if (!badge_path.empty())
+// 	{
+// 		HostDisplayTexture* badge = GetCachedTextureAsync(badge_path.c_str());
+// 		if (badge)
+// 		{
+// 			ImGui::GetWindowDrawList()->AddImage(
+// 				badge->GetHandle(), bb.Min, bb.Min + image_size, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), IM_COL32(255, 255, 255, 255));
+// 		}
+// 	}
+//
+// 	const float midpoint = bb.Min.y + g_large_font->FontSize + LayoutScale(4.0f);
+// 	const float text_start_x = bb.Min.x + image_size.x + LayoutScale(15.0f);
+// 	const ImRect title_bb(ImVec2(text_start_x, bb.Min.y), ImVec2(bb.Max.x, midpoint));
+// 	const ImRect summary_bb(ImVec2(text_start_x, midpoint), bb.Max);
+//
+// 	ImGui::PushFont(g_large_font);
+// 	ImGui::RenderTextClipped(title_bb.Min, title_bb.Max, cheevo.title.c_str(), cheevo.title.c_str() + cheevo.title.size(), nullptr,
+// 		ImVec2(0.0f, 0.0f), &title_bb);
+// 	ImGui::PopFont();
+//
+// 	if (!cheevo.description.empty())
+// 	{
+// 		ImGui::PushFont(g_medium_font);
+// 		ImGui::RenderTextClipped(summary_bb.Min, summary_bb.Max, cheevo.description.c_str(),
+// 			cheevo.description.c_str() + cheevo.description.size(), nullptr, ImVec2(0.0f, 0.0f), &summary_bb);
+// 		ImGui::PopFont();
+// 	}
+//
+// 	if (is_measured)
+// 	{
+// 		ImDrawList* dl = ImGui::GetWindowDrawList();
+// 		const float progress_height = LayoutScale(progress_height_unscaled);
+// 		const float progress_spacing = LayoutScale(progress_spacing_unscaled);
+// 		const float top = midpoint + g_medium_font->FontSize + progress_spacing;
+// 		const ImRect progress_bb(ImVec2(text_start_x, top), ImVec2(bb.Max.x, top + progress_height));
+// 		const float fraction = static_cast<float>(progress.first) / static_cast<float>(progress.second);
+// 		dl->AddRectFilled(progress_bb.Min, progress_bb.Max, ImGui::GetColorU32(ImGuiFullscreen::UIPrimaryDarkColor));
+// 		dl->AddRectFilled(progress_bb.Min, ImVec2(progress_bb.Min.x + fraction * progress_bb.GetWidth(), progress_bb.Max.y),
+// 			ImGui::GetColorU32(ImGuiFullscreen::UISecondaryColor));
+//
+// 		const std::string text(Achievements::GetAchievementProgressText(cheevo));
+// 		const ImVec2 text_size = ImGui::CalcTextSize(text.c_str());
+// 		const ImVec2 text_pos(progress_bb.Min.x + ((progress_bb.Max.x - progress_bb.Min.x) / 2.0f) - (text_size.x / 2.0f),
+// 			progress_bb.Min.y + ((progress_bb.Max.y - progress_bb.Min.y) / 2.0f) - (text_size.y / 2.0f));
+// 		dl->AddText(g_medium_font, g_medium_font->FontSize, text_pos, ImGui::GetColorU32(ImGuiFullscreen::UIPrimaryTextColor), text.c_str(),
+// 			text.c_str() + text.size());
+// 	}
+//
+// #if 0
+// 	// The API doesn't seem to send us this :(
+// 	if (!cheevo.locked)
+// 	{
+// 		ImGui::PushFont(g_medium_font);
+//
+// 		const ImRect time_bb(ImVec2(text_start_x, bb.Min.y),
+// 			ImVec2(bb.Max.x, bb.Min.y + g_medium_font->FontSize + LayoutScale(4.0f)));
+// 		text.Format("Unlocked 21 Feb, 2019 @ 3:14am");
+// 		ImGui::RenderTextClipped(time_bb.Min, time_bb.Max, text.GetCharArray(), text.GetCharArray() + text.GetLength(),
+// 			nullptr, ImVec2(1.0f, 0.0f), &time_bb);
+// 		ImGui::PopFont();
+// 	}
+// #endif
+//
+// 	if (pressed)
+// 	{
+// 		// TODO: What should we do here?
+// 		// Display information or something..
+// 	}
+// }
+//
+// void FullscreenUI::DrawAchievementsWindow()
+// {
+// 	// ensure image downloads still happen while we're paused
+// 	Achievements::ProcessPendingHTTPRequestsFromGSThread();
+//
+// 	static constexpr float alpha = 0.8f;
+// 	static constexpr float heading_height_unscaled = 110.0f;
+//
+// 	ImGui::SetNextWindowBgAlpha(alpha);
+//
+// 	const ImVec4 background(0.13f, 0.13f, 0.13f, alpha);
+// 	const ImVec2 display_size(ImGui::GetIO().DisplaySize);
+// 	const float heading_height = LayoutScale(heading_height_unscaled);
+//
+// 	if (BeginFullscreenWindow(ImVec2(0.0f, 0.0f), ImVec2(display_size.x, heading_height), "achievements_heading", background, 0.0f, 0.0f,
+// 			ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse))
+// 	{
+// 		auto lock = Achievements::GetLock();
+//
+// 		ImRect bb;
+// 		bool visible, hovered;
+// 		/*bool pressed = */ MenuButtonFrame(
+// 			"achievements_heading", false, heading_height_unscaled, &visible, &hovered, &bb.Min, &bb.Max, 0, alpha);
+//
+// 		if (visible)
+// 		{
+// 			const float padding = LayoutScale(10.0f);
+// 			const float spacing = LayoutScale(10.0f);
+// 			const float image_height = LayoutScale(85.0f);
+//
+// 			const ImVec2 icon_min(bb.Min + ImVec2(padding, padding));
+// 			const ImVec2 icon_max(icon_min + ImVec2(image_height, image_height));
+//
+// 			const std::string& icon_path = Achievements::GetGameIcon();
+// 			if (!icon_path.empty())
+// 			{
+// 				HostDisplayTexture* badge = GetCachedTexture(icon_path.c_str());
+// 				if (badge)
+// 				{
+// 					ImGui::GetWindowDrawList()->AddImage(
+// 						badge->GetHandle(), icon_min, icon_max, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), IM_COL32(255, 255, 255, 255));
+// 				}
+// 			}
+//
+// 			float left = bb.Min.x + padding + image_height + spacing;
+// 			float right = bb.Max.x - padding;
+// 			float top = bb.Min.y + padding;
+// 			ImDrawList* dl = ImGui::GetWindowDrawList();
+// 			std::string text;
+// 			ImVec2 text_size;
+//
+// 			const u32 unlocked_count = Achievements::GetUnlockedAchiementCount();
+// 			const u32 achievement_count = Achievements::GetAchievementCount();
+// 			const u32 current_points = Achievements::GetCurrentPointsForGame();
+// 			const u32 total_points = Achievements::GetMaximumPointsForGame();
+//
+// 			if (FloatingButton(ICON_FA_WINDOW_CLOSE, 10.0f, 10.0f, -1.0f, -1.0f, 1.0f, 0.0f, true, g_large_font) || WantsToCloseMenu())
+// 			{
+// 				ReturnToMainWindow();
+// 			}
+//
+// 			const ImRect title_bb(ImVec2(left, top), ImVec2(right, top + g_large_font->FontSize));
+// 			text = Achievements::GetGameTitle();
+//
+// 			if (Achievements::ChallengeModeActive())
+// 				text += " (Hardcore Mode)";
+//
+// 			top += g_large_font->FontSize + spacing;
+//
+// 			ImGui::PushFont(g_large_font);
+// 			ImGui::RenderTextClipped(
+// 				title_bb.Min, title_bb.Max, text.c_str(), text.c_str() + text.length(), nullptr, ImVec2(0.0f, 0.0f), &title_bb);
+// 			ImGui::PopFont();
+//
+// 			const ImRect summary_bb(ImVec2(left, top), ImVec2(right, top + g_medium_font->FontSize));
+// 			if (unlocked_count == achievement_count)
+// 			{
+// 				text = fmt::format("You have unlocked all achievements and earned {} points!", total_points);
+// 			}
+// 			else
+// 			{
+// 				text = fmt::format("You have unlocked {} of {} achievements, earning {} of {} possible points.", unlocked_count,
+// 					achievement_count, current_points, total_points);
+// 			}
+//
+// 			top += g_medium_font->FontSize + spacing;
+//
+// 			ImGui::PushFont(g_medium_font);
+// 			ImGui::RenderTextClipped(
+// 				summary_bb.Min, summary_bb.Max, text.c_str(), text.c_str() + text.length(), nullptr, ImVec2(0.0f, 0.0f), &summary_bb);
+// 			ImGui::PopFont();
+//
+// 			const float progress_height = LayoutScale(20.0f);
+// 			const ImRect progress_bb(ImVec2(left, top), ImVec2(right, top + progress_height));
+// 			const float fraction = static_cast<float>(unlocked_count) / static_cast<float>(achievement_count);
+// 			dl->AddRectFilled(progress_bb.Min, progress_bb.Max, ImGui::GetColorU32(ImGuiFullscreen::UIPrimaryDarkColor));
+// 			dl->AddRectFilled(progress_bb.Min, ImVec2(progress_bb.Min.x + fraction * progress_bb.GetWidth(), progress_bb.Max.y),
+// 				ImGui::GetColorU32(ImGuiFullscreen::UISecondaryColor));
+//
+// 			text = fmt::format("{}%", static_cast<int>(std::round(fraction * 100.0f)));
+// 			text_size = ImGui::CalcTextSize(text.c_str());
+// 			const ImVec2 text_pos(progress_bb.Min.x + ((progress_bb.Max.x - progress_bb.Min.x) / 2.0f) - (text_size.x / 2.0f),
+// 				progress_bb.Min.y + ((progress_bb.Max.y - progress_bb.Min.y) / 2.0f) - (text_size.y / 2.0f));
+// 			dl->AddText(g_medium_font, g_medium_font->FontSize, text_pos, ImGui::GetColorU32(ImGuiFullscreen::UIPrimaryTextColor),
+// 				text.c_str(), text.c_str() + text.length());
+// 			top += progress_height + spacing;
+// 		}
+// 	}
+// 	EndFullscreenWindow();
+//
+// 	ImGui::SetNextWindowBgAlpha(alpha);
+//
+// 	if (BeginFullscreenWindow(ImVec2(0.0f, heading_height), ImVec2(display_size.x, display_size.y - heading_height), "achievements",
+// 			background, 0.0f, 0.0f, 0))
+// 	{
+// 		BeginMenuButtons();
+//
+// 		static bool unlocked_achievements_collapsed = false;
+//
+// 		unlocked_achievements_collapsed ^=
+// 			MenuHeadingButton("Unlocked Achievements", unlocked_achievements_collapsed ? ICON_FA_CHEVRON_DOWN : ICON_FA_CHEVRON_UP);
+// 		if (!unlocked_achievements_collapsed)
+// 		{
+// 			Achievements::EnumerateAchievements([](const Achievements::Achievement& cheevo) -> bool {
+// 				if (!cheevo.locked)
+// 					DrawAchievement(cheevo);
+//
+// 				return true;
+// 			});
+// 		}
+//
+// 		if (Achievements::GetUnlockedAchiementCount() != Achievements::GetAchievementCount())
+// 		{
+// 			static bool locked_achievements_collapsed = false;
+// 			locked_achievements_collapsed ^=
+// 				MenuHeadingButton("Locked Achievements", locked_achievements_collapsed ? ICON_FA_CHEVRON_DOWN : ICON_FA_CHEVRON_UP);
+// 			if (!locked_achievements_collapsed)
+// 			{
+// 				Achievements::EnumerateAchievements([](const Achievements::Achievement& cheevo) -> bool {
+// 					if (cheevo.locked)
+// 						DrawAchievement(cheevo);
+//
+// 					return true;
+// 				});
+// 			}
+// 		}
+//
+// 		EndMenuButtons();
+// 	}
+// 	EndFullscreenWindow();
+// }
+//
+// bool FullscreenUI::OpenLeaderboardsWindow()
+// {
+// 	if (!VMManager::HasValidVM() || !Initialize())
+// 		return false;
+//
+// 	if (!Achievements::HasActiveGame() || Achievements::GetLeaderboardCount() == 0)
+// 	{
+// 		ShowToast(std::string(), "This game has no leaderboards.");
+// 		return false;
+// 	}
+//
+// 	if (s_current_main_window != MainWindowType::PauseMenu)
+// 		PauseForMenuOpen();
+//
+// 	s_current_main_window = MainWindowType::Leaderboards;
+// 	s_open_leaderboard_id.reset();
+// 	QueueResetFocus();
+// 	return true;
+// }
+//
+//
+// void FullscreenUI::DrawLeaderboardListEntry(const Achievements::Leaderboard& lboard)
+// {
+// 	static constexpr float alpha = 0.8f;
+//
+// 	std::string id_str(fmt::format("lb_{}", lboard.id));
+//
+// 	ImRect bb;
+// 	bool visible, hovered;
+// 	bool pressed = MenuButtonFrame(id_str.c_str(), true, LAYOUT_MENU_BUTTON_HEIGHT, &visible, &hovered, &bb.Min, &bb.Max, 0, alpha);
+// 	if (!visible)
+// 		return;
+//
+// 	const float midpoint = bb.Min.y + g_large_font->FontSize + LayoutScale(4.0f);
+// 	const float text_start_x = bb.Min.x + LayoutScale(15.0f);
+// 	const ImRect title_bb(ImVec2(text_start_x, bb.Min.y), ImVec2(bb.Max.x, midpoint));
+// 	const ImRect summary_bb(ImVec2(text_start_x, midpoint), bb.Max);
+//
+// 	ImGui::PushFont(g_large_font);
+// 	ImGui::RenderTextClipped(title_bb.Min, title_bb.Max, lboard.title.c_str(), lboard.title.c_str() + lboard.title.size(), nullptr,
+// 		ImVec2(0.0f, 0.0f), &title_bb);
+// 	ImGui::PopFont();
+//
+// 	if (!lboard.description.empty())
+// 	{
+// 		ImGui::PushFont(g_medium_font);
+// 		ImGui::RenderTextClipped(summary_bb.Min, summary_bb.Max, lboard.description.c_str(),
+// 			lboard.description.c_str() + lboard.description.size(), nullptr, ImVec2(0.0f, 0.0f), &summary_bb);
+// 		ImGui::PopFont();
+// 	}
+//
+// 	if (pressed)
+// 	{
+// 		s_open_leaderboard_id = lboard.id;
+// 	}
+// }
+//
+// void FullscreenUI::DrawLeaderboardEntry(
+// 	const Achievements::LeaderboardEntry& lbEntry, float rank_column_width, float name_column_width, float column_spacing)
+// {
+// 	static constexpr float alpha = 0.8f;
+//
+// 	ImRect bb;
+// 	bool visible, hovered;
+// 	bool pressed =
+// 		MenuButtonFrame(lbEntry.user.c_str(), true, LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY, &visible, &hovered, &bb.Min, &bb.Max, 0, alpha);
+// 	if (!visible)
+// 		return;
+//
+// 	const float midpoint = bb.Min.y + g_large_font->FontSize + LayoutScale(4.0f);
+// 	float text_start_x = bb.Min.x + LayoutScale(15.0f);
+// 	std::string rank_str(fmt::format("{}", lbEntry.rank));
+//
+// 	ImGui::PushFont(g_large_font);
+// 	if (lbEntry.is_self)
+// 	{
+// 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(255, 242, 0, 255));
+// 	}
+//
+// 	const ImRect rank_bb(ImVec2(text_start_x, bb.Min.y), ImVec2(bb.Max.x, midpoint));
+// 	ImGui::RenderTextClipped(rank_bb.Min, rank_bb.Max, rank_str.c_str(), nullptr, nullptr, ImVec2(0.0f, 0.0f), &rank_bb);
+// 	text_start_x += rank_column_width + column_spacing;
+//
+// 	const ImRect user_bb(ImVec2(text_start_x, bb.Min.y), ImVec2(bb.Max.x, midpoint));
+// 	ImGui::RenderTextClipped(
+// 		user_bb.Min, user_bb.Max, lbEntry.user.c_str(), lbEntry.user.c_str() + lbEntry.user.size(), nullptr, ImVec2(0.0f, 0.0f), &user_bb);
+// 	text_start_x += name_column_width + column_spacing;
+//
+// 	const ImRect score_bb(ImVec2(text_start_x, bb.Min.y), ImVec2(bb.Max.x, midpoint));
+// 	ImGui::RenderTextClipped(score_bb.Min, score_bb.Max, lbEntry.formatted_score.c_str(),
+// 		lbEntry.formatted_score.c_str() + lbEntry.formatted_score.size(), nullptr, ImVec2(0.0f, 0.0f), &score_bb);
+//
+// 	if (lbEntry.is_self)
+// 	{
+// 		ImGui::PopStyleColor();
+// 	}
+//
+// 	ImGui::PopFont();
+//
+// 	// This API DOES list the submission date/time, but is it relevant?
+// #if 0
+// 	if (!cheevo.locked)
+// 	{
+// 		ImGui::PushFont(g_medium_font);
+//
+// 		const ImRect time_bb(ImVec2(text_start_x, bb.Min.y),
+// 			ImVec2(bb.Max.x, bb.Min.y + g_medium_font->FontSize + LayoutScale(4.0f)));
+// 		text.Format("Unlocked 21 Feb, 2019 @ 3:14am");
+// 		ImGui::RenderTextClipped(time_bb.Min, time_bb.Max, text.GetCharArray(), text.GetCharArray() + text.GetLength(),
+// 			nullptr, ImVec2(1.0f, 0.0f), &time_bb);
+// 		ImGui::PopFont();
+// 	}
+// #endif
+//
+// 	if (pressed)
+// 	{
+// 		// Anything?
+// 	}
+// }
+//
+// void FullscreenUI::DrawLeaderboardsWindow()
+// {
+// 	static constexpr float alpha = 0.8f;
+// 	static constexpr float heading_height_unscaled = 110.0f;
+//
+// 	// ensure image downloads still happen while we're paused
+// 	Achievements::ProcessPendingHTTPRequestsFromGSThread();
+//
+// 	ImGui::SetNextWindowBgAlpha(alpha);
+//
+// 	const bool is_leaderboard_open = s_open_leaderboard_id.has_value();
+// 	bool close_leaderboard_on_exit = false;
+//
+// 	const ImVec4 background(0.13f, 0.13f, 0.13f, alpha);
+// 	const ImVec2 display_size(ImGui::GetIO().DisplaySize);
+// 	const float padding = LayoutScale(10.0f);
+// 	const float spacing = LayoutScale(10.0f);
+// 	const float spacing_small = spacing / 2.0f;
+// 	float heading_height = LayoutScale(heading_height_unscaled);
+// 	if (is_leaderboard_open)
+// 	{
+// 		// Add space for a legend - spacing + 1 line of text + spacing + line
+// 		heading_height += spacing + LayoutScale(LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY) + spacing;
+// 	}
+//
+// 	const float rank_column_width =
+// 		g_large_font->CalcTextSizeA(g_large_font->FontSize, std::numeric_limits<float>::max(), -1.0f, "99999").x;
+// 	const float name_column_width =
+// 		g_large_font->CalcTextSizeA(g_large_font->FontSize, std::numeric_limits<float>::max(), -1.0f, "WWWWWWWWWWWWWWWWWWWW").x;
+// 	const float column_spacing = spacing * 2.0f;
+//
+// 	if (BeginFullscreenWindow(ImVec2(0.0f, 0.0f), ImVec2(display_size.x, heading_height), "leaderboards_heading", background, 0.0f, 0.0f,
+// 			ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse))
+// 	{
+// 		ImRect bb;
+// 		bool visible, hovered;
+// 		/*bool pressed = */
+// 		MenuButtonFrame("leaderboards_heading", false, heading_height_unscaled, &visible, &hovered, &bb.Min, &bb.Max, 0, alpha);
+//
+// 		if (visible)
+// 		{
+// 			const float image_height = LayoutScale(85.0f);
+//
+// 			const ImVec2 icon_min(bb.Min + ImVec2(padding, padding));
+// 			const ImVec2 icon_max(icon_min + ImVec2(image_height, image_height));
+//
+// 			const std::string& icon_path = Achievements::GetGameIcon();
+// 			if (!icon_path.empty())
+// 			{
+// 				HostDisplayTexture* badge = GetCachedTexture(icon_path.c_str());
+// 				if (badge)
+// 				{
+// 					ImGui::GetWindowDrawList()->AddImage(
+// 						badge->GetHandle(), icon_min, icon_max, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), IM_COL32(255, 255, 255, 255));
+// 				}
+// 			}
+//
+// 			float left = bb.Min.x + padding + image_height + spacing;
+// 			float right = bb.Max.x - padding;
+// 			float top = bb.Min.y + padding;
+// 			ImVec2 text_size;
+//
+// 			const u32 leaderboard_count = Achievements::GetLeaderboardCount();
+//
+// 			if (!is_leaderboard_open)
+// 			{
+// 				if (FloatingButton(ICON_FA_WINDOW_CLOSE, 10.0f, 10.0f, -1.0f, -1.0f, 1.0f, 0.0f, true, g_large_font) || WantsToCloseMenu())
+// 				{
+// 					ReturnToMainWindow();
+// 				}
+// 			}
+// 			else
+// 			{
+// 				if (FloatingButton(ICON_FA_CARET_SQUARE_LEFT, 10.0f, 10.0f, -1.0f, -1.0f, 1.0f, 0.0f, true, g_large_font) ||
+// 					WantsToCloseMenu())
+// 				{
+// 					close_leaderboard_on_exit = true;
+// 				}
+// 			}
+//
+// 			const ImRect title_bb(ImVec2(left, top), ImVec2(right, top + g_large_font->FontSize));
+// 			const std::string& title = Achievements::GetGameTitle();
+//
+// 			top += g_large_font->FontSize + spacing;
+//
+// 			ImGui::PushFont(g_large_font);
+// 			ImGui::RenderTextClipped(title_bb.Min, title_bb.Max, title.c_str(), nullptr, nullptr, ImVec2(0.0f, 0.0f), &title_bb);
+// 			ImGui::PopFont();
+//
+// 			std::string lb_description;
+// 			if (s_open_leaderboard_id.has_value())
+// 			{
+// 				const Achievements::Leaderboard* lboard = Achievements::GetLeaderboardByID(s_open_leaderboard_id.value());
+// 				if (lboard != nullptr)
+// 				{
+// 					const ImRect subtitle_bb(ImVec2(left, top), ImVec2(right, top + g_large_font->FontSize));
+// 					const std::string& subtitle = lboard->title;
+//
+// 					top += g_large_font->FontSize + spacing_small;
+//
+// 					ImGui::PushFont(g_large_font);
+// 					ImGui::RenderTextClipped(
+// 						subtitle_bb.Min, subtitle_bb.Max, subtitle.c_str(), nullptr, nullptr, ImVec2(0.0f, 0.0f), &subtitle_bb);
+// 					ImGui::PopFont();
+//
+// 					lb_description = lboard->description;
+// 				}
+// 			}
+// 			else
+// 			{
+// 				lb_description = fmt::format("This game has {} leaderboards.", leaderboard_count);
+// 			}
+//
+// 			const ImRect summary_bb(ImVec2(left, top), ImVec2(right, top + g_medium_font->FontSize));
+// 			top += g_medium_font->FontSize + spacing_small;
+//
+// 			ImGui::PushFont(g_medium_font);
+// 			ImGui::RenderTextClipped(
+// 				summary_bb.Min, summary_bb.Max, lb_description.c_str(), nullptr, nullptr, ImVec2(0.0f, 0.0f), &summary_bb);
+//
+// 			if (!Achievements::ChallengeModeActive())
+// 			{
+// 				const ImRect hardcore_warning_bb(ImVec2(left, top), ImVec2(right, top + g_medium_font->FontSize));
+// 				top += g_medium_font->FontSize + spacing_small;
+//
+// 				ImGui::RenderTextClipped(hardcore_warning_bb.Min, hardcore_warning_bb.Max,
+// 					"Submitting scores is disabled because hardcore mode is off. Leaderboards are read-only.", nullptr, nullptr,
+// 					ImVec2(0.0f, 0.0f), &hardcore_warning_bb);
+// 			}
+//
+// 			ImGui::PopFont();
+// 		}
+//
+// 		if (is_leaderboard_open)
+// 		{
+// 			/*bool pressed = */
+// 			MenuButtonFrame("legend", false, LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY, &visible, &hovered, &bb.Min, &bb.Max, 0, alpha);
+//
+// 			if (visible)
+// 			{
+// 				const Achievements::Leaderboard* lboard = Achievements::GetLeaderboardByID(s_open_leaderboard_id.value());
+//
+// 				const float midpoint = bb.Min.y + g_large_font->FontSize + LayoutScale(4.0f);
+// 				float text_start_x = bb.Min.x + LayoutScale(15.0f) + padding;
+//
+// 				ImGui::PushFont(g_large_font);
+//
+// 				const ImRect rank_bb(ImVec2(text_start_x, bb.Min.y), ImVec2(bb.Max.x, midpoint));
+// 				ImGui::RenderTextClipped(rank_bb.Min, rank_bb.Max, "Rank", nullptr, nullptr, ImVec2(0.0f, 0.0f), &rank_bb);
+// 				text_start_x += rank_column_width + column_spacing;
+//
+// 				const ImRect user_bb(ImVec2(text_start_x, bb.Min.y), ImVec2(bb.Max.x, midpoint));
+// 				ImGui::RenderTextClipped(user_bb.Min, user_bb.Max, "Name", nullptr, nullptr, ImVec2(0.0f, 0.0f), &user_bb);
+// 				text_start_x += name_column_width + column_spacing;
+//
+// 				const ImRect score_bb(ImVec2(text_start_x, bb.Min.y), ImVec2(bb.Max.x, midpoint));
+// 				ImGui::RenderTextClipped(score_bb.Min, score_bb.Max,
+// 					lboard != nullptr && Achievements::IsLeaderboardTimeType(*lboard) ? "Time" : "Score", nullptr, nullptr,
+// 					ImVec2(0.0f, 0.0f), &score_bb);
+//
+// 				ImGui::PopFont();
+//
+// 				const float line_thickness = LayoutScale(1.0f);
+// 				const float line_padding = LayoutScale(5.0f);
+// 				const ImVec2 line_start(bb.Min.x, bb.Min.y + g_large_font->FontSize + line_padding);
+// 				const ImVec2 line_end(bb.Max.x, line_start.y);
+// 				ImGui::GetWindowDrawList()->AddLine(line_start, line_end, ImGui::GetColorU32(ImGuiCol_TextDisabled), line_thickness);
+// 			}
+// 		}
+// 	}
+// 	EndFullscreenWindow();
+//
+// 	ImGui::SetNextWindowBgAlpha(alpha);
+//
+// 	if (!is_leaderboard_open)
+// 	{
+// 		if (BeginFullscreenWindow(ImVec2(0.0f, heading_height), ImVec2(display_size.x, display_size.y - heading_height), "leaderboards",
+// 				background, 0.0f, 0.0f, 0))
+// 		{
+// 			BeginMenuButtons();
+//
+// 			Achievements::EnumerateLeaderboards([](const Achievements::Leaderboard& lboard) -> bool {
+// 				DrawLeaderboardListEntry(lboard);
+//
+// 				return true;
+// 			});
+//
+// 			EndMenuButtons();
+// 		}
+// 		EndFullscreenWindow();
+// 	}
+// 	else
+// 	{
+// 		if (BeginFullscreenWindow(ImVec2(0.0f, heading_height), ImVec2(display_size.x, display_size.y - heading_height), "leaderboard",
+// 				background, 0.0f, 0.0f, 0))
+// 		{
+// 			BeginMenuButtons();
+//
+// 			const auto result = Achievements::TryEnumerateLeaderboardEntries(s_open_leaderboard_id.value(),
+// 				[rank_column_width, name_column_width, column_spacing](const Achievements::LeaderboardEntry& lbEntry) -> bool {
+// 					DrawLeaderboardEntry(lbEntry, rank_column_width, name_column_width, column_spacing);
+// 					return true;
+// 				});
+//
+// 			if (!result.has_value())
+// 			{
+// 				ImGui::PushFont(g_large_font);
+//
+// 				const ImVec2 pos_min(0.0f, heading_height);
+// 				const ImVec2 pos_max(display_size.x, display_size.y);
+// 				ImGui::RenderTextClipped(
+// 					pos_min, pos_max, "Downloading leaderboard data, please wait...", nullptr, nullptr, ImVec2(0.5f, 0.5f));
+//
+// 				ImGui::PopFont();
+// 			}
+//
+// 			EndMenuButtons();
+// 		}
+// 		EndFullscreenWindow();
+// 	}
+//
+// 	if (close_leaderboard_on_exit)
+// 		s_open_leaderboard_id.reset();
+// }
+//
+// void FullscreenUI::DrawAchievementsSettingsPage()
+// {
+// #ifdef ENABLE_RAINTEGRATION
+// 	if (Achievements::IsUsingRAIntegration())
+// 	{
+// 		BeginMenuButtons();
+// 		ActiveButton(ICON_FA_BAN "  RAIntegration is being used instead of the built-in achievements implementation.", false, false,
+// 			LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
+// 		EndMenuButtons();
+// 		return;
+// 	}
+// #endif
+//
+// 	const auto lock = Achievements::GetLock();
+// 	if (Achievements::IsActive())
+// 		Achievements::ProcessPendingHTTPRequestsFromGSThread();
+//
+// 	SettingsInterface* bsi = GetEditingSettingsInterface();
+//
+// 	BeginMenuButtons();
+//
+// 	MenuHeading("Settings");
+// 	DrawToggleSetting(bsi, ICON_FA_TROPHY "  Enable Achievements",
+// 		"When enabled and logged in, XBSX2 will scan for achievements on startup.", "Achievements", "Enabled", false);
+//
+// 	const bool enabled = bsi->GetBoolValue("Achievements", "Enabled", false);
+// 	const bool challenge = bsi->GetBoolValue("Achievements", "ChallengeMode", false);
+//
+// 	DrawToggleSetting(bsi, ICON_FA_USER_FRIENDS "  Rich Presence",
+// 		"When enabled, rich presence information will be collected and sent to the server where supported.", "Achievements", "RichPresence",
+// 		true, enabled);
+// 	if (DrawToggleSetting(bsi, ICON_FA_HARD_HAT "  Hardcore Mode",
+// 			"\"Challenge\" mode for achievements. Disables save state, cheats, and slowdown functions, but you receive double the "
+// 			"achievement points.",
+// 			"Achievements", "ChallengeMode", false, enabled))
+// 	{
+// 		if (VMManager::HasValidVM() && bsi->GetBoolValue("Achievements", "ChallengeMode", false))
+// 			ShowToast(std::string(), "Hardcore mode will be enabled on next game restart.");
+// 	}
+// 	DrawToggleSetting(bsi, ICON_FA_LIST_OL "  Leaderboards", "Enables tracking and submission of leaderboards in supported games.",
+// 		"Achievements", "Leaderboards", true, enabled && challenge);
+// 	DrawToggleSetting(bsi, ICON_FA_MEDAL "  Test Unofficial Achievements",
+// 		"When enabled, XBSX2 will list achievements from unofficial sets. These achievements are not tracked by RetroAchievements.",
+// 		"Achievements", "UnofficialTestMode", false, enabled);
+// 	DrawToggleSetting(bsi, ICON_FA_STETHOSCOPE "  Test Mode",
+// 		"When enabled, XBSX2 will assume all achievements are locked and not send any unlock notifications to the server.", "Achievements",
+// 		"TestMode", false, enabled);
+//
+// 	MenuHeading("Account");
+// 	if (Achievements::IsLoggedIn())
+// 	{
+// 		ImGui::PushStyleColor(ImGuiCol_TextDisabled, ImGui::GetStyle().Colors[ImGuiCol_Text]);
+// 		ActiveButton(fmt::format(ICON_FA_USER "  Username: {}", Achievements::GetUsername()).c_str(), false, false,
+// 			LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
+//
+// 		const u64 ts = StringUtil::FromChars<u64>(bsi->GetStringValue("Achievements", "LoginTimestamp", "0")).value_or(0);
+// 		ActiveButton(fmt::format(ICON_FA_CLOCK "  Login token generated on {}", TimeToPrintableString(static_cast<time_t>(ts))).c_str(),
+// 			false, false, LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
+// 		ImGui::PopStyleColor();
+//
+// 		if (MenuButton(ICON_FA_KEY "  Logout", "Logs out of RetroAchievements."))
+// 		{
+// 			Host::RunOnCPUThread([]() { Achievements::Logout(); });
+// 		}
+// 	}
+// 	else if (Achievements::IsActive())
+// 	{
+// 		ActiveButton(ICON_FA_USER "  Not Logged In", false, false, ImGuiFullscreen::LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
+//
+// 		if (MenuButton(ICON_FA_KEY "  Login", "Logs in to RetroAchievements."))
+// 			ImGui::OpenPopup("Achievements Login");
+//
+// 		DrawAchievementsLoginWindow();
+// 	}
+// 	else
+// 	{
+// 		ActiveButton(ICON_FA_USER "  Achievements are disabled.", false, false, ImGuiFullscreen::LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
+// 	}
+//
+// 	MenuHeading("Current Game");
+// 	if (Achievements::HasActiveGame())
+// 	{
+// 		ImGui::PushStyleColor(ImGuiCol_TextDisabled, ImGui::GetStyle().Colors[ImGuiCol_Text]);
+// 		ActiveButton(fmt::format(ICON_FA_BOOKMARK "  Game ID: {}", Achievements::GetGameID()).c_str(), false, false,
+// 			LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
+// 		ActiveButton(fmt::format(ICON_FA_BOOK "  Game Title: {}", Achievements::GetGameTitle()).c_str(), false, false,
+// 			LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
+// 		ActiveButton(fmt::format(ICON_FA_TROPHY "  Achievements: {} ({} points)", Achievements::GetAchievementCount(),
+// 						 Achievements::GetMaximumPointsForGame())
+// 						 .c_str(),
+// 			false, false, LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
+//
+// 		const std::string& rich_presence_string = Achievements::GetRichPresenceString();
+// 		if (!rich_presence_string.empty())
+// 		{
+// 			ActiveButton(fmt::format(ICON_FA_MAP "  {}", rich_presence_string).c_str(), false, false, LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
+// 		}
+// 		else
+// 		{
+// 			ActiveButton(ICON_FA_MAP "  Rich presence inactive or unsupported.", false, false, LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
+// 		}
+//
+// 		ImGui::PopStyleColor();
+// 	}
+// 	else
+// 	{
+// 		ActiveButton(
+// 			ICON_FA_BAN "  Game not loaded or no RetroAchievements available.", false, false, LAYOUT_MENU_BUTTON_HEIGHT_NO_SUMMARY);
+// 	}
+//
+// 	EndMenuButtons();
+// }
+//
+// void FullscreenUI::DrawAchievementsLoginWindow()
+// {
+// 	ImGui::SetNextWindowSize(LayoutScale(700.0f, 0.0f));
+// 	ImGui::SetNextWindowPos(ImGui::GetIO().DisplaySize * 0.5f, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+//
+// 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, LayoutScale(10.0f));
+// 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, LayoutScale(20.0f, 20.0f));
+// 	ImGui::PushFont(g_large_font);
+//
+// 	bool is_open = true;
+// 	if (ImGui::BeginPopupModal("Achievements Login", &is_open, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize))
+// 	{
+//
+// 		ImGui::TextWrapped("Please enter your user name and password for retroachievements.org.");
+// 		ImGui::NewLine();
+// 		ImGui::TextWrapped("Your password will not be saved in XBSX2, an access token will be generated and used instead.");
+//
+// 		ImGui::NewLine();
+//
+// 		static char username[256] = {};
+// 		static char password[256] = {};
+//
+// 		ImGui::Text("User Name: ");
+// 		ImGui::SameLine(LayoutScale(200.0f));
+// 		ImGui::InputText("##username", username, sizeof(username));
+//
+// 		ImGui::Text("Password: ");
+// 		ImGui::SameLine(LayoutScale(200.0f));
+// 		ImGui::InputText("##password", password, sizeof(password), ImGuiInputTextFlags_Password);
+//
+// 		ImGui::NewLine();
+//
+// 		BeginMenuButtons();
+//
+// 		const bool login_enabled = (std::strlen(username) > 0 && std::strlen(password) > 0);
+//
+// 		if (ActiveButton(ICON_FA_KEY "  Login", false, login_enabled))
+// 		{
+// 			Achievements::LoginAsync(username, password);
+// 			std::memset(username, 0, sizeof(username));
+// 			std::memset(password, 0, sizeof(password));
+// 			ImGui::CloseCurrentPopup();
+// 		}
+//
+// 		if (ActiveButton(ICON_FA_TIMES "  Cancel", false))
+// 		{
+// 			std::memset(username, 0, sizeof(username));
+// 			std::memset(password, 0, sizeof(password));
+// 			ImGui::CloseCurrentPopup();
+// 		}
+//
+// 		EndMenuButtons();
+//
+// 		ImGui::EndPopup();
+// 	}
+//
+// 	ImGui::PopFont();
+// 	ImGui::PopStyleVar(2);
+// }
+//
+// #endif

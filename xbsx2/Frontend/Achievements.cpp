@@ -1,5 +1,6 @@
 /*  XBSX2 - PS2 Emulator for Xbox Consoles
- *
+ *  Copyright (C) 2002-2022 PCSX2 Dev Team
+ * 
  *  XBSX2 is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU Lesser General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -8,7 +9,7 @@
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License along with PCSX2.
+ *  You should have received a copy of the GNU General Public License along with XBSX2.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -48,6 +49,7 @@
 #include "svnrev.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdarg>
 #include <cstdlib>
 #include <limits>
@@ -57,9 +59,9 @@
 #include <vector>
 
 #ifdef ENABLE_RAINTEGRATION
- // RA_Interface.h indirectly includes windows.h, which defines a bunch of stuff and breaks rapidjson.
+// RA_Interface ends up including windows.h, with its silly macros.
+#include "common/RedtapeWindows.h"
 #include "RA_Interface.h"
-#undef GetObject
 #endif
 
 namespace Achievements
@@ -81,6 +83,7 @@ namespace Achievements
 	static void EnsureCacheDirectoriesExist();
 	static void CheevosEventHandler(const rc_runtime_event_t* runtime_event);
 	static unsigned PeekMemory(unsigned address, unsigned num_bytes, void* ud);
+	static unsigned PeekMemoryBlock(unsigned address, unsigned char* buffer, unsigned num_bytes);
 	static void PokeMemory(unsigned address, unsigned num_bytes, void* ud, unsigned value);
 	static void ActivateLockedAchievements();
 	static bool ActivateAchievement(Achievement* achievement);
@@ -88,7 +91,7 @@ namespace Achievements
 	static void SendPing();
 	static void SendPlaying();
 	static void UpdateRichPresence();
-	static Achievement* GetAchievementByID(u32 id);
+	static Achievement* GetMutableAchievementByID(u32 id);
 	static void ClearGameInfo(bool clear_achievements = true, bool clear_leaderboards = true);
 	static void ClearGameHash();
 	static std::string GetUserAgent();
@@ -106,6 +109,8 @@ namespace Achievements
 	static std::string_view GetELFNameForHash(const std::string& elf_path);
 	static std::optional<std::vector<u8>> ReadELFFromCurrentDisc(const std::string& elf_path);
 	static std::string GetGameHash();
+	static void SetChallengeMode(bool enabled);
+	static void SendGetGameId();
 	static void GetGameIdCallback(s32 status_code, Common::HTTPDownloader::Request::Data data);
 	static void SendPlayingCallback(s32 status_code, Common::HTTPDownloader::Request::Data data);
 	static void UpdateRichPresence();
@@ -113,15 +118,13 @@ namespace Achievements
 	static void UnlockAchievementCallback(s32 status_code, Common::HTTPDownloader::Request::Data data);
 	static void SubmitLeaderboardCallback(s32 status_code, Common::HTTPDownloader::Request::Data data);
 
-	bool g_active = false;
-	bool g_logged_in = false;
-	bool g_challenge_mode = false;
-	u32 g_game_id = 0;
-
-	static bool s_test_mode = false;
+	static bool s_active = false;
+	static bool s_logged_in = false;
+	static bool s_challenge_mode = false;
+	static u32 s_game_id = 0;
 
 #ifdef ENABLE_RAINTEGRATION
-	bool g_using_raintegration = false;
+	static bool s_using_raintegration = false;
 #endif
 
 	static std::recursive_mutex s_achievements_mutex;
@@ -134,6 +137,7 @@ namespace Achievements
 	static std::string s_api_token;
 
 	static u32 s_last_game_crc;
+	static std::string s_game_path;
 	static std::string s_game_hash;
 	static std::string s_game_title;
 	static std::string s_game_icon;
@@ -144,7 +148,8 @@ namespace Achievements
 	static std::string s_rich_presence_string;
 	static Common::Timer s_last_ping_time;
 
-	static u32 s_last_queried_lboard;
+	static u32 s_last_queried_lboard = 0;
+	static u32 s_submitting_lboard_id = 0;
 	static std::optional<std::vector<Achievements::LeaderboardEntry>> s_lboard_entries;
 
 	template <typename T>
@@ -177,9 +182,11 @@ namespace Achievements
 	RAPI_STRUCT_NAME(rc_api_submit_lboard_entry_response_t);
 	RAPI_STRUCT_NAME(rc_api_start_session_response_t);
 	RAPI_STRUCT_NAME(rc_api_fetch_user_unlocks_response_t);
-	RAPI_STRUCT_NAME(rc_api_fetch_achievement_info_response_t);
 	RAPI_STRUCT_NAME(rc_api_fetch_leaderboard_info_response_t);
-	RAPI_STRUCT_NAME(rc_api_fetch_games_list_response_t);
+
+	// Unused for now.
+	// RAPI_STRUCT_NAME(rc_api_fetch_achievement_info_response_t);
+	// RAPI_STRUCT_NAME(rc_api_fetch_games_list_response_t);
 
 #undef RAPI_STRUCT_NAME
 
@@ -227,9 +234,21 @@ namespace Achievements
 				return false;
 			}
 
-			pxAssertRel(!api_request.post_data, "Download request does not have POST data");
+			pxAssertMsg(!api_request.post_data, "Download request does not have POST data");
 			Achievements::DownloadImage(api_request.url, std::move(cache_filename));
 			return true;
+		}
+
+		std::string GetURL()
+		{
+			const int error = InitFunc(&api_request, this);
+			if (error != RC_OK)
+			{
+				FormattedError("%s failed: error %d (%s)", RAPIStructName<T>(), error, rc_error_str(error));
+				return std::string();
+			}
+
+			return api_request.url;
 		}
 	};
 
@@ -244,7 +263,7 @@ namespace Achievements
 		{
 			if (status_code != Common::HTTPDownloader::HTTP_OK || data.empty())
 			{
-				FormattedError("%s failed: empty response and/or status code %d (%s)", RAPIStructName<T>(), status_code);
+				FormattedError("%s failed: empty response and/or status code %d", RAPIStructName<T>(), status_code);
 				LogFailedResponseJSON(data);
 				return;
 			}
@@ -274,13 +293,17 @@ namespace Achievements
 				DestroyFunc(this);
 		}
 
-		operator bool() const
-		{
-			return initialized && static_cast<const T*>(this)->response.succeeded;
-		}
+		operator bool() const { return initialized && static_cast<const T*>(this)->response.succeeded; }
 	};
 
 } // namespace Achievements
+
+#ifdef ENABLE_RAINTEGRATION
+bool Achievements::IsUsingRAIntegration()
+{
+	return s_using_raintegration;
+}
+#endif
 
 void Achievements::FormattedError(const char* format, ...)
 {
@@ -299,7 +322,18 @@ void Achievements::LogFailedResponseJSON(const Common::HTTPDownloader::Request::
 	Console.Error("API call failed. Response JSON was:\n%s", str_data.c_str());
 }
 
-static Achievements::Achievement* Achievements::GetAchievementByID(u32 id)
+const Achievements::Achievement* Achievements::GetAchievementByID(u32 id)
+{
+	for (const Achievement& ach : s_achievements)
+	{
+		if (ach.id == id)
+			return &ach;
+	}
+
+	return nullptr;
+}
+
+Achievements::Achievement* Achievements::GetMutableAchievementByID(u32 id)
 {
 	for (Achievement& ach : s_achievements)
 	{
@@ -312,7 +346,8 @@ static Achievements::Achievement* Achievements::GetAchievementByID(u32 id)
 
 void Achievements::ClearGameInfo(bool clear_achievements, bool clear_leaderboards)
 {
-	const bool had_game = (g_game_id != 0);
+	std::unique_lock lock(s_achievements_mutex);
+	const bool had_game = (s_game_id != 0);
 
 	if (clear_achievements)
 	{
@@ -343,7 +378,7 @@ void Achievements::ClearGameInfo(bool clear_achievements, bool clear_leaderboard
 		s_game_icon = {};
 		s_rich_presence_string = {};
 		s_has_rich_presence = false;
-		g_game_id = 0;
+		s_game_id = 0;
 	}
 
 	if (had_game)
@@ -359,14 +394,65 @@ void Achievements::ClearGameHash()
 std::string Achievements::GetUserAgent()
 {
 	std::string ret;
-	if (!XBSX2_isReleaseVersion && GIT_TAGGED_COMMIT)
-		ret = fmt::format("XBSX2 Nightly - {} ({})", GIT_TAG, GetOSVersionString());
-	else if (!XBSX2_isReleaseVersion)
-		ret = fmt::format("XBSX2 {} ({})", GIT_REV, GetOSVersionString());
+	if (!PCSX2_isReleaseVersion && GIT_TAGGED_COMMIT)
+		ret = fmt::format("PCSX2 Nightly - {} ({})", GIT_TAG, GetOSVersionString());
+	else if (!PCSX2_isReleaseVersion)
+		ret = fmt::format("PCSX2 {} ({})", GIT_REV, GetOSVersionString());
 	else
-		ret = fmt::format("XBSX2 {}.{}.{}-{} ({})", XBSX2_VersionHi, XBSX2_VersionMid, XBSX2_VersionLo, SVN_REV, GetOSVersionString());
+		ret = fmt::format("PCSX2 {}.{}.{}-{} ({})", PCSX2_VersionHi, PCSX2_VersionMid, PCSX2_VersionLo, SVN_REV, GetOSVersionString());
 
 	return ret;
+}
+
+
+bool Achievements::IsActive()
+{
+	return s_active;
+}
+
+bool Achievements::IsLoggedIn()
+{
+	return s_logged_in;
+}
+
+bool Achievements::ChallengeModeActive()
+{
+#ifdef ENABLE_RAINTEGRATION
+	if (IsUsingRAIntegration())
+		return RA_HardcoreModeIsActive() != 0;
+#endif
+
+	return s_challenge_mode;
+}
+
+bool Achievements::LeaderboardsActive()
+{
+	return ChallengeModeActive() && EmuConfig.Achievements.Leaderboards;
+}
+
+bool Achievements::IsTestModeActive()
+{
+	return EmuConfig.Achievements.TestMode;
+}
+
+bool Achievements::IsUnofficialTestModeActive()
+{
+	return EmuConfig.Achievements.UnofficialTestMode;
+}
+
+bool Achievements::IsRichPresenceEnabled()
+{
+	return EmuConfig.Achievements.RichPresence;
+}
+
+bool Achievements::HasActiveGame()
+{
+	return s_game_id != 0;
+}
+
+u32 Achievements::GetGameID()
+{
+	return s_game_id;
 }
 
 std::unique_lock<std::recursive_mutex> Achievements::GetLock()
@@ -389,17 +475,18 @@ void Achievements::Initialize()
 		return;
 	}
 
-	g_active = true;
+	s_active = true;
+	s_challenge_mode = false;
 	rc_runtime_init(&s_rcheevos_runtime);
 	EnsureCacheDirectoriesExist();
 
 	s_last_ping_time.Reset();
 	s_username = Host::GetBaseStringSettingValue("Achievements", "Username");
 	s_api_token = Host::GetBaseStringSettingValue("Achievements", "Token");
-	g_logged_in = (!s_username.empty() && !s_api_token.empty());
+	s_logged_in = (!s_username.empty() && !s_api_token.empty());
 
-	if (IsLoggedIn() && VMManager::HasValidVM())
-		GameChanged();
+	if (VMManager::HasValidVM())
+		GameChanged(VMManager::GetGameCRC());
 }
 
 void Achievements::UpdateSettings(const Pcsx2Config::AchievementsOptions& old_config)
@@ -414,25 +501,155 @@ void Achievements::UpdateSettings(const Pcsx2Config::AchievementsOptions& old_co
 		return;
 	}
 
-	if (!g_active)
+	if (!s_active)
 	{
 		// we just got enabled
 		Initialize();
 		return;
 	}
 
-	// FIXME: Handle changes to various settings individually
+	if (EmuConfig.Achievements.ChallengeMode != old_config.ChallengeMode)
+	{
+		// Hardcore mode can only be enabled through system boot/reset.
+		if (s_challenge_mode && !old_config.ChallengeMode)
+		{
+			ResetChallengeMode();
+		}
+		else if (EmuConfig.Achievements.ChallengeMode)
+		{
+			Host::AddKeyedOSDMessage("challenge_mode_reset", "Hardcore mode will be enabled on system reset.", 10.0f);
+		}
+	}
+
+	// We *could* handle these separately, but easier to just flush everything.
 	if (EmuConfig.Achievements.TestMode != old_config.TestMode ||
 		EmuConfig.Achievements.UnofficialTestMode != old_config.UnofficialTestMode ||
-		EmuConfig.Achievements.RichPresence != old_config.RichPresence || EmuConfig.Achievements.ChallengeMode != old_config.ChallengeMode)
+		EmuConfig.Achievements.RichPresence != old_config.RichPresence)
 	{
 		Shutdown();
 		Initialize();
 		return;
 	}
+	else if (EmuConfig.Achievements.Leaderboards != old_config.Leaderboards)
+	{
+		// If leaderboards were toggled, redisplay the summary (but only when HC mode is active,
+		// because otherwise leaderboards are irrelevant anyway).
+		if (HasActiveGame() && ChallengeModeActive())
+			DisplayAchievementSummary();
+	}
 
 	// in case cache directory changed
 	EnsureCacheDirectoriesExist();
+}
+
+void Achievements::DisableDisallowedSettings(Pcsx2Config& config)
+{
+	if (!IsActive() || !ChallengeModeActive())
+		return;
+
+	static constexpr auto ClampSpeed = [](double& rate) {
+		if (rate > 0.0f && rate < 1.0f)
+			rate = 1.0f;
+	};
+
+	// can't use slow motion
+	ClampSpeed(config.Framerate.NominalScalar);
+	ClampSpeed(config.Framerate.TurboScalar);
+	ClampSpeed(config.Framerate.SlomoScalar);
+
+	// can't use cheats
+	if (config.EnableCheats)
+	{
+		Host::AddKeyedOSDMessage("ChallengeDisableCheats", "Cheats have been disabled due to achievements hardcore mode.", 10.0f);
+		config.EnableCheats = false;
+	}
+
+	// input recording/playback is probably an issue
+	config.EnableRecordingTools = false;
+	config.EnablePINE = false;
+
+	// framerates should be at default
+	config.GS.FramerateNTSC = 59.94;
+	config.GS.FrameratePAL = 50.00;
+}
+
+bool Achievements::ConfirmChallengeModeDisable(const char* trigger)
+{
+#ifdef ENABLE_RAINTEGRATION
+	if (IsUsingRAIntegration())
+		return (RA_WarnDisableHardcore(trigger) != 0);
+#endif
+
+#ifndef _UWP
+	const bool confirmed =
+		Host::ConfirmMessage("Confirm Hardcore Mode", fmt::format("{0} cannot be performed while hardcore mode is active. Do you want to "
+																  "disable hardcore mode? {0} will be cancelled if you select No.",
+														  trigger));
+	if (!confirmed)
+		return false;
+#endif
+
+	DisableChallengeMode();
+	return true;
+}
+
+void Achievements::DisableChallengeMode()
+{
+	if (!s_active)
+		return;
+
+#ifdef ENABLE_RAINTEGRATION
+	if (IsUsingRAIntegration())
+	{
+		if (RA_HardcoreModeIsActive())
+			RA_DisableHardcore();
+
+		return;
+	}
+#endif
+
+	if (s_challenge_mode)
+		SetChallengeMode(false);
+}
+
+void Achievements::ResetChallengeMode()
+{
+	if (!s_active)
+		return;
+
+	Host::RemoveKeyedOSDMessage("challenge_mode_reset");
+
+	if (s_challenge_mode != EmuConfig.Achievements.ChallengeMode)
+		SetChallengeMode(EmuConfig.Achievements.ChallengeMode);
+}
+
+void Achievements::SetChallengeMode(bool enabled)
+{
+	if (enabled == s_challenge_mode)
+		return;
+
+	// new mode
+	s_challenge_mode = enabled;
+
+	if (HasActiveGame())
+		ImGuiFullscreen::ShowToast(std::string(), enabled ? "Hardcore mode is now enabled." : "Hardcore mode is now disabled.", 10.0f);
+
+	if (HasActiveGame() && !IsTestModeActive())
+	{
+		// deactivate, but don't clear all achievements (getting unlocks will reactivate them)
+		std::unique_lock lock(s_achievements_mutex);
+		for (Achievement& achievement : s_achievements)
+		{
+			DeactivateAchievement(&achievement);
+			achievement.locked = true;
+		}
+		for (Leaderboard& leaderboard : s_leaderboards)
+			rc_runtime_deactivate_lboard(&s_rcheevos_runtime, leaderboard.id);
+	}
+
+	// re-grab unlocks, this will reactivate what's locked in non-hardcore mode later on
+	if (!s_achievements.empty())
+		GetUserUnlocks();
 }
 
 bool Achievements::Shutdown()
@@ -449,7 +666,7 @@ bool Achievements::Shutdown()
 	}
 #endif
 
-	if (!g_active)
+	if (!s_active)
 		return true;
 
 	std::unique_lock lock(s_achievements_mutex);
@@ -459,10 +676,10 @@ bool Achievements::Shutdown()
 	ClearGameHash();
 	std::string().swap(s_username);
 	std::string().swap(s_api_token);
-	g_logged_in = false;
+	s_logged_in = false;
 	Host::OnAchievementsRefreshed();
 
-	g_active = false;
+	s_active = false;
 	rc_runtime_destroy(&s_rcheevos_runtime);
 
 	s_http_downloader.reset();
@@ -482,7 +699,7 @@ bool Achievements::Reset()
 	}
 #endif
 
-	if (!g_active)
+	if (!s_active)
 		return true;
 
 	std::unique_lock lock(s_achievements_mutex);
@@ -517,7 +734,7 @@ void Achievements::VSyncUpdate()
 		rc_runtime_do_frame(&s_rcheevos_runtime, &CheevosEventHandler, &PeekMemory, nullptr, nullptr);
 		UpdateRichPresence();
 
-		if (!s_test_mode)
+		if (!IsTestModeActive())
 		{
 			const s32 ping_frequency = EmuConfig.Achievements.RichPresence ? RICH_PRESENCE_PING_FREQUENCY : NO_RICH_PRESENCE_PING_FREQUENCY;
 			if (static_cast<s32>(s_last_ping_time.GetTimeSeconds()) >= ping_frequency)
@@ -538,7 +755,8 @@ void Achievements::ProcessPendingHTTPRequestsFromGSThread()
 
 void Achievements::LoadState(const u8* state_data, u32 state_data_size)
 {
-	pxAssertRel(g_active, "Achievements are active");
+	if (!s_active)
+		return;
 
 #ifdef ENABLE_RAINTEGRATION
 	if (IsUsingRAIntegration())
@@ -599,20 +817,23 @@ std::vector<u8> Achievements::SaveState()
 	}
 #endif
 
-	std::unique_lock lock(s_achievements_mutex);
-
-	// internally this happens twice.. not great.
-	const int size = rc_runtime_progress_size(&s_rcheevos_runtime, nullptr);
-
-	const u32 data_size = (size >= 0) ? static_cast<u32>(size) : 0;
-	ret.resize(data_size);
-
-	const int result = rc_runtime_serialize_progress(ret.data(), &s_rcheevos_runtime, nullptr);
-	if (result != RC_OK)
+	if (s_active)
 	{
-		// set data to zero, effectively serializing nothing
-		Console.Warning("Failed to serialize cheevos state (%d)", result);
-		ret.clear();
+		std::unique_lock lock(s_achievements_mutex);
+
+		// internally this happens twice.. not great.
+		const int size = rc_runtime_progress_size(&s_rcheevos_runtime, nullptr);
+
+		const u32 data_size = (size >= 0) ? static_cast<u32>(size) : 0;
+		ret.resize(data_size);
+
+		const int result = rc_runtime_serialize_progress(ret.data(), &s_rcheevos_runtime, nullptr);
+		if (result != RC_OK)
+		{
+			// set data to zero, effectively serializing nothing
+			Console.Warning("Failed to serialize cheevos state (%d)", result);
+			ret.clear();
+		}
 	}
 
 	return ret;
@@ -672,15 +893,15 @@ void Achievements::LoginCallback(s32 status_code, Common::HTTPDownloader::Reques
 	Host::SetBaseStringSettingValue("Achievements", "LoginTimestamp", fmt::format("{}", std::time(nullptr)).c_str());
 	Host::CommitBaseSettingChanges();
 
-	if (g_active)
+	if (s_active)
 	{
 		s_username = std::move(username);
 		s_api_token = std::move(api_token);
-		g_logged_in = true;
+		s_logged_in = true;
 
 		// If we have a game running, set it up.
-		if (VMManager::HasValidVM())
-			GameChanged();
+		if (!s_game_hash.empty())
+			SendGetGameId();
 	}
 }
 
@@ -705,7 +926,7 @@ bool Achievements::LoginAsync(const char* username, const char* password)
 {
 	s_http_downloader->WaitForAllRequests();
 
-	if (g_logged_in || std::strlen(username) == 0 || std::strlen(password) == 0 || IsUsingRAIntegration())
+	if (s_logged_in || std::strlen(username) == 0 || std::strlen(password) == 0 || IsUsingRAIntegration())
 		return false;
 
 	if (FullscreenUI::IsInitialized())
@@ -719,13 +940,13 @@ bool Achievements::LoginAsync(const char* username, const char* password)
 
 bool Achievements::Login(const char* username, const char* password)
 {
-	if (g_active)
+	if (s_active)
 		s_http_downloader->WaitForAllRequests();
 
-	if (g_logged_in || std::strlen(username) == 0 || std::strlen(password) == 0 || IsUsingRAIntegration())
+	if (s_logged_in || std::strlen(username) == 0 || std::strlen(password) == 0 || IsUsingRAIntegration())
 		return false;
 
-	if (g_active)
+	if (s_active)
 	{
 		SendLogin(username, password, s_http_downloader.get(), LoginCallback);
 		s_http_downloader->WaitForAllRequests();
@@ -733,7 +954,7 @@ bool Achievements::Login(const char* username, const char* password)
 	}
 
 	// create a temporary downloader if we're not initialized
-	pxAssertRel(!g_active, "RetroAchievements is not active on login");
+	pxAssertRel(!s_active, "RetroAchievements is not active on login");
 	std::unique_ptr<Common::HTTPDownloader> http_downloader = Common::HTTPDownloader::Create(GetUserAgent().c_str());
 	if (!http_downloader)
 		return false;
@@ -746,16 +967,16 @@ bool Achievements::Login(const char* username, const char* password)
 
 void Achievements::Logout()
 {
-	if (g_active)
+	if (s_active)
 	{
 		std::unique_lock lock(s_achievements_mutex);
 		s_http_downloader->WaitForAllRequests();
-		if (g_logged_in)
+		if (s_logged_in)
 		{
 			ClearGameInfo();
 			std::string().swap(s_username);
 			std::string().swap(s_api_token);
-			g_logged_in = false;
+			s_logged_in = false;
 			Host::OnAchievementsRefreshed();
 		}
 	}
@@ -788,7 +1009,7 @@ void Achievements::DownloadImage(std::string url, std::string cache_filename)
 void Achievements::DisplayAchievementSummary()
 {
 	std::string title = s_game_title;
-	if (g_challenge_mode)
+	if (ChallengeModeActive())
 		title += " (Hardcore Mode)";
 
 	std::string summary;
@@ -804,14 +1025,8 @@ void Achievements::DisplayAchievementSummary()
 	if (GetLeaderboardCount() > 0)
 	{
 		summary.push_back('\n');
-		if (g_challenge_mode)
-		{
-			summary.append("Leaderboards are enabled.");
-		}
-		else
-		{
-			summary.append("Leaderboards are DISABLED because Hardcore Mode is off.");
-		}
+		if (LeaderboardsActive())
+			summary.append("Leaderboard submission is enabled.");
 	}
 
 	ImGuiFullscreen::AddNotification(10.0f, std::move(title), std::move(summary), s_game_icon);
@@ -833,7 +1048,7 @@ void Achievements::GetUserUnlocksCallback(s32 status_code, Common::HTTPDownloade
 	// flag achievements as unlocked
 	for (u32 i = 0; i < response.num_achievement_ids; i++)
 	{
-		Achievement* cheevo = GetAchievementByID(response.achievement_ids[i]);
+		Achievement* cheevo = GetMutableAchievementByID(response.achievement_ids[i]);
 		if (!cheevo)
 		{
 			Console.Error("Server returned unknown achievement %u", response.achievement_ids[i]);
@@ -857,13 +1072,16 @@ void Achievements::GetUserUnlocks()
 	RAPIRequest<rc_api_fetch_user_unlocks_request_t, rc_api_init_fetch_user_unlocks_request> request;
 	request.username = s_username.c_str();
 	request.api_token = s_api_token.c_str();
-	request.game_id = g_game_id;
-	request.hardcore = static_cast<int>(g_challenge_mode);
+	request.game_id = s_game_id;
+	request.hardcore = static_cast<int>(ChallengeModeActive());
 	request.Send(GetUserUnlocksCallback);
 }
 
 void Achievements::GetPatchesCallback(s32 status_code, Common::HTTPDownloader::Request::Data data)
 {
+	if (!VMManager::HasValidVM())
+		return;
+
 	RAPIResponse<rc_api_fetch_game_data_response_t, rc_api_process_fetch_game_data_response, rc_api_destroy_fetch_game_data_response>
 		response(status_code, data);
 
@@ -875,13 +1093,13 @@ void Achievements::GetPatchesCallback(s32 status_code, Common::HTTPDownloader::R
 	// ensure fullscreen UI is ready
 	GetMTGS().RunOnGSThread([]() { FullscreenUI::Initialize(); });
 
-	g_game_id = response.id;
+	s_game_id = response.id;
 	s_game_title = response.title;
 
 	// try for a icon
 	if (std::strlen(response.image_name) > 0)
 	{
-		s_game_icon = Path::Combine(s_game_icon_cache_directory, fmt::format("{}.png", g_game_id));
+		s_game_icon = Path::Combine(s_game_icon_cache_directory, fmt::format("{}.png", s_game_id));
 		if (!FileSystem::FileExists(s_game_icon.c_str()))
 		{
 			RAPIRequest<rc_api_fetch_image_request_t, rc_api_init_fetch_image_request> request;
@@ -899,7 +1117,7 @@ void Achievements::GetPatchesCallback(s32 status_code, Common::HTTPDownloader::R
 		// Skip local and unofficial achievements for now, unless "Test Unofficial Achievements" is enabled
 		if (defn.category == RC_ACHIEVEMENT_CATEGORY_UNOFFICIAL)
 		{
-			if (!EmuConfig.Achievements.UnofficialTestMode)
+			if (!IsUnofficialTestModeActive())
 			{
 				Console.Warning("Skipping unofficial achievement %u (%s)", defn.id, defn.title);
 				continue;
@@ -911,7 +1129,7 @@ void Achievements::GetPatchesCallback(s32 status_code, Common::HTTPDownloader::R
 			continue;
 		}
 
-		if (GetAchievementByID(defn.id))
+		if (GetMutableAchievementByID(defn.id))
 		{
 			Console.Error("Achievement %u already exists", defn.id);
 			continue;
@@ -941,21 +1159,19 @@ void Achievements::GetPatchesCallback(s32 status_code, Common::HTTPDownloader::R
 		lboard.format = defn.format;
 		s_leaderboards.push_back(std::move(lboard));
 
+		// Always track the leaderboard, if we don't have leaderboards enabled we just won't submit it.
+		// That way if someone activates them later on, current progress will count.
 		const int err = rc_runtime_activate_lboard(&s_rcheevos_runtime, defn.id, defn.definition, nullptr, 0);
 		if (err != RC_OK)
-		{
 			Console.Error("Leaderboard %u memaddr parse error: %s", defn.id, rc_error_str(err));
-		}
 		else
-		{
 			DevCon.WriteLn("Activated leaderboard %s (%u)", defn.title, defn.id);
-		}
 	}
 
-	// parse rich presence
+	// Parse rich presence.
 	if (std::strlen(response.rich_presence_script) > 0)
 	{
-		int res = rc_runtime_activate_richpresence(&s_rcheevos_runtime, response.rich_presence_script, nullptr, 0);
+		const int res = rc_runtime_activate_richpresence(&s_rcheevos_runtime, response.rich_presence_script, nullptr, 0);
 		if (res == RC_OK)
 			s_has_rich_presence = true;
 		else
@@ -966,9 +1182,13 @@ void Achievements::GetPatchesCallback(s32 status_code, Common::HTTPDownloader::R
 	Console.WriteLn("Achievements: %zu", s_achievements.size());
 	Console.WriteLn("Leaderboards: %zu", s_leaderboards.size());
 
+	// We don't want to block saving/loading states when there's no achievements.
+	if (s_achievements.empty() && s_leaderboards.empty())
+		DisableChallengeMode();
+
 	if (!s_achievements.empty() || s_has_rich_presence)
 	{
-		if (!s_test_mode)
+		if (!IsTestModeActive())
 		{
 			GetUserUnlocks();
 		}
@@ -992,6 +1212,9 @@ void Achievements::GetPatchesCallback(s32 status_code, Common::HTTPDownloader::R
 
 void Achievements::GetLbInfoCallback(s32 status_code, Common::HTTPDownloader::Request::Data data)
 {
+	if (!VMManager::HasValidVM())
+		return;
+
 	RAPIResponse<rc_api_fetch_leaderboard_info_response_t, rc_api_process_fetch_leaderboard_info_response,
 		rc_api_destroy_fetch_leaderboard_info_response>
 		response(status_code, data);
@@ -1129,6 +1352,9 @@ std::string Achievements::GetGameHash()
 
 void Achievements::GetGameIdCallback(s32 status_code, Common::HTTPDownloader::Request::Data data)
 {
+	if (!VMManager::HasValidVM())
+		return;
+
 	RAPIResponse<rc_api_resolve_hash_response_t, rc_api_process_resolve_hash_response, rc_api_destroy_resolve_hash_response> response(
 		status_code, data);
 	if (!response)
@@ -1137,17 +1363,22 @@ void Achievements::GetGameIdCallback(s32 status_code, Common::HTTPDownloader::Re
 	const u32 game_id = response.game_id;
 	Console.WriteLn("Server returned GameID %u", game_id);
 	if (game_id == 0)
+	{
+		// We don't want to block saving/loading states when there's no achievements.
+		DisableChallengeMode();
 		return;
+	}
 
 	GetPatches(game_id);
 }
 
-void Achievements::GameChanged()
+void Achievements::GameChanged(u32 crc)
 {
-	pxAssert(VMManager::HasValidVM());
+	std::unique_lock lock(s_achievements_mutex);
+	if (!s_active)
+		return;
 
 	// avoid reading+hashing the executable if the crc hasn't changed
-	const u32 crc = VMManager::GetGameCRC();
 	if (s_last_game_crc == crc)
 		return;
 
@@ -1155,7 +1386,6 @@ void Achievements::GameChanged()
 	if (s_game_hash == game_hash)
 		return;
 
-	std::unique_lock lock(s_achievements_mutex);
 	if (!IsUsingRAIntegration())
 		s_http_downloader->WaitForAllRequests();
 
@@ -1174,16 +1404,24 @@ void Achievements::GameChanged()
 
 	if (s_game_hash.empty())
 	{
-		// when we're booting the bios, this will fail
-		if (VMManager::GetGameCRC() != 0)
+		// when we're booting the bios, or shutting down, this will fail
+		if (crc != 0)
 		{
 			Host::AddKeyedOSDMessage(
 				"retroachievements_disc_read_failed", "Failed to read executable from disc. Achievements disabled.", 10.0f);
 		}
 
+		DisableChallengeMode();
+		s_last_game_crc = 0;
 		return;
 	}
 
+	if (IsLoggedIn())
+		SendGetGameId();
+}
+
+void Achievements::SendGetGameId()
+{
 	RAPIRequest<rc_api_resolve_hash_request_t, rc_api_init_resolve_hash_request> request;
 	request.username = s_username.c_str();
 	request.api_token = s_api_token.c_str();
@@ -1193,12 +1431,15 @@ void Achievements::GameChanged()
 
 void Achievements::SendPlayingCallback(s32 status_code, Common::HTTPDownloader::Request::Data data)
 {
+	if (!VMManager::HasValidVM())
+		return;
+
 	RAPIResponse<rc_api_start_session_response_t, rc_api_process_start_session_response, rc_api_destroy_start_session_response> response(
 		status_code, data);
 	if (!response)
 		return;
 
-	Console.WriteLn("Playing game updated to %u (%s)", g_game_id, s_game_title.c_str());
+	Console.WriteLn("Playing game updated to %u (%s)", s_game_id, s_game_title.c_str());
 }
 
 void Achievements::SendPlaying()
@@ -1209,7 +1450,7 @@ void Achievements::SendPlaying()
 	RAPIRequest<rc_api_start_session_request_t, rc_api_init_start_session_request> request;
 	request.username = s_username.c_str();
 	request.api_token = s_api_token.c_str();
-	request.game_id = g_game_id;
+	request.game_id = s_game_id;
 	request.Send(SendPlayingCallback);
 }
 
@@ -1219,7 +1460,7 @@ void Achievements::UpdateRichPresence()
 		return;
 
 	char buffer[512];
-	int res = rc_runtime_get_richpresence(&s_rcheevos_runtime, buffer, sizeof(buffer), PeekMemory, nullptr, nullptr);
+	const int res = rc_runtime_get_richpresence(&s_rcheevos_runtime, buffer, sizeof(buffer), PeekMemory, nullptr, nullptr);
 	if (res <= 0)
 	{
 		const bool had_rich_presence = !s_rich_presence_string.empty();
@@ -1240,6 +1481,9 @@ void Achievements::UpdateRichPresence()
 
 void Achievements::SendPingCallback(s32 status_code, Common::HTTPDownloader::Request::Data data)
 {
+	if (!VMManager::HasValidVM())
+		return;
+
 	RAPIResponse<rc_api_ping_response_t, rc_api_process_ping_response, rc_api_destroy_ping_response> response(status_code, data);
 }
 
@@ -1253,7 +1497,7 @@ void Achievements::SendPing()
 	RAPIRequest<rc_api_ping_request_t, rc_api_init_ping_request> request;
 	request.api_token = s_api_token.c_str();
 	request.username = s_username.c_str();
-	request.game_id = g_game_id;
+	request.game_id = s_game_id;
 	request.rich_presence = s_rich_presence_string.c_str();
 	request.Send(SendPingCallback);
 }
@@ -1423,6 +1667,9 @@ void Achievements::DeactivateAchievement(Achievement* achievement)
 
 void Achievements::UnlockAchievementCallback(s32 status_code, Common::HTTPDownloader::Request::Data data)
 {
+	if (!VMManager::HasValidVM())
+		return;
+
 	RAPIResponse<rc_api_award_achievement_response_t, rc_api_process_award_achievement_response, rc_api_destroy_award_achievement_response>
 		response(status_code, data);
 	if (!response)
@@ -1433,6 +1680,9 @@ void Achievements::UnlockAchievementCallback(s32 status_code, Common::HTTPDownlo
 
 void Achievements::SubmitLeaderboardCallback(s32 status_code, Common::HTTPDownloader::Request::Data data)
 {
+	if (!VMManager::HasValidVM())
+		return;
+
 	RAPIResponse<rc_api_submit_lboard_entry_response_t, rc_api_process_submit_lboard_entry_response,
 		rc_api_destroy_submit_lboard_entry_response>
 		response(status_code, data);
@@ -1441,11 +1691,29 @@ void Achievements::SubmitLeaderboardCallback(s32 status_code, Common::HTTPDownlo
 
 	// Force the next leaderboard query to repopulate everything, just in case the user wants to see their new score
 	s_last_queried_lboard = 0;
+
+	// RA API doesn't send us the leaderboard ID back.. hopefully we don't submit two at once :/
+	if (s_submitting_lboard_id == 0)
+		return;
+
+	const Leaderboard* lb = GetLeaderboardByID(std::exchange(s_submitting_lboard_id, 0u));
+	if (!lb)
+		return;
+
+	char submitted_score[128];
+	char best_score[128];
+	rc_runtime_format_lboard_value(submitted_score, sizeof(submitted_score), response.submitted_score, lb->format);
+	rc_runtime_format_lboard_value(best_score, sizeof(best_score), response.best_score, lb->format);
+
+	std::string summary = fmt::format(
+		"Your Score: {} (Best: {})\nLeaderboard Position: {} of {}", submitted_score, best_score, response.new_rank, response.num_entries);
+
+	ImGuiFullscreen::AddNotification(10.0f, lb->title, std::move(summary), s_game_icon);
 }
 
 void Achievements::UnlockAchievement(u32 achievement_id, bool add_notification /* = true*/)
 {
-	Achievement* achievement = GetAchievementByID(achievement_id);
+	Achievement* achievement = GetMutableAchievementByID(achievement_id);
 	if (!achievement)
 	{
 		Console.Error("Attempting to unlock unknown achievement %u", achievement_id);
@@ -1453,33 +1721,33 @@ void Achievements::UnlockAchievement(u32 achievement_id, bool add_notification /
 	}
 	else if (!achievement->locked)
 	{
-		Console.Warning("Achievement %u for game %u is already unlocked", achievement_id, g_game_id);
+		Console.Warning("Achievement %u for game %u is already unlocked", achievement_id, s_game_id);
 		return;
 	}
 
 	achievement->locked = false;
 	DeactivateAchievement(achievement);
 
-	Console.WriteLn("Achievement %s (%u) for game %u unlocked", achievement->title.c_str(), achievement_id, g_game_id);
+	Console.WriteLn("Achievement %s (%u) for game %u unlocked", achievement->title.c_str(), achievement_id, s_game_id);
 
 	std::string title;
 	switch (achievement->category)
 	{
-	case AchievementCategory::Local:
-		title = fmt::format("{} (Local)", achievement->title);
-		break;
-	case AchievementCategory::Unofficial:
-		title = fmt::format("{} (Unofficial)", achievement->title);
-		break;
-	case AchievementCategory::Core:
-	default:
-		title = achievement->title;
-		break;
+		case AchievementCategory::Local:
+			title = fmt::format("{} (Local)", achievement->title);
+			break;
+		case AchievementCategory::Unofficial:
+			title = fmt::format("{} (Unofficial)", achievement->title);
+			break;
+		case AchievementCategory::Core:
+		default:
+			title = achievement->title;
+			break;
 	}
 
 	ImGuiFullscreen::AddNotification(15.0f, std::move(title), achievement->description, GetAchievementBadgePath(*achievement));
 
-	if (s_test_mode)
+	if (IsTestModeActive())
 	{
 		Console.Warning("Skipping sending achievement %u unlock to server because of test mode.", achievement_id);
 		return;
@@ -1496,23 +1764,31 @@ void Achievements::UnlockAchievement(u32 achievement_id, bool add_notification /
 	request.api_token = s_api_token.c_str();
 	request.game_hash = s_game_hash.c_str();
 	request.achievement_id = achievement_id;
-	request.hardcore = static_cast<int>(g_challenge_mode);
+	request.hardcore = static_cast<int>(ChallengeModeActive());
 	request.Send(UnlockAchievementCallback);
 }
 
 void Achievements::SubmitLeaderboard(u32 leaderboard_id, int value)
 {
-	if (s_test_mode)
+	if (IsTestModeActive())
 	{
 		Console.Warning("Skipping sending leaderboard %u result to server because of test mode.", leaderboard_id);
 		return;
 	}
 
-	if (!g_challenge_mode)
+	if (!ChallengeModeActive())
 	{
 		Console.Warning("Skipping sending leaderboard %u result to server because Challenge mode is off.", leaderboard_id);
 		return;
 	}
+
+	if (!LeaderboardsActive())
+	{
+		Console.Warning("Skipping sending leaderboard %u result to server because leaderboards are disabled.", leaderboard_id);
+		return;
+	}
+
+	s_submitting_lboard_id = leaderboard_id;
 
 	RAPIRequest<rc_api_submit_lboard_entry_request_t, rc_api_init_submit_lboard_entry_request> request;
 	request.username = s_username.c_str();
@@ -1537,7 +1813,7 @@ std::string Achievements::GetAchievementProgressText(const Achievement& achievem
 	return buf;
 }
 
-const std::string& Achievements::GetAchievementBadgePath(const Achievement& achievement)
+const std::string& Achievements::GetAchievementBadgePath(const Achievement& achievement, bool download_if_missing)
 {
 	std::string& badge_path = achievement.locked ? achievement.locked_badge_path : achievement.unlocked_badge_path;
 	if (!badge_path.empty() || achievement.badge_name.empty())
@@ -1551,19 +1827,31 @@ const std::string& Achievements::GetAchievementBadgePath(const Achievement& achi
 		return badge_path;
 
 	// need to download it
+	if (download_if_missing)
+	{
+		RAPIRequest<rc_api_fetch_image_request_t, rc_api_init_fetch_image_request> request;
+		request.image_name = achievement.badge_name.c_str();
+		request.image_type = achievement.locked ? RC_IMAGE_TYPE_ACHIEVEMENT_LOCKED : RC_IMAGE_TYPE_ACHIEVEMENT;
+		request.DownloadImage(badge_path);
+	}
+
+	return badge_path;
+}
+
+std::string Achievements::GetAchievementBadgeURL(const Achievement& achievement)
+{
 	RAPIRequest<rc_api_fetch_image_request_t, rc_api_init_fetch_image_request> request;
 	request.image_name = achievement.badge_name.c_str();
 	request.image_type = achievement.locked ? RC_IMAGE_TYPE_ACHIEVEMENT_LOCKED : RC_IMAGE_TYPE_ACHIEVEMENT;
-	request.DownloadImage(badge_path);
-	return badge_path;
+	return request.GetURL();
 }
 
 void Achievements::CheevosEventHandler(const rc_runtime_event_t* runtime_event)
 {
-	static const char* events[] = { "RC_RUNTIME_EVENT_ACHIEVEMENT_ACTIVATED", "RC_RUNTIME_EVENT_ACHIEVEMENT_PAUSED",
+	static const char* events[] = {"RC_RUNTIME_EVENT_ACHIEVEMENT_ACTIVATED", "RC_RUNTIME_EVENT_ACHIEVEMENT_PAUSED",
 		"RC_RUNTIME_EVENT_ACHIEVEMENT_RESET", "RC_RUNTIME_EVENT_ACHIEVEMENT_TRIGGERED", "RC_RUNTIME_EVENT_ACHIEVEMENT_PRIMED",
 		"RC_RUNTIME_EVENT_LBOARD_STARTED", "RC_RUNTIME_EVENT_LBOARD_CANCELED", "RC_RUNTIME_EVENT_LBOARD_UPDATED",
-		"RC_RUNTIME_EVENT_LBOARD_TRIGGERED", "RC_RUNTIME_EVENT_ACHIEVEMENT_DISABLED", "RC_RUNTIME_EVENT_LBOARD_DISABLED" };
+		"RC_RUNTIME_EVENT_LBOARD_TRIGGERED", "RC_RUNTIME_EVENT_ACHIEVEMENT_DISABLED", "RC_RUNTIME_EVENT_LBOARD_DISABLED"};
 	const char* event_text = ((unsigned)runtime_event->type >= std::size(events)) ? "unknown" : events[(unsigned)runtime_event->type];
 	DevCon.WriteLn("Cheevos Event %s for %u", event_text, runtime_event->id);
 
@@ -1580,30 +1868,40 @@ unsigned Achievements::PeekMemory(unsigned address, unsigned num_bytes, void* ud
 
 	switch (num_bytes)
 	{
-	case 1:
-	{
-		u8 value;
-		std::memcpy(&value, reinterpret_cast<u8*>(eeMem) + address, sizeof(value));
-		return static_cast<unsigned>(value);
-	}
+		case 1:
+		{
+			u8 value;
+			std::memcpy(&value, reinterpret_cast<u8*>(eeMem) + address, sizeof(value));
+			return static_cast<unsigned>(value);
+		}
 
-	case 2:
-	{
-		u16 value;
-		std::memcpy(&value, reinterpret_cast<u8*>(eeMem) + address, sizeof(value));
-		return static_cast<unsigned>(value);
-	}
+		case 2:
+		{
+			u16 value;
+			std::memcpy(&value, reinterpret_cast<u8*>(eeMem) + address, sizeof(value));
+			return static_cast<unsigned>(value);
+		}
 
-	case 4:
-	{
-		u32 value;
-		std::memcpy(&value, reinterpret_cast<u8*>(eeMem) + address, sizeof(value));
-		return static_cast<unsigned>(value);
-	}
+		case 4:
+		{
+			u32 value;
+			std::memcpy(&value, reinterpret_cast<u8*>(eeMem) + address, sizeof(value));
+			return static_cast<unsigned>(value);
+		}
 
-	default:
+		default:
+			return 0u;
+	}
+}
+
+unsigned Achievements::PeekMemoryBlock(unsigned address, unsigned char* buffer, unsigned num_bytes)
+{
+	if (!VMManager::HasValidVM() || (address >= EXPOSED_EE_MEMORY_SIZE))
 		return 0u;
-	}
+
+	const unsigned read_byte_count = std::min<unsigned>(EXPOSED_EE_MEMORY_SIZE - address, num_bytes);
+	std::memcpy(buffer, reinterpret_cast<u8*>(eeMem) + address, read_byte_count);
+	return read_byte_count;
 }
 
 void Achievements::PokeMemory(unsigned address, unsigned num_bytes, void* ud, unsigned value)
@@ -1613,29 +1911,29 @@ void Achievements::PokeMemory(unsigned address, unsigned num_bytes, void* ud, un
 
 	switch (num_bytes)
 	{
-	case 1:
-	{
-		const u8 value8 = static_cast<u8>(value);
-		std::memcpy(reinterpret_cast<u8*>(eeMem) + address, &value8, sizeof(value8));
-	}
-	break;
-
-	case 2:
-	{
-		const u16 value16 = static_cast<u16>(value);
-		std::memcpy(reinterpret_cast<u8*>(eeMem) + address, &value16, sizeof(value16));
-	}
-	break;
-
-	case 4:
-	{
-		const u32 value32 = static_cast<u32>(value);
-		std::memcpy(reinterpret_cast<u8*>(eeMem) + address, &value32, sizeof(value32));
-	}
-	break;
-
-	default:
+		case 1:
+		{
+			const u8 value8 = static_cast<u8>(value);
+			std::memcpy(reinterpret_cast<u8*>(eeMem) + address, &value8, sizeof(value8));
+		}
 		break;
+
+		case 2:
+		{
+			const u16 value16 = static_cast<u16>(value);
+			std::memcpy(reinterpret_cast<u8*>(eeMem) + address, &value16, sizeof(value16));
+		}
+		break;
+
+		case 4:
+		{
+			const u32 value32 = static_cast<u32>(value);
+			std::memcpy(reinterpret_cast<u8*>(eeMem) + address, &value32, sizeof(value32));
+		}
+		break;
+
+		default:
+			break;
 	}
 }
 
@@ -1655,6 +1953,7 @@ namespace Achievements::RAIntegration
 	static void RACallbackResetEmulator();
 	static void RACallbackLoadROM(const char* unused);
 	static unsigned char RACallbackReadMemory(unsigned int address);
+	static unsigned int RACallbackReadBlock(unsigned int address, unsigned char* buffer, unsigned int bytes);
 	static void RACallbackWriteMemory(unsigned int address, unsigned char value);
 
 	static bool s_raintegration_initialized = false;
@@ -1662,11 +1961,11 @@ namespace Achievements::RAIntegration
 
 void Achievements::SwitchToRAIntegration()
 {
-	g_using_raintegration = true;
-	g_active = true;
+	s_using_raintegration = true;
+	s_active = true;
 
 	// Not strictly the case, but just in case we gate anything by IsLoggedIn().
-	g_logged_in = true;
+	s_logged_in = true;
 }
 
 void Achievements::RAIntegration::InitializeRAIntegration(void* main_window_handle)
@@ -1680,11 +1979,11 @@ void Achievements::RAIntegration::InitializeRAIntegration(void* main_window_hand
 
 	// EE physical memory and scratchpad are currently exposed (matching direct rcheevos implementation).
 	RA_InstallMemoryBank(0, RACallbackReadMemory, RACallbackWriteMemory, EXPOSED_EE_MEMORY_SIZE);
+	RA_InstallMemoryBankBlockReader(0, RACallbackReadBlock);
 
 	// Fire off a login anyway. Saves going into the menu and doing it.
 	RA_AttemptLogin(0);
 
-	g_challenge_mode = RA_HardcoreModeIsActive() != 0;
 	s_raintegration_initialized = true;
 
 	// this is pretty lame, but we may as well persist until we exit anyway
@@ -1704,58 +2003,31 @@ void Achievements::RAIntegration::MainWindowChanged(void* new_handle)
 
 void Achievements::RAIntegration::GameChanged()
 {
-	g_game_id = s_game_hash.empty() ? 0 : RA_IdentifyHash(s_game_hash.c_str());
-	RA_ActivateGame(g_game_id);
+	s_game_id = s_game_hash.empty() ? 0 : RA_IdentifyHash(s_game_hash.c_str());
+	RA_ActivateGame(s_game_id);
 }
 
-std::vector<std::pair<int, const char*>> Achievements::RAIntegration::GetMenuItems()
+std::vector<std::tuple<int, std::string, bool>> Achievements::RAIntegration::GetMenuItems()
 {
-	// NOTE: I *really* don't like doing this. But sadly it's the only way we can integrate with Qt.
-	static constexpr int IDM_RA_RETROACHIEVEMENTS = 1700;
-	static constexpr int IDM_RA_OVERLAYSETTINGS = 1701;
-	static constexpr int IDM_RA_FILES_MEMORYBOOKMARKS = 1703;
-	static constexpr int IDM_RA_FILES_ACHIEVEMENTS = 1704;
-	static constexpr int IDM_RA_FILES_MEMORYFINDER = 1705;
-	static constexpr int IDM_RA_FILES_LOGIN = 1706;
-	static constexpr int IDM_RA_FILES_LOGOUT = 1707;
-	static constexpr int IDM_RA_FILES_ACHIEVEMENTEDITOR = 1708;
-	static constexpr int IDM_RA_HARDCORE_MODE = 1710;
-	static constexpr int IDM_RA_REPORTBROKENACHIEVEMENTS = 1711;
-	static constexpr int IDM_RA_GETROMCHECKSUM = 1712;
-	static constexpr int IDM_RA_OPENUSERPAGE = 1713;
-	static constexpr int IDM_RA_OPENGAMEPAGE = 1714;
-	static constexpr int IDM_RA_PARSERICHPRESENCE = 1716;
-	static constexpr int IDM_RA_TOGGLELEADERBOARDS = 1717;
-	static constexpr int IDM_RA_NON_HARDCORE_WARNING = 1718;
+	std::array<RA_MenuItem, 64> items;
+	const int num_items = RA_GetPopupMenuItems(items.data());
 
-	std::vector<std::pair<int, const char*>> ret;
+	std::vector<std::tuple<int, std::string, bool>> ret;
+	ret.reserve(static_cast<u32>(num_items));
 
-	const char* username = RA_UserName();
-	if (!username || std::strlen(username) == 0)
+	for (int i = 0; i < num_items; i++)
 	{
-		ret.emplace_back(IDM_RA_FILES_LOGIN, "&Login");
-	}
-	else
-	{
-		ret.emplace_back(IDM_RA_FILES_LOGOUT, "Log&out");
-		ret.emplace_back(0, nullptr);
-		ret.emplace_back(IDM_RA_OPENUSERPAGE, "Open my &User Page");
-		ret.emplace_back(IDM_RA_OPENGAMEPAGE, "Open this &Game's Page");
-		ret.emplace_back(0, nullptr);
-		ret.emplace_back(IDM_RA_HARDCORE_MODE, "&Hardcore Mode");
-		ret.emplace_back(IDM_RA_NON_HARDCORE_WARNING, "Non-Hardcore &Warning");
-		ret.emplace_back(0, nullptr);
-		ret.emplace_back(IDM_RA_TOGGLELEADERBOARDS, "Enable &Leaderboards");
-		ret.emplace_back(IDM_RA_OVERLAYSETTINGS, "O&verlay Settings");
-		ret.emplace_back(0, nullptr);
-		ret.emplace_back(IDM_RA_FILES_ACHIEVEMENTS, "Assets Li&st");
-		ret.emplace_back(IDM_RA_FILES_ACHIEVEMENTEDITOR, "Assets &Editor");
-		ret.emplace_back(IDM_RA_FILES_MEMORYFINDER, "&Memory Inspector");
-		ret.emplace_back(IDM_RA_FILES_MEMORYBOOKMARKS, "Memory &Bookmarks");
-		ret.emplace_back(IDM_RA_PARSERICHPRESENCE, "Rich &Presence Monitor");
-		ret.emplace_back(0, nullptr);
-		ret.emplace_back(IDM_RA_REPORTBROKENACHIEVEMENTS, "&Report Achievement Problem");
-		ret.emplace_back(IDM_RA_GETROMCHECKSUM, "View Game H&ash");
+		const RA_MenuItem& it = items[i];
+		if (!it.sLabel)
+		{
+			// separator
+			ret.emplace_back(0, std::string(), false);
+		}
+		else
+		{
+			// option, maybe checkable
+			ret.emplace_back(static_cast<int>(it.nID), StringUtil::WideStringToUTF8String(it.sLabel), it.bChecked);
+		}
 	}
 
 	return ret;
@@ -1796,7 +2068,6 @@ void Achievements::RAIntegration::RACallbackEstimateTitle(char* buf)
 
 void Achievements::RAIntegration::RACallbackResetEmulator()
 {
-	g_challenge_mode = RA_HardcoreModeIsActive() != 0;
 	if (VMManager::HasValidVM())
 		VMManager::Reset();
 }
@@ -1810,6 +2081,11 @@ void Achievements::RAIntegration::RACallbackLoadROM(const char* unused)
 unsigned char Achievements::RAIntegration::RACallbackReadMemory(unsigned int address)
 {
 	return static_cast<unsigned char>(PeekMemory(address, sizeof(unsigned char), nullptr));
+}
+
+unsigned int Achievements::RAIntegration::RACallbackReadBlock(unsigned int address, unsigned char* buffer, unsigned int bytes)
+{
+	return PeekMemoryBlock(address, buffer, bytes);
 }
 
 void Achievements::RAIntegration::RACallbackWriteMemory(unsigned int address, unsigned char value)
