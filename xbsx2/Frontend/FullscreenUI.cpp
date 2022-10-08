@@ -1294,6 +1294,12 @@ void FullscreenUI::DrawIntListSetting(SettingsInterface* bsi, const char* title,
 	int default_value, const char* const* options, size_t option_count, int option_offset, bool enabled, float height, ImFont* font,
 	ImFont* summary_font)
 {
+	if (options && option_count == 0)
+	{
+		while (options[option_count] != nullptr)
+			option_count++;
+	}
+
 	const bool game_settings = IsEditingGameSettings(bsi);
 	const std::optional<int> value =
 		bsi->GetOptionalIntValue(section, key, game_settings ? std::nullopt : std::optional<int>(default_value));
