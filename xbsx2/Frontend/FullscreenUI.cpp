@@ -2734,9 +2734,9 @@ void FullscreenUI::DrawMemoryCardSettingsPage()
 	SettingsInterface* bsi = GetEditingSettingsInterface();
 
 	MenuHeading("Settings and Operations");
-	// if (bsi, MenuButton(ICON_FA_PLUS "  Create Memory Card", "Creates a new memory card file or folder."))
-	// 	ImGui::OpenPopup("Create Memory Card");
-	// DrawCreateMemoryCardWindow();
+	if (bsi, MenuButton(ICON_FA_PLUS "  Create Memory Card", "Creates a new memory card file or folder."))
+		ImGui::OpenPopup("Create Memory Card");
+	DrawCreateMemoryCardWindow();
 
 	DrawToggleSetting(bsi, ICON_FA_SEARCH " Folder Memory Card Filter",
 		"Simulates a larger memory card by filtering saves only to the current game.", "EmuCore", "McdFolderAutoManage", true);
