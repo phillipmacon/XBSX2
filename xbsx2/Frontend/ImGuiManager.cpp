@@ -878,6 +878,23 @@ void ImGuiManager::AddTextInput(std::string str)
 		});
 	});
 }
+
+void ImGuiManager::AddCharacterInput(int code)
+{
+	if (!s_imgui_wants_keyboard.load(std::memory_order_acquire))
+		return;
+
+	// Has to go through the CPU -> GS thread :(
+	Host::RunOnCPUThread([code = std::move(code)]() {
+		GetMTGS().RunOnGSThread([code = std::move(code)]() {
+			if (!ImGui::GetCurrentContext())
+				return;
+
+			ImGui::GetIO().AddInputCharacter(code);
+		});
+	});
+}
+
 void ImGuiManager::UpdateMousePosition(float x, float y)
 {
 	if (!ImGui::GetCurrentContext())
