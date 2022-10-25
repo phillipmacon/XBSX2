@@ -26,6 +26,7 @@
 
 #include "xbsx2/HostSettings.h"
 #include "xbsx2/windows/resource.h"
+#include "xbsx2/Frontend/ImGuiManager.h"
 
 #include <gamingdeviceinformation.h>
 #include <winrt/Windows.Graphics.Display.Core.h>
@@ -317,6 +318,10 @@ void UWPNoGUIPlatform::OnKeyUp(const IInspectable&, const winrt::Windows::UI::Co
 
 void UWPNoGUIPlatform::OnCharacterReceived(const IInspectable&, const winrt::Windows::UI::Core::CharacterReceivedEventArgs& args)
 {
+	if (ImGuiManager::WantsTextInput())
+	{
+		Host::RunOnCPUThread([key = args.KeyCode()]() { ImGuiManager::AddCharacterInput(std::move(key)); });
+	}
 }
 
 void UWPNoGUIPlatform::OnPointerPressed(const IInspectable&, const winrt::Windows::UI::Core::PointerEventArgs& args)
@@ -390,12 +395,26 @@ void UWPNoGUIPlatform::ReportError(const std::string_view& title, const std::str
 
 void UWPNoGUIPlatform::BeginTextInput()
 {
-	Console.Error("UWPNoGUIPlatform::BeginTextInput() not implemented.");
+	bool activate = true;
+	m_dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal, [this, activate]() {
+		const auto input_pane = winrt::Windows::UI::ViewManagement::InputPane::GetForCurrentView();
+		if (input_pane)
+		{
+			input_pane.TryShow();
+		}
+	});
 }
 
 void UWPNoGUIPlatform::EndTextInput()
 {
-	Console.Error("UWPNoGUIPlatform::EndTextInput() not implemented.");
+	bool activate = false;
+	m_dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal, [this, activate]() {
+		const auto input_pane = winrt::Windows::UI::ViewManagement::InputPane::GetForCurrentView();
+		if (input_pane)
+		{
+			input_pane.TryHide();
+		}
+	});
 }
 
 void UWPNoGUIPlatform::SetDefaultControllerConfig(SettingsInterface& si)

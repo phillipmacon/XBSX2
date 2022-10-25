@@ -70,6 +70,8 @@ namespace ImGuiManager
 	/// Called on the UI or CPU thread in response to a key press. String is UTF-8.
 	void AddTextInput(std::string str);
 
+	void AddCharacterInput(int code);
+
 	/// Called on the UI or CPU thread in response to mouse movement.
 	void UpdateMousePosition(float x, float y);
 
